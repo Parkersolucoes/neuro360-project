@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Users } from "lucide-react";
 import { useUsers, User } from "@/hooks/useUsers";
 import { useCompanies } from "@/hooks/useCompanies";
@@ -22,13 +21,17 @@ export default function Usuarios() {
 
   const saveUser = async (userData: Omit<User, 'id' | 'created_at' | 'updated_at'>) => {
     try {
-      console.log('Saving user with companies:', { selectedCompanies, primaryCompany });
+      console.log('Saving user with data:', userData);
+      console.log('Selected companies:', selectedCompanies);
+      console.log('Primary company:', primaryCompany);
       
       let savedUser;
       if (editingUser) {
         savedUser = await updateUser(editingUser.id, userData);
         // Atualizar associações de empresas
-        await createUserCompanies(editingUser.id, selectedCompanies, primaryCompany);
+        if (selectedCompanies.length > 0) {
+          await createUserCompanies(editingUser.id, selectedCompanies, primaryCompany);
+        }
       } else {
         savedUser = await createUser(userData);
         // Criar associações de empresas
@@ -66,6 +69,7 @@ export default function Usuarios() {
   };
 
   const openNewUserDialog = () => {
+    console.log('Opening new user dialog');
     setEditingUser(null);
     setSelectedCompanies([]);
     setPrimaryCompany('');

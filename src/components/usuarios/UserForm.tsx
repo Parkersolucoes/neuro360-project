@@ -41,6 +41,8 @@ export function UserForm({
     status: "active" as 'active' | 'inactive'
   });
 
+  const [isSaving, setIsSaving] = useState(false);
+
   const roles = [
     { value: "admin", label: "Administrador" },
     { value: "manager", label: "Gerente" },
@@ -106,7 +108,17 @@ export function UserForm({
   };
 
   const handleSave = async () => {
-    await onSave(formData);
+    if (isSaving) return;
+    
+    try {
+      setIsSaving(true);
+      console.log('Submitting form data:', formData);
+      await onSave(formData);
+    } catch (error) {
+      console.error('Error saving user:', error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const isFormValid = formData.name && formData.email && formData.phone && formData.whatsapp && formData.department;
@@ -265,10 +277,10 @@ export function UserForm({
         </Button>
         <Button 
           onClick={handleSave} 
-          disabled={!isFormValid}
+          disabled={!isFormValid || isSaving}
           className="bg-blue-500 hover:bg-blue-600 text-white"
         >
-          {editingUser ? "Atualizar" : "Criar"} Usuário
+          {isSaving ? "Salvando..." : (editingUser ? "Atualizar" : "Criar")} Usuário
         </Button>
       </div>
     </div>

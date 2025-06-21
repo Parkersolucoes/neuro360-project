@@ -70,7 +70,6 @@ export function useUsers() {
 
       if (error) throw error;
       
-      // Garantir que o status seja do tipo correto
       const formattedUsers = (data || []).map(user => ({
         ...user,
         status: user.status as 'active' | 'inactive'
@@ -91,15 +90,30 @@ export function useUsers() {
 
   const createUser = async (userData: Omit<User, 'id' | 'created_at' | 'updated_at'>) => {
     try {
+      console.log('Creating user with data:', userData);
+      
       const { data, error } = await supabase
         .from('users')
-        .insert([userData])
+        .insert([{
+          name: userData.name,
+          email: userData.email,
+          phone: userData.phone,
+          whatsapp: userData.whatsapp,
+          role: userData.role,
+          department: userData.department,
+          is_admin: userData.is_admin,
+          status: userData.status
+        }])
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
       
-      // Garantir que o status seja do tipo correto
+      console.log('User created successfully:', data);
+      
       const formattedUser = {
         ...data,
         status: data.status as 'active' | 'inactive'
@@ -116,7 +130,7 @@ export function useUsers() {
       console.error('Error creating user:', error);
       toast({
         title: "Erro",
-        description: "Erro ao criar usuário",
+        description: error instanceof Error ? error.message : "Erro ao criar usuário",
         variant: "destructive"
       });
       throw error;
@@ -134,7 +148,6 @@ export function useUsers() {
 
       if (error) throw error;
       
-      // Garantir que o status seja do tipo correto
       const formattedUser = {
         ...data,
         status: data.status as 'active' | 'inactive'
