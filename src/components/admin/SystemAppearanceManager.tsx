@@ -1,5 +1,5 @@
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,14 +21,26 @@ export function SystemAppearanceManager() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
-    system_name: config?.system_name || "360 Solutions",
-    system_description: config?.system_description || "Automação WhatsApp Inteligente",
-    login_background_image: config?.login_background_image || "",
-    primary_color: config?.primary_color || "#1e293b"
+    system_name: "360 Solutions",
+    system_description: "Automação WhatsApp Inteligente",
+    login_background_image: "",
+    primary_color: "#1e293b"
   });
 
   const [isUploading, setIsUploading] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  // Update form data when config is loaded
+  useEffect(() => {
+    if (config) {
+      setFormData({
+        system_name: config.system_name || "360 Solutions",
+        system_description: config.system_description || "Automação WhatsApp Inteligente",
+        login_background_image: config.login_background_image || "",
+        primary_color: config.primary_color || "#1e293b"
+      });
+    }
+  }, [config]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

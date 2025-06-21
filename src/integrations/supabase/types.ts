@@ -404,6 +404,36 @@ export type Database = {
           },
         ]
       }
+      system_configs: {
+        Row: {
+          created_at: string
+          id: string
+          login_background_image: string | null
+          primary_color: string | null
+          system_description: string | null
+          system_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          login_background_image?: string | null
+          primary_color?: string | null
+          system_description?: string | null
+          system_name?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          login_background_image?: string | null
+          primary_color?: string | null
+          system_description?: string | null
+          system_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       system_updates: {
         Row: {
           created_at: string
