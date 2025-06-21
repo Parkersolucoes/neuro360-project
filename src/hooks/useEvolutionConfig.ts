@@ -28,7 +28,7 @@ export function useEvolutionConfig() {
         .single();
 
       if (error && error.code !== 'PGRST116') throw error;
-      setConfig(data || null);
+      setConfig(data ? { ...data, status: data.status as 'connected' | 'disconnected' | 'testing' } : null);
     } catch (error) {
       console.error('Error fetching Evolution config:', error);
       toast({
@@ -55,7 +55,7 @@ export function useEvolutionConfig() {
           .single();
 
         if (error) throw error;
-        setConfig(data);
+        setConfig({ ...data, status: data.status as 'connected' | 'disconnected' | 'testing' });
       } else {
         const { data, error } = await supabase
           .from('evolution_configs')
@@ -64,7 +64,7 @@ export function useEvolutionConfig() {
           .single();
 
         if (error) throw error;
-        setConfig(data);
+        setConfig({ ...data, status: data.status as 'connected' | 'disconnected' | 'testing' });
       }
 
       toast({
@@ -103,7 +103,7 @@ export function useEvolutionConfig() {
           .single();
 
         if (!error && data) {
-          setConfig(data);
+          setConfig({ ...data, status: data.status as 'connected' | 'disconnected' | 'testing' });
           toast({
             title: "Sucesso",
             description: "Conexão Evolution testada com sucesso!"

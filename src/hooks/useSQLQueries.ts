@@ -34,7 +34,7 @@ export function useSQLQueries() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setQueries(data || []);
+      setQueries(data ? data.map(query => ({ ...query, status: query.status as 'success' | 'error' | 'pending' })) : []);
     } catch (error) {
       console.error('Error fetching SQL queries:', error);
       toast({
@@ -63,13 +63,14 @@ export function useSQLQueries() {
 
       if (error) throw error;
       
-      setQueries(prev => [data, ...prev]);
+      const newQuery = { ...data, status: data.status as 'success' | 'error' | 'pending' };
+      setQueries(prev => [newQuery, ...prev]);
       toast({
         title: "Sucesso",
         description: "Consulta SQL criada com sucesso!"
       });
       
-      return data;
+      return newQuery;
     } catch (error) {
       console.error('Error creating SQL query:', error);
       toast({
@@ -95,11 +96,12 @@ export function useSQLQueries() {
 
       if (error) throw error;
       
+      const updatedQuery = { ...data, status: data.status as 'success' | 'error' | 'pending' };
       setQueries(prev => prev.map(query => 
-        query.id === id ? { ...query, ...data } : query
+        query.id === id ? updatedQuery : query
       ));
       
-      return data;
+      return updatedQuery;
     } catch (error) {
       console.error('Error updating SQL query:', error);
       toast({

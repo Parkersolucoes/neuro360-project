@@ -30,7 +30,7 @@ export function useQRSessions() {
         .single();
 
       if (error && error.code !== 'PGRST116') throw error;
-      setSession(data || null);
+      setSession(data ? { ...data, session_status: data.session_status as 'connected' | 'waiting' | 'disconnected' } : null);
     } catch (error) {
       console.error('Error fetching QR session:', error);
     } finally {
@@ -56,7 +56,7 @@ export function useQRSessions() {
 
       if (error) throw error;
       
-      setSession(data);
+      setSession({ ...data, session_status: data.session_status as 'connected' | 'waiting' | 'disconnected' });
       return data;
     } catch (error) {
       console.error('Error creating QR session:', error);
@@ -82,7 +82,7 @@ export function useQRSessions() {
 
       if (error) throw error;
       
-      setSession(data);
+      setSession({ ...data, session_status: data.session_status as 'connected' | 'waiting' | 'disconnected' });
       return data;
     } catch (error) {
       console.error('Error updating QR session:', error);
@@ -106,7 +106,7 @@ export function useQRSessions() {
 
       if (error) throw error;
       
-      setSession(data);
+      setSession({ ...data, session_status: data.session_status as 'connected' | 'waiting' | 'disconnected' });
       toast({
         title: "Sucesso",
         description: "Sessão desconectada com sucesso!"

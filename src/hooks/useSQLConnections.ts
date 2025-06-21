@@ -29,7 +29,7 @@ export function useSQLConnections() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setConnections(data || []);
+      setConnections(data ? data.map(conn => ({ ...conn, status: conn.status as 'connected' | 'disconnected' | 'testing' })) : []);
     } catch (error) {
       console.error('Error fetching SQL connections:', error);
       toast({
@@ -55,13 +55,14 @@ export function useSQLConnections() {
 
       if (error) throw error;
       
-      setConnections(prev => [data, ...prev]);
+      const newConnection = { ...data, status: data.status as 'connected' | 'disconnected' | 'testing' };
+      setConnections(prev => [newConnection, ...prev]);
       toast({
         title: "Sucesso",
         description: "Conexão SQL criada com sucesso!"
       });
       
-      return data;
+      return newConnection;
     } catch (error) {
       console.error('Error creating SQL connection:', error);
       toast({
@@ -84,8 +85,9 @@ export function useSQLConnections() {
 
       if (error) throw error;
       
+      const updatedConnection = { ...data, status: data.status as 'connected' | 'disconnected' | 'testing' };
       setConnections(prev => prev.map(conn => 
-        conn.id === id ? { ...conn, ...data } : conn
+        conn.id === id ? updatedConnection : conn
       ));
       
       toast({
@@ -93,7 +95,7 @@ export function useSQLConnections() {
         description: "Conexão SQL atualizada com sucesso!"
       });
       
-      return data;
+      return updatedConnection;
     } catch (error) {
       console.error('Error updating SQL connection:', error);
       toast({
