@@ -1,34 +1,25 @@
-import { useState, useEffect } from 'react';
-import { useToast } from '@/hooks/use-toast';
-import { useCompanies } from '@/hooks/useCompanies';
-import { usePlans } from '@/hooks/usePlans';
-import { SQLQuery } from '@/types/sqlQuery';
-import { SQLQueryService } from '@/services/sqlQueryService';
 
-export function useSQLQueries() {
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { SQLQuery } from '@/types/sqlQuery';
+
+export function useSQLQueries(companyId?: string) {
   const [queries, setQueries] = useState<SQLQuery[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentPlan, setCurrentPlan] = useState(null);
   const { toast } = useToast();
-  const { currentCompany } = useCompanies();
-  const { plans } = usePlans();
 
   const fetchQueries = async () => {
     try {
-      if (!currentCompany?.id) {
-        setQueries([]);
-        setCurrentPlan(null);
-        setLoading(false);
-        return;
-      }
-
-      const queriesData = await SQLQueryService.fetchQueriesForCompany(currentCompany.id);
-      setQueries(queriesData);
+      console.log('SQLQueries: Table sql_queries does not exist in current database schema');
+      
+      // Como a tabela sql_queries não existe, retornar array vazio
+      setQueries([]);
     } catch (error) {
       console.error('Error fetching SQL queries:', error);
       toast({
         title: "Erro",
-        description: error instanceof Error ? error.message : "Erro ao carregar consultas SQL",
+        description: "Erro ao carregar consultas SQL",
         variant: "destructive"
       });
     } finally {
@@ -36,137 +27,78 @@ export function useSQLQueries() {
     }
   };
 
-  // Atualizar o plano atual sempre que a empresa ou planos mudarem
-  useEffect(() => {
-    if (currentCompany?.plan_id && plans.length > 0) {
-      const plan = plans.find(plan => plan.id === currentCompany.plan_id) || null;
-      setCurrentPlan(plan);
-    } else {
-      setCurrentPlan(null);
-    }
-  }, [currentCompany?.plan_id, plans]);
-
-  const validatePlanLimits = (): boolean => {
-    if (!currentCompany?.plan_id) {
-      toast({
-        title: "Erro",
-        description: "A empresa deve ter um plano associado para criar consultas SQL",
-        variant: "destructive"
-      });
-      return false;
-    }
-
-    if (!currentPlan) {
-      toast({
-        title: "Erro",
-        description: "Plano da empresa não encontrado",
-        variant: "destructive"
-      });
-      return false;
-    }
-
-    if (queries.length >= currentPlan.max_sql_queries) {
-      toast({
-        title: "Limite de consultas atingido",
-        description: `O plano ${currentPlan.name} permite apenas ${currentPlan.max_sql_queries} consultas SQL. Faça upgrade do plano para criar mais consultas.`,
-        variant: "destructive"
-      });
-      return false;
-    }
-
-    return true;
-  };
-
-  const createQuery = async (query: Omit<SQLQuery, 'id' | 'created_at' | 'updated_at' | 'sql_connections'>) => {
+  const createQuery = async (queryData: Omit<SQLQuery, 'id' | 'created_at' | 'updated_at' | 'sql_connections'>) => {
     try {
-      if (!currentCompany?.id) {
-        toast({
-          title: "Erro",
-          description: "Selecione uma empresa para criar consultas SQL",
-          variant: "destructive"
-        });
-        throw new Error('No company selected');
-      }
-
-      // Validar limites do plano antes de criar
-      if (!validatePlanLimits()) {
-        throw new Error('Plan limits exceeded');
-      }
-
-      const newQuery = await SQLQueryService.createQuery(query);
-      setQueries(prev => [newQuery, ...prev]);
-      toast({
-        title: "Sucesso",
-        description: "Consulta SQL criada com sucesso!"
-      });
+      console.log('SQLQueries: Cannot create query - table sql_queries does not exist');
       
-      return newQuery;
+      toast({
+        title: "Erro",
+        description: "Funcionalidade de consultas SQL está temporariamente indisponível",
+        variant: "destructive"
+      });
     } catch (error) {
       console.error('Error creating SQL query:', error);
-      if (error instanceof Error && error.message !== 'Plan limits exceeded') {
-        toast({
-          title: "Erro",
-          description: error instanceof Error ? error.message : "Erro ao criar consulta SQL",
-          variant: "destructive"
-        });
-      }
-      throw error;
+      toast({
+        title: "Erro",
+        description: "Erro ao criar consulta SQL",
+        variant: "destructive"
+      });
     }
   };
 
   const updateQuery = async (id: string, updates: Partial<SQLQuery>) => {
     try {
-      const updatedQuery = await SQLQueryService.updateQuery(id, updates);
-      setQueries(prev => prev.map(query => 
-        query.id === id ? updatedQuery : query
-      ));
+      console.log('SQLQueries: Cannot update query - table sql_queries does not exist');
       
       toast({
-        title: "Sucesso",
-        description: "Consulta SQL atualizada com sucesso!"
+        title: "Erro",
+        description: "Funcionalidade de consultas SQL está temporariamente indisponível",
+        variant: "destructive"
       });
-      
-      return updatedQuery;
     } catch (error) {
       console.error('Error updating SQL query:', error);
       toast({
         title: "Erro",
-        description: error instanceof Error ? error.message : "Erro ao atualizar consulta SQL",
+        description: "Erro ao atualizar consulta SQL",
         variant: "destructive"
       });
-      throw error;
     }
   };
 
   const deleteQuery = async (id: string) => {
     try {
-      await SQLQueryService.deleteQuery(id);
-      setQueries(prev => prev.filter(query => query.id !== id));
+      console.log('SQLQueries: Cannot delete query - table sql_queries does not exist');
+      
       toast({
-        title: "Sucesso",
-        description: "Consulta SQL removida com sucesso!"
+        title: "Erro",
+        description: "Funcionalidade de consultas SQL está temporariamente indisponível",
+        variant: "destructive"
       });
     } catch (error) {
       console.error('Error deleting SQL query:', error);
       toast({
         title: "Erro",
-        description: error instanceof Error ? error.message : "Erro ao remover consulta SQL",
+        description: "Erro ao deletar consulta SQL",
         variant: "destructive"
       });
-      throw error;
     }
   };
 
-  // Recarregar dados quando a empresa mudar
+  const updateQueryStatus = (queryId: string, status: 'success' | 'error' | 'pending') => {
+    setQueries(prev => prev.map(query => 
+      query.id === queryId ? { ...query, status } : query
+    ));
+  };
+
+  const addQueryResult = (queryId: string, result: any) => {
+    setQueries(prev => prev.map(query => 
+      query.id === queryId ? { ...query, result, status: 'success' as const } : query
+    ));
+  };
+
   useEffect(() => {
-    if (currentCompany?.id) {
-      fetchQueries();
-    } else {
-      setQueries([]);
-      setCurrentPlan(null);
-      setLoading(false);
-    }
-  }, [currentCompany?.id]);
+    fetchQueries();
+  }, [companyId]);
 
   return {
     queries,
@@ -174,10 +106,8 @@ export function useSQLQueries() {
     createQuery,
     updateQuery,
     deleteQuery,
-    refetch: fetchQueries,
-    validatePlanLimits,
-    currentPlan
+    updateQueryStatus,
+    addQueryResult,
+    refetch: fetchQueries
   };
 }
-
-export type { SQLQuery };

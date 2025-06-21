@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export default function Auth() {
   const navigate = useNavigate();
-  const { signIn, signUp, user, loading, createMasterUser } = useAuth();
+  const { signIn, signUp, user, userLogin, loading, createMasterUser } = useAuth();
   const { toast } = useToast();
   const { updates, loading: updatesLoading } = useSystemUpdates();
   const { config: systemConfig } = useSystemConfig();
@@ -41,10 +40,10 @@ export default function Auth() {
 
   useEffect(() => {
     // Redirecionar usuários autenticados
-    if (user && !loading) {
+    if ((user || userLogin) && !loading) {
       navigate('/dashboard');
     }
-  }, [user, loading, navigate]);
+  }, [user, userLogin, loading, navigate]);
 
   // Criar usuário master automaticamente na inicialização
   useEffect(() => {

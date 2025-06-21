@@ -182,6 +182,7 @@ export type Database = {
           is_admin: boolean
           is_master: boolean
           name: string
+          password_hash: string | null
           phone: string
           role: string
           status: string
@@ -196,6 +197,7 @@ export type Database = {
           is_admin?: boolean
           is_master?: boolean
           name: string
+          password_hash?: string | null
           phone: string
           role?: string
           status?: string
@@ -210,6 +212,7 @@ export type Database = {
           is_admin?: boolean
           is_master?: boolean
           name?: string
+          password_hash?: string | null
           phone?: string
           role?: string
           status?: string
@@ -230,6 +233,18 @@ export type Database = {
       is_master_user_check: {
         Args: { user_uuid?: string }
         Returns: boolean
+      }
+      validate_user_password: {
+        Args: { user_email: string; user_password: string }
+        Returns: {
+          id: string
+          name: string
+          email: string
+          role: string
+          is_admin: boolean
+          is_master: boolean
+          status: string
+        }[]
       }
     }
     Enums: {

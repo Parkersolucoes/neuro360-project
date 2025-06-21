@@ -3,6 +3,7 @@ import { useState, useEffect, createContext, useContext } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { UserAuthService, UserLoginData } from '@/services/userAuthService';
 
 interface Profile {
   id: string;
@@ -20,6 +21,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
+  userLogin: UserLoginData | null;
   loading: boolean;
   signUp: (email: string, password: string, name: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
@@ -35,6 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [userLogin, setUserLogin] = useState<UserLoginData | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -51,6 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }, 0);
         } else {
           setProfile(null);
+          setUserLogin(null);
         }
         setLoading(false);
       }
@@ -238,6 +242,64 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('Limpando sessão anterior...');
       await supabase.auth.signOut();
       
+      // Primeiro, tenta validar as credenciais na tabela users
+      console.log('Validando credenciais na tabela users...');
+      const userData = await UserAuthService.validateUserCredentials(email, password);
+      
+      if (userData) {
+        console.log('Credenciais válidas na tabela users:', userData);
+        setUserLogin(userData);
+        
+        // Cria uma sessão simulada para manter a compatibilidade
+        const mockUser = {
+          id: userData.id,
+          email: userData.email,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          app_metadata: {},
+          user_metadata: { name: userData.name },
+          aud: 'authenticated',
+          confirmation_sent_at: null,
+          recovery_sent_at: null,
+          email_change_sent_at: null,
+          new_email: null,
+          invited_at: null,
+          action_link: null,
+          email_confirmed_at: new Date().toISOString(),
+          phone_confirmed_at: null,
+          confirmed_at: new Date().toISOString(),
+          email_change: null,
+          phone_change: null,
+          last_sign_in_at: new Date().toISOString(),
+          role: 'authenticated',
+          phone: null,
+          identities: []
+        } as User;
+        
+        setUser(mockUser);
+        
+        // Cria perfil compatível
+        const mockProfile = {
+          id: userData.id,
+          name: userData.name,
+          email: userData.email,
+          role: userData.role,
+          is_admin: userData.is_admin,
+          is_master_user: userData.is_master,
+          is_test_user: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        
+        setProfile(mockProfile);
+        
+        console.log('Login realizado com sucesso usando tabela users!');
+        return { error: null };
+      }
+      
+      // Se não encontrou na tabela users, tenta o Supabase Auth como fallback
+      console.log('Tentando login com Supabase Auth como fallback...');
+      
       // Se for o email master, garante que o usuário master existe
       if (email === 'admin@visao360.com.br') {
         console.log('Email master detectado, garantindo que usuário existe...');
@@ -264,7 +326,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error('Nome do erro:', error.name);
         
         // Mensagens de erro mais específicas
-        let errorMessage = "Erro ao fazer login";
+        let errorMessage = "Email ou senha incorretos";
         
         switch (error.code) {
           case 'invalid_credentials':
@@ -280,7 +342,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             errorMessage = "Cadastro desabilitado. Entre em contato com o administrador.";
             break;
           default:
-            errorMessage = `Erro: ${error.message} (${error.code})`;
+            errorMessage = "Email ou senha incorretos";
         }
         
         console.error('Mensagem de erro para o usuário:', errorMessage);
@@ -326,6 +388,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     setSession(null);
     setProfile(null);
+    setUserLogin(null);
     toast({
       title: "Sucesso",
       description: "Logout realizado com sucesso!"
@@ -333,14 +396,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const isMasterUser = () => {
-    return profile?.is_master_user || false;
+    return profile?.is_master_user || userLogin?.is_master || false;
   };
 
   const hasPermission = (action: 'create' | 'edit' | 'delete') => {
-    if (!profile) return false;
+    if (!profile && !userLogin) return false;
     
-    if (profile.is_master_user) return true;
-    if (profile.is_admin) return true;
+    const isAdmin = profile?.is_admin || userLogin?.is_admin || false;
+    const isMaster = profile?.is_master_user || userLogin?.is_master || false;
+    
+    if (isMaster) return true;
+    if (isAdmin) return true;
     
     if (action === 'delete') return false;
     
@@ -352,6 +418,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user,
       session,
       profile,
+      userLogin,
       loading,
       signUp,
       signIn,
