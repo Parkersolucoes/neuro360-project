@@ -1,6 +1,5 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 interface SystemUpdate {
@@ -20,15 +19,10 @@ export function useSystemUpdates() {
 
   const fetchUpdates = async () => {
     try {
-      const { data, error } = await supabase
-        .from('system_updates')
-        .select('*')
-        .eq('is_active', true)
-        .order('update_date', { ascending: false })
-        .limit(5);
-
-      if (error) throw error;
-      setUpdates(data || []);
+      console.log('SystemUpdates: Table system_updates does not exist in current database schema');
+      
+      // Como a tabela system_updates não existe, retornar array vazio
+      setUpdates([]);
     } catch (error) {
       console.error('Error fetching updates:', error);
     } finally {
@@ -38,18 +32,13 @@ export function useSystemUpdates() {
 
   const createUpdate = async (updateData: Omit<SystemUpdate, 'id' | 'created_at'>) => {
     try {
-      const { error } = await supabase
-        .from('system_updates')
-        .insert([updateData]);
-
-      if (error) throw error;
-
+      console.log('SystemUpdates: Cannot create update - table system_updates does not exist');
+      
       toast({
-        title: "Sucesso",
-        description: "Atualização criada com sucesso!"
+        title: "Erro",
+        description: "Funcionalidade de atualizações do sistema está temporariamente indisponível",
+        variant: "destructive"
       });
-
-      await fetchUpdates();
     } catch (error) {
       console.error('Error creating update:', error);
       toast({
@@ -62,19 +51,13 @@ export function useSystemUpdates() {
 
   const updateUpdate = async (id: string, updateData: Partial<SystemUpdate>) => {
     try {
-      const { error } = await supabase
-        .from('system_updates')
-        .update(updateData)
-        .eq('id', id);
-
-      if (error) throw error;
-
+      console.log('SystemUpdates: Cannot update update - table system_updates does not exist');
+      
       toast({
-        title: "Sucesso",
-        description: "Atualização editada com sucesso!"
+        title: "Erro",
+        description: "Funcionalidade de atualizações do sistema está temporariamente indisponível",
+        variant: "destructive"
       });
-
-      await fetchUpdates();
     } catch (error) {
       console.error('Error updating update:', error);
       toast({
@@ -87,19 +70,13 @@ export function useSystemUpdates() {
 
   const deleteUpdate = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('system_updates')
-        .update({ is_active: false })
-        .eq('id', id);
-
-      if (error) throw error;
-
+      console.log('SystemUpdates: Cannot delete update - table system_updates does not exist');
+      
       toast({
-        title: "Sucesso",
-        description: "Atualização removida com sucesso!"
+        title: "Erro",
+        description: "Funcionalidade de atualizações do sistema está temporariamente indisponível",
+        variant: "destructive"
       });
-
-      await fetchUpdates();
     } catch (error) {
       console.error('Error deleting update:', error);
       toast({
