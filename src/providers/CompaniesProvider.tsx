@@ -5,6 +5,7 @@ import { Company } from '@/types/company';
 import { CompanyService } from '@/services/companyService';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 export function CompaniesProvider({ children }: { children: React.ReactNode }) {
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -115,11 +116,58 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Função para buscar usuário master
+  const getMasterUser = async () => {
+    try {
+      const { data: masterUser, error } = await supabase
+        .from('users')
+        .select('id')
+        .eq('is_master', true)
+        .single();
+
+      if (error) {
+        console.error('Error fetching master user:', error);
+        return null;
+      }
+
+      return masterUser;
+    } catch (error) {
+      console.error('Error in getMasterUser:', error);
+      return null;
+    }
+  };
+
   const createCompany = async (companyData: Omit<Company, 'id' | 'created_at' | 'updated_at'>) => {
     try {
       console.log('CompaniesProvider: Creating company with data:', companyData);
       const data = await CompanyService.createCompany(companyData);
       console.log('CompaniesProvider: Company created successfully:', data);
+
+      // Vincular automaticamente ao usuário master
+      const masterUser = await getMasterUser();
+      if (masterUser && data?.id) {
+        console.log('CompaniesProvider: Linking company to master user:', masterUser.id);
+        
+        const { error: linkError } = await supabase
+          .from('user_companies')
+          .insert({
+            user_id: masterUser.id,
+            company_id: data.id,
+            role: 'admin',
+            is_primary: false
+          });
+
+        if (linkError) {
+          console.error('Error linking company to master user:', linkError);
+          toast({
+            title: "Aviso",
+            description: "Empresa criada, mas houve erro ao vincular ao usuário master",
+            variant: "destructive"
+          });
+        } else {
+          console.log('CompaniesProvider: Company successfully linked to master user');
+        }
+      }
 
       toast({
         title: "Sucesso",
