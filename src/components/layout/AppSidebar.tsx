@@ -109,25 +109,42 @@ export function AppSidebar() {
 
   return (
     <Sidebar className="border-r border-gray-700 bg-slate-900">
-      <SidebarHeader className="p-6 bg-slate-900">
-        <div className="flex items-center justify-between mb-4">
+      <SidebarHeader className="p-4 bg-slate-900">
+        <div className="space-y-4">
+          {/* Logo e informações do sistema */}
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
               <BarChart3 className="w-5 h-5 text-white" />
             </div>
-            <div>
-              <h1 className="text-lg font-semibold text-white">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-lg font-semibold text-white truncate">
                 {systemConfig?.system_name || "Visão 360"}
               </h1>
-              <p className="text-sm text-gray-300">
+              <p className="text-sm text-gray-300 truncate">
                 {systemDescription}
               </p>
-              {currentCompany && (
-                <p className="text-xs text-blue-400 font-medium mt-1">{currentCompany.name}</p>
-              )}
             </div>
           </div>
-          <UserMenu />
+
+          {/* Informações da empresa atual */}
+          {currentCompany && (
+            <div className="bg-slate-800 rounded-lg p-3 border border-slate-700">
+              <div className="flex items-center space-x-2 mb-1">
+                <Building2 className="w-4 h-4 text-blue-400" />
+                <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  Empresa Atual
+                </span>
+              </div>
+              <p className="text-sm font-medium text-white truncate">
+                {currentCompany.name}
+              </p>
+            </div>
+          )}
+
+          {/* Menu do usuário */}
+          <div className="pt-2 border-t border-slate-700">
+            <UserMenu />
+          </div>
         </div>
       </SidebarHeader>
       

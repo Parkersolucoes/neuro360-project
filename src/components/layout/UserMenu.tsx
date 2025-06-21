@@ -52,19 +52,19 @@ export function UserMenu() {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="h-10 px-3 py-2">
-            <div className="flex items-center space-x-2">
-              <Avatar className="h-8 w-8">
+          <Button variant="ghost" className="w-full h-auto p-3 justify-start text-left bg-slate-700 hover:bg-slate-600 border border-slate-600">
+            <div className="flex items-center space-x-3 w-full">
+              <Avatar className="h-8 w-8 flex-shrink-0">
                 <AvatarImage src="" />
                 <AvatarFallback className="bg-blue-500 text-white text-sm">
                   {userInitials}
                 </AvatarFallback>
               </Avatar>
-              <div className="hidden md:block text-left">
-                <p className="text-sm font-medium">{userLogin.name}</p>
-                <p className="text-xs text-gray-500">{userLogin.email}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white truncate">{userLogin.name}</p>
+                <p className="text-xs text-gray-300 truncate">{userLogin.email}</p>
               </div>
-              <ChevronDown className="h-4 w-4 text-gray-500" />
+              <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" />
             </div>
           </Button>
         </DropdownMenuTrigger>
