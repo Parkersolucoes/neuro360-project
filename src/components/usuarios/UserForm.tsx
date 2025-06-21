@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { User } from "@/hooks/useUsers";
 import { UserBasicInfoForm } from "./UserBasicInfoForm";
@@ -65,19 +66,9 @@ export function UserForm({
       
       // Tratar campos boolean especificamente
       if (field === 'is_admin') {
-        // Converter corretamente para boolean
-        if (typeof value === 'boolean') {
-          newData.is_admin = value;
-        } else {
-          newData.is_admin = value === 'true';
-        }
+        newData.is_admin = Boolean(value);
       } else if (field === 'is_master') {
-        // Converter corretamente para boolean
-        if (typeof value === 'boolean') {
-          newData.is_master = value;
-        } else {
-          newData.is_master = value === 'true';
-        }
+        newData.is_master = Boolean(value);
       } else if (field === 'status') {
         newData.status = String(value) as 'active' | 'inactive';
       } else {
@@ -105,8 +96,8 @@ export function UserForm({
         whatsapp: formData.whatsapp.trim(),
         role: formData.role,
         department: formData.department.trim(),
-        is_admin: formData.is_admin,
-        is_master: formData.is_master,
+        is_admin: Boolean(formData.is_admin),
+        is_master: Boolean(formData.is_master),
         status: formData.status
       };
       
