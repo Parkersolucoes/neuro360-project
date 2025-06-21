@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { CompaniesContext } from '@/contexts/CompaniesContext';
 import { Company } from '@/types/company';
@@ -117,12 +116,12 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Função para buscar usuário master
-  const getMasterUser = async () => {
+  const getMasterUser = async (): Promise<{ id: string } | null> => {
     try {
       const { data: masterUser, error } = await supabase
         .from('users')
         .select('id')
-        .eq('is_master', true)
+        .eq('is_admin', '0')
         .single();
 
       if (error) {
