@@ -60,10 +60,11 @@ export type Database = {
         Row: {
           api_key: string
           api_url: string
-          company_id: string | null
+          company_id: string
           created_at: string
           id: string
           instance_name: string
+          is_active: boolean
           status: string
           updated_at: string
           webhook_url: string | null
@@ -71,10 +72,11 @@ export type Database = {
         Insert: {
           api_key: string
           api_url?: string
-          company_id?: string | null
+          company_id: string
           created_at?: string
           id?: string
           instance_name: string
+          is_active?: boolean
           status?: string
           updated_at?: string
           webhook_url?: string | null
@@ -82,10 +84,11 @@ export type Database = {
         Update: {
           api_key?: string
           api_url?: string
-          company_id?: string | null
+          company_id?: string
           created_at?: string
           id?: string
           instance_name?: string
+          is_active?: boolean
           status?: string
           updated_at?: string
           webhook_url?: string | null

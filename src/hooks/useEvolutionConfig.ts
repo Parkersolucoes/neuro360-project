@@ -1,14 +1,17 @@
 
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface EvolutionConfig {
   id: string;
-  company_id: string | null;
+  company_id: string;
   api_url: string;
   api_key: string;
   instance_name: string;
+  webhook_url: string | null;
   is_active: boolean;
+  status: 'connected' | 'disconnected' | 'testing';
   created_at: string;
   updated_at: string;
 }
@@ -19,13 +22,36 @@ export function useEvolutionConfig(companyId?: string) {
   const { toast } = useToast();
 
   const fetchConfig = async () => {
-    try {
-      console.log('EvolutionConfig: Table evolution_configs does not exist in current database schema');
-      
-      // Como a tabela evolution_configs não existe mais, retornar null
+    if (!companyId) {
       setConfig(null);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      console.log('EvolutionConfig: Fetching config for company:', companyId);
+      
+      const { data, error } = await supabase
+        .from('evolution_configs')
+        .select('*')
+        .eq('company_id', companyId)
+        .maybeSingle();
+
+      if (error) {
+        console.error('EvolutionConfig: Error fetching config:', error);
+        throw error;
+      }
+
+      console.log('EvolutionConfig: Fetched config:', data);
+      setConfig(data);
     } catch (error) {
       console.error('Error fetching Evolution config:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar configuração da Evolution API",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
@@ -33,34 +59,65 @@ export function useEvolutionConfig(companyId?: string) {
 
   const createConfig = async (configData: Omit<EvolutionConfig, 'id' | 'created_at' | 'updated_at'>) => {
     try {
-      console.log('EvolutionConfig: Cannot create config - table evolution_configs does not exist');
+      console.log('EvolutionConfig: Creating config:', configData);
+      
+      const { data, error } = await supabase
+        .from('evolution_configs')
+        .insert(configData)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log('EvolutionConfig: Config created successfully:', data);
+      setConfig(data);
       
       toast({
-        title: "Erro",
-        description: "Tabela de configurações da Evolution API não existe no banco de dados atual",
-        variant: "destructive"
+        title: "Sucesso",
+        description: "Configuração da Evolution API criada com sucesso!"
       });
       
-      throw new Error('evolution_configs table does not exist');
+      return data;
     } catch (error) {
       console.error('Error creating Evolution config:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao criar configuração da Evolution API",
+        variant: "destructive"
+      });
       throw error;
     }
   };
 
   const updateConfig = async (id: string, updates: Partial<EvolutionConfig>) => {
     try {
-      console.log('EvolutionConfig: Cannot update config - table evolution_configs does not exist');
+      console.log('EvolutionConfig: Updating config:', id, updates);
+      
+      const { data, error } = await supabase
+        .from('evolution_configs')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log('EvolutionConfig: Config updated successfully:', data);
+      setConfig(data);
       
       toast({
-        title: "Erro",
-        description: "Tabela de configurações da Evolution API não existe no banco de dados atual",
-        variant: "destructive"
+        title: "Sucesso",
+        description: "Configuração da Evolution API atualizada com sucesso!"
       });
       
-      throw new Error('evolution_configs table does not exist');
+      return data;
     } catch (error) {
       console.error('Error updating Evolution config:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar configuração da Evolution API",
+        variant: "destructive"
+      });
       throw error;
     }
   };

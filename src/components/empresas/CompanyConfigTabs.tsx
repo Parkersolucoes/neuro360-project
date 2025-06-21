@@ -1,6 +1,6 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Database, MessageSquare, Webhook } from "lucide-react";
+import { Database, MessageSquare } from "lucide-react";
 import { Company } from "@/hooks/useCompanies";
 import { SQLConnectionForm } from "@/components/configuracao/SQLConnectionForm";
 import { EvolutionAPIForm } from "@/components/configuracao/EvolutionAPIForm";
@@ -15,7 +15,7 @@ export function CompanyConfigTabs({ company }: CompanyConfigTabsProps) {
 
   return (
     <Tabs defaultValue="sql" className="space-y-6">
-      <TabsList className="grid w-full grid-cols-3">
+      <TabsList className="grid w-full grid-cols-2">
         <TabsTrigger value="sql" className="flex items-center space-x-2">
           <Database className="w-4 h-4" />
           <span>SQL Server</span>
@@ -23,10 +23,6 @@ export function CompanyConfigTabs({ company }: CompanyConfigTabsProps) {
         <TabsTrigger value="evolution" className="flex items-center space-x-2">
           <MessageSquare className="w-4 h-4" />
           <span>Evolution API</span>
-        </TabsTrigger>
-        <TabsTrigger value="webhook" className="flex items-center space-x-2">
-          <Webhook className="w-4 h-4" />
-          <span>Webhooks</span>
         </TabsTrigger>
       </TabsList>
 
@@ -39,12 +35,6 @@ export function CompanyConfigTabs({ company }: CompanyConfigTabsProps) {
 
       <TabsContent value="evolution">
         <EvolutionAPIForm companyId={company.id} />
-      </TabsContent>
-
-      <TabsContent value="webhook">
-        <div className="text-center py-12 text-gray-500">
-          Configuração de Webhooks será implementada em breve
-        </div>
       </TabsContent>
     </Tabs>
   );
