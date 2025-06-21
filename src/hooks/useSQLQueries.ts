@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useCompanies } from '@/hooks/useCompanies';
+import { usePlans } from '@/hooks/usePlans';
 import { SQLQuery } from '@/types/sqlQuery';
 import { SQLQueryService } from '@/services/sqlQueryService';
 
@@ -10,6 +11,7 @@ export function useSQLQueries() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { currentCompany } = useCompanies();
+  const { plans } = usePlans();
 
   const fetchQueries = async () => {
     try {
@@ -33,6 +35,38 @@ export function useSQLQueries() {
     }
   };
 
+  const validatePlanLimits = (): boolean => {
+    if (!currentCompany?.plan_id) {
+      toast({
+        title: "Erro",
+        description: "A empresa deve ter um plano associado para criar consultas SQL",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    const currentPlan = plans.find(plan => plan.id === currentCompany.plan_id);
+    if (!currentPlan) {
+      toast({
+        title: "Erro",
+        description: "Plano da empresa não encontrado",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    if (queries.length >= currentPlan.max_sql_queries) {
+      toast({
+        title: "Limite de consultas atingido",
+        description: `O plano ${currentPlan.name} permite apenas ${currentPlan.max_sql_queries} consultas SQL. Faça upgrade do plano para criar mais consultas.`,
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    return true;
+  };
+
   const createQuery = async (query: Omit<SQLQuery, 'id' | 'created_at' | 'updated_at' | 'sql_connections'>) => {
     try {
       if (!currentCompany?.id) {
@@ -42,6 +76,11 @@ export function useSQLQueries() {
           variant: "destructive"
         });
         throw new Error('No company selected');
+      }
+
+      // Validar limites do plano antes de criar
+      if (!validatePlanLimits()) {
+        throw new Error('Plan limits exceeded');
       }
 
       const newQuery = await SQLQueryService.createQuery(query);
@@ -54,11 +93,13 @@ export function useSQLQueries() {
       return newQuery;
     } catch (error) {
       console.error('Error creating SQL query:', error);
-      toast({
-        title: "Erro",
-        description: error instanceof Error ? error.message : "Erro ao criar consulta SQL",
-        variant: "destructive"
-      });
+      if (error instanceof Error && error.message !== 'Plan limits exceeded') {
+        toast({
+          title: "Erro",
+          description: error instanceof Error ? error.message : "Erro ao criar consulta SQL",
+          variant: "destructive"
+        });
+      }
       throw error;
     }
   };
@@ -116,7 +157,8 @@ export function useSQLQueries() {
     createQuery,
     updateQuery,
     deleteQuery,
-    refetch: fetchQueries
+    refetch: fetchQueries,
+    validatePlanLimits
   };
 }
 

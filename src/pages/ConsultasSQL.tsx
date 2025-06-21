@@ -3,21 +3,30 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Database, Plus, Search } from "lucide-react";
+import { Database, Plus, Search, AlertCircle, Zap } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { QueryForm } from "@/components/sql/QueryForm";
 import { QueryList } from "@/components/sql/QueryList";
 import { QueryDetails } from "@/components/sql/QueryDetails";
 import { useSQLQueries } from "@/hooks/useSQLQueries";
 import { useSQLConnections } from "@/hooks/useSQLConnections";
+import { useCompanies } from "@/hooks/useCompanies";
+import { usePlans } from "@/hooks/usePlans";
 import { SQLQuery } from "@/types/sqlQuery";
 
 export default function ConsultasSQL() {
-  const { queries, createQuery, updateQuery, deleteQuery, loading } = useSQLQueries();
+  const { queries, createQuery, updateQuery, deleteQuery, loading, validatePlanLimits } = useSQLQueries();
   const { connections } = useSQLConnections();
+  const { currentCompany } = useCompanies();
+  const { plans } = usePlans();
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [editingQuery, setEditingQuery] = useState<SQLQuery | null>(null);
   const [selectedQuery, setSelectedQuery] = useState<SQLQuery | null>(null);
+
+  const currentPlan = currentCompany?.plan_id ? plans.find(plan => plan.id === currentCompany.plan_id) : null;
+  const queriesCount = queries.length;
+  const maxQueries = currentPlan?.max_sql_queries || 0;
 
   const handleCreateQuery = async (queryData: Omit<SQLQuery, 'id' | 'created_at' | 'updated_at'>) => {
     try {
@@ -61,6 +70,13 @@ export default function ConsultasSQL() {
     setIsDetailsDialogOpen(true);
   };
 
+  const handleNewQueryClick = () => {
+    if (validatePlanLimits()) {
+      setEditingQuery(null);
+      setIsFormDialogOpen(true);
+    }
+  };
+
   const resetForm = () => {
     setEditingQuery(null);
     setIsFormDialogOpen(false);
@@ -88,7 +104,7 @@ export default function ConsultasSQL() {
           <DialogTrigger asChild>
             <Button 
               className="bg-blue-600 hover:bg-blue-700"
-              onClick={() => setEditingQuery(null)}
+              onClick={handleNewQueryClick}
             >
               <Plus className="w-4 h-4 mr-2" />
               Nova Consulta SQL
@@ -108,6 +124,42 @@ export default function ConsultasSQL() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {!currentCompany && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Selecione uma empresa no menu lateral para gerenciar consultas SQL.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {currentCompany && !currentPlan && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            A empresa "{currentCompany.name}" deve ter um plano associado para criar consultas SQL.
+            Configure um plano em: Empresas &gt; Editar Empresa
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {currentCompany && currentPlan && (
+        <Alert>
+          <Zap className="h-4 w-4" />
+          <AlertDescription>
+            <div className="flex items-center justify-between">
+              <span>
+                Plano: <strong>{currentPlan.name}</strong> | 
+                Consultas: <strong>{queriesCount}/{maxQueries}</strong>
+              </span>
+              {queriesCount >= maxQueries && (
+                <span className="text-red-600 font-medium">Limite atingido</span>
+              )}
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Card>
         <CardHeader>
