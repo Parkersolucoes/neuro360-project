@@ -28,7 +28,7 @@ export function SystemInfoForm({
           id="system_name"
           value={systemName}
           onChange={(e) => onSystemNameChange(e.target.value)}
-          placeholder="Nome do sistema"
+          placeholder="Visão 360 - Soluções empresariais"
           required
         />
       </div>

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, Mail, Lock, User, Package, Calendar } from "lucide-react";
+import { BarChart3, Mail, Lock, User, Package, Calendar } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useSystemUpdates } from "@/hooks/useSystemUpdates";
@@ -113,8 +113,8 @@ export default function Auth() {
     );
   }
 
-  const systemName = systemConfig?.system_name || "360 Solutions";
-  const systemDescription = systemConfig?.system_description || "Automação WhatsApp Inteligente";
+  const systemName = systemConfig?.system_name || "Visão 360 - Soluções empresariais";
+  const systemDescription = systemConfig?.system_description || "Soluções de Análise dados para seu negócio";
   const backgroundImage = systemConfig?.login_background_image;
 
   return (
@@ -125,7 +125,7 @@ export default function Auth() {
           <div className="text-center">
             <div className="flex justify-center">
               <div className="w-12 h-12 bg-slate-800 rounded-lg flex items-center justify-center">
-                <MessageSquare className="w-6 h-6 text-white" />
+                <BarChart3 className="w-6 h-6 text-white" />
               </div>
             </div>
             <h2 className="mt-6 text-3xl font-bold text-gray-900">

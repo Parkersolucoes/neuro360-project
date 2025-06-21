@@ -1,8 +1,7 @@
-
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, ArrowRight, Zap, Shield, BarChart3 } from "lucide-react";
+import { BarChart3, ArrowRight, Zap, Shield, BarChart } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function Index() {
@@ -30,14 +29,14 @@ export default function Index() {
         <div className="text-center mb-16">
           <div className="flex justify-center mb-6">
             <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center">
-              <MessageSquare className="w-8 h-8 text-white" />
+              <BarChart3 className="w-8 h-8 text-white" />
             </div>
           </div>
           <h1 className="text-5xl font-bold text-gray-900 mb-6">
-            WhatsApp <span className="text-blue-600">Automation</span>
+            Visão 360 <span className="text-blue-600">Soluções empresariais</span>
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Automatize suas conversas no WhatsApp com nossa plataforma completa de gestão e automação.
+            Soluções de Análise dados para seu negócio com nossa plataforma completa de gestão e automação.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
@@ -82,7 +81,7 @@ export default function Index() {
 
           <div className="text-center p-8 bg-white rounded-xl shadow-lg">
             <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <BarChart3 className="w-6 h-6 text-purple-600" />
+              <BarChart className="w-6 h-6 text-purple-600" />
             </div>
             <h3 className="text-xl font-semibold mb-4">Relatórios Detalhados</h3>
             <p className="text-gray-600">
