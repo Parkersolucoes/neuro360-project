@@ -11,17 +11,18 @@ import { useToast } from "@/hooks/use-toast";
 
 export function CompanySelector() {
   const [open, setOpen] = useState(false);
-  const [selectedCompany, setSelectedCompany] = useState<string>("");
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>("");
   const { companies = [], currentCompany, setCurrentCompany, loading, refetch } = useCompanies();
   const { isMasterUser } = useAdminAuth();
   const { toast } = useToast();
 
   // Sincronizar estado local com a empresa atual
   useEffect(() => {
+    console.log('CompanySelector: currentCompany changed:', currentCompany);
     if (currentCompany) {
-      setSelectedCompany(currentCompany.id);
+      setSelectedCompanyId(currentCompany.id);
     } else {
-      setSelectedCompany("");
+      setSelectedCompanyId("");
     }
   }, [currentCompany]);
 
@@ -33,8 +34,14 @@ export function CompanySelector() {
   // Garantir que companies é sempre um array
   const safeCompanies = Array.isArray(companies) ? companies : [];
 
+  const handleCompanySelect = (companyId: string) => {
+    console.log('CompanySelector: Selecting company:', companyId);
+    setSelectedCompanyId(companyId);
+    setOpen(false);
+  };
+
   const handleApplySelection = async () => {
-    if (!selectedCompany) {
+    if (!selectedCompanyId) {
       toast({
         title: "Atenção",
         description: "Selecione uma empresa primeiro",
@@ -43,26 +50,34 @@ export function CompanySelector() {
       return;
     }
 
-    const company = safeCompanies.find(c => c.id === selectedCompany);
+    const company = safeCompanies.find(c => c.id === selectedCompanyId);
     if (company) {
-      setCurrentCompany(company);
+      console.log('CompanySelector: Applying selection for company:', company);
       
-      // Recarregar dados relacionados à empresa
-      await refetch();
-      
-      toast({
-        title: "Sucesso",
-        description: `Empresa "${company.name}" selecionada. Dados recarregados.`,
-      });
-      
-      // Recarregar a página para garantir que todos os dados sejam atualizados
-      window.location.reload();
+      try {
+        // Definir a empresa atual
+        setCurrentCompany(company);
+        
+        // Aguardar um pouco para garantir que o contexto foi atualizado
+        setTimeout(async () => {
+          await refetch();
+        }, 100);
+        
+        toast({
+          title: "Sucesso",
+          description: `Empresa "${company.name}" selecionada com sucesso.`,
+        });
+        
+        console.log('CompanySelector: Company selection completed successfully');
+      } catch (error) {
+        console.error('CompanySelector: Error applying selection:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao selecionar empresa",
+          variant: "destructive"
+        });
+      }
     }
-  };
-
-  const handleCompanySelect = (companyId: string) => {
-    setSelectedCompany(companyId === selectedCompany ? "" : companyId);
-    setOpen(false);
   };
 
   if (loading) {
@@ -92,6 +107,8 @@ export function CompanySelector() {
     );
   }
 
+  const selectedCompany = safeCompanies.find(c => c.id === selectedCompanyId);
+
   return (
     <div className="flex items-center space-x-2">
       <div className="flex-1">
@@ -106,7 +123,7 @@ export function CompanySelector() {
               <div className="flex items-center space-x-2 min-w-0">
                 <Building2 className="w-4 h-4 flex-shrink-0 text-yellow-400" />
                 <span className="truncate">
-                  {currentCompany ? currentCompany.name : "Selecionar empresa..."}
+                  {selectedCompany ? selectedCompany.name : "Selecionar empresa..."}
                 </span>
               </div>
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -133,7 +150,7 @@ export function CompanySelector() {
                       <Check
                         className={cn(
                           "mr-2 h-4 w-4 text-yellow-400",
-                          selectedCompany === company.id ? "opacity-100" : "opacity-0"
+                          selectedCompanyId === company.id ? "opacity-100" : "opacity-0"
                         )}
                       />
                       <div className="flex flex-col">
@@ -153,7 +170,7 @@ export function CompanySelector() {
         onClick={handleApplySelection}
         size="sm"
         className="bg-yellow-500 hover:bg-yellow-600 text-slate-900 px-3 font-medium"
-        disabled={!selectedCompany}
+        disabled={!selectedCompanyId || selectedCompanyId === currentCompany?.id}
       >
         <RefreshCw className="w-4 h-4" />
       </Button>

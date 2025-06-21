@@ -54,6 +54,10 @@ export function UserMenu() {
   // Mostrar seletor de empresa se for master OU se usuário normal tem mais de uma empresa
   const shouldShowCompanySelector = isMasterUser || (Array.isArray(companies) && companies.length > 1);
 
+  const handleCloseCompanyDialog = () => {
+    setShowCompanyDialog(false);
+  };
+
   return (
     <>
       <DropdownMenu>
@@ -110,13 +114,21 @@ export function UserMenu() {
       </DropdownMenu>
 
       {/* Dialog para seleção de empresa */}
-      <Dialog open={showCompanyDialog} onOpenChange={setShowCompanyDialog}>
+      <Dialog open={showCompanyDialog} onOpenChange={handleCloseCompanyDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Selecionar Empresa</DialogTitle>
           </DialogHeader>
           <div className="py-4">
             <CompanySelector />
+          </div>
+          <div className="flex justify-end pt-4">
+            <Button 
+              variant="outline" 
+              onClick={handleCloseCompanyDialog}
+            >
+              Fechar
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

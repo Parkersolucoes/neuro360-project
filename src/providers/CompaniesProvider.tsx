@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { CompaniesContext } from '@/contexts/CompaniesContext';
 import { Company } from '@/types/company';
@@ -15,14 +16,14 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
   const fetchCompanies = async () => {
     try {
       setLoading(true);
-      console.log('Fetching companies...');
-      console.log('User login:', userLogin);
+      console.log('CompaniesProvider: Fetching companies...');
+      console.log('CompaniesProvider: User login:', userLogin);
       
       // Se for usuário master, buscar todas as empresas
       if (userLogin?.is_master) {
-        console.log('Fetching all companies for master user...');
+        console.log('CompaniesProvider: Fetching all companies for master user...');
         const data = await CompanyService.fetchAllCompanies();
-        console.log('All companies fetched for master user:', data);
+        console.log('CompaniesProvider: All companies fetched for master user:', data);
         
         if (data && Array.isArray(data)) {
           const typedCompanies = data.map(company => ({
@@ -35,11 +36,11 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
           // Se ainda não há empresa selecionada, selecionar a empresa Visão 360 ou a primeira
           if (!currentCompany && typedCompanies.length > 0) {
             const defaultCompany = typedCompanies.find(c => c.id === '0a988013-fa43-4d9d-9bfa-22c245c0c1ea') || typedCompanies[0];
-            console.log('Setting default company for master:', defaultCompany);
-            setCurrentCompany(defaultCompany);
+            console.log('CompaniesProvider: Setting default company for master:', defaultCompany);
+            setCurrentCompanyInternal(defaultCompany);
           }
         } else {
-          console.log('No companies found or invalid data format');
+          console.log('CompaniesProvider: No companies found or invalid data format');
           setCompanies([]);
         }
         return;
@@ -47,15 +48,15 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
 
       // Para usuários normais, buscar apenas empresas associadas
       if (!userLogin) {
-        console.log('No user login found, clearing companies');
+        console.log('CompaniesProvider: No user login found, clearing companies');
         setCompanies([]);
-        setCurrentCompany(null);
+        setCurrentCompanyInternal(null);
         return;
       }
 
-      console.log('Fetching companies for regular user:', userLogin.id);
+      console.log('CompaniesProvider: Fetching companies for regular user:', userLogin.id);
       const userCompanies = await CompanyService.fetchUserCompanies(userLogin.id);
-      console.log('User companies fetched:', userCompanies);
+      console.log('CompaniesProvider: User companies fetched:', userCompanies);
       
       if (userCompanies && Array.isArray(userCompanies)) {
         const typedCompanies = userCompanies.map(company => ({
@@ -68,18 +69,18 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
         // Para usuários normais, se há apenas uma empresa, selecioná-la automaticamente
         // Se há múltiplas empresas, não selecionar automaticamente - deixar o usuário escolher
         if (!currentCompany && typedCompanies.length === 1) {
-          console.log('Setting single company for user:', typedCompanies[0]);
-          setCurrentCompany(typedCompanies[0]);
+          console.log('CompaniesProvider: Setting single company for user:', typedCompanies[0]);
+          setCurrentCompanyInternal(typedCompanies[0]);
         } else if (typedCompanies.length > 1) {
-          console.log('Multiple companies found for user - waiting for manual selection');
+          console.log('CompaniesProvider: Multiple companies found for user - waiting for manual selection');
         }
       } else {
-        console.log('No user companies found or invalid data format');
+        console.log('CompaniesProvider: No user companies found or invalid data format');
         setCompanies([]);
       }
 
     } catch (error) {
-      console.error('Error fetching companies:', error);
+      console.error('CompaniesProvider: Error fetching companies:', error);
       toast({
         title: "Erro",
         description: "Erro ao carregar empresas",
@@ -91,9 +92,16 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const setCurrentCompanyAndNotify = (company: Company | null) => {
-    console.log('Setting current company and notifying:', company);
+  // Função interna para definir a empresa atual
+  const setCurrentCompanyInternal = (company: Company | null) => {
+    console.log('CompaniesProvider: Setting current company internally:', company);
     setCurrentCompany(company);
+  };
+
+  // Função pública para definir empresa atual e notificar outros componentes
+  const setCurrentCompanyAndNotify = (company: Company | null) => {
+    console.log('CompaniesProvider: Setting current company and notifying:', company);
+    setCurrentCompanyInternal(company);
     
     // Disparar evento customizado para notificar outros componentes
     if (company) {
@@ -101,14 +109,17 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
         detail: { company } 
       });
       window.dispatchEvent(event);
+      
+      // Log adicional para debug
+      console.log('CompaniesProvider: Company change event dispatched for:', company.name);
     }
   };
 
   const createCompany = async (companyData: Omit<Company, 'id' | 'created_at' | 'updated_at'>) => {
     try {
-      console.log('Creating company with data:', companyData);
+      console.log('CompaniesProvider: Creating company with data:', companyData);
       const data = await CompanyService.createCompany(companyData);
-      console.log('Company created successfully:', data);
+      console.log('CompaniesProvider: Company created successfully:', data);
 
       toast({
         title: "Sucesso",
@@ -118,7 +129,7 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
       await fetchCompanies();
       return data as Company;
     } catch (error) {
-      console.error('Error creating company:', error);
+      console.error('CompaniesProvider: Error creating company:', error);
       const errorMessage = error instanceof Error ? error.message : "Erro ao criar empresa";
       
       toast({
@@ -132,7 +143,7 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
 
   const updateCompany = async (id: string, updates: Partial<Company>) => {
     try {
-      console.log('Updating company:', id, 'with data:', updates);
+      console.log('CompaniesProvider: Updating company:', id, 'with data:', updates);
       const data = await CompanyService.updateCompany(id, updates);
 
       toast({
@@ -143,7 +154,7 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
       await fetchCompanies();
       return data as Company;
     } catch (error) {
-      console.error('Error updating company:', error);
+      console.error('CompaniesProvider: Error updating company:', error);
       const errorMessage = error instanceof Error ? error.message : "Erro ao atualizar empresa";
       
       toast({
@@ -157,7 +168,7 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
 
   const deleteCompany = async (id: string) => {
     try {
-      console.log('Deleting company:', id);
+      console.log('CompaniesProvider: Deleting company:', id);
       await CompanyService.deleteCompany(id);
 
       toast({
@@ -167,7 +178,7 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
 
       await fetchCompanies();
     } catch (error) {
-      console.error('Error deleting company:', error);
+      console.error('CompaniesProvider: Error deleting company:', error);
       const errorMessage = error instanceof Error ? error.message : "Erro ao remover empresa";
       
       toast({
@@ -182,15 +193,15 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
   // Effect para buscar empresas quando o usuário muda
   useEffect(() => {
     if (userLogin) {
-      console.log('User login changed, fetching companies...');
+      console.log('CompaniesProvider: User login changed, fetching companies...');
       fetchCompanies();
     }
   }, [userLogin?.id, userLogin?.is_master]);
 
   // Effect adicional para debug
   useEffect(() => {
-    console.log('Companies state updated:', companies);
-    console.log('Current company:', currentCompany);
+    console.log('CompaniesProvider: Companies state updated:', companies);
+    console.log('CompaniesProvider: Current company:', currentCompany);
   }, [companies, currentCompany]);
 
   return (
