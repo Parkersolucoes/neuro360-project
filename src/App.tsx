@@ -3,10 +3,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AuthProvider } from "@/hooks/useAuth";
-import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -34,39 +33,28 @@ const App = () => (
         <AuthProvider>
           <SidebarProvider>
             <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
+              {/* Redirecionar todas as rotas principais para o dashboard */}
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/auth" element={<Navigate to="/dashboard" replace />} />
+              
+              {/* Rotas do dashboard sem proteção */}
               <Route path="/*" element={
-                <ProtectedRoute>
-                  <DashboardLayout>
-                    <Routes>
-                      <Route path="/dashboard" element={<Dashboard />} />
-                      <Route path="/empresas" element={<Empresas />} />
-                      <Route path="/usuarios" element={<Usuarios />} />
-                      <Route path="/templates" element={<Templates />} />
-                      <Route path="/consultas" element={<ConsultasSQL />} />
-                      <Route path="/agendamento" element={<Agendamento />} />
-                      <Route path="/qrcode" element={<QRCode />} />
-                      <Route path="/configuracao" element={<Configuracao />} />
-                      <Route path="/configuracao-sistema" element={
-                        <ProtectedRoute requireAdmin={true}>
-                          <ConfiguracaoSistema />
-                        </ProtectedRoute>
-                      } />
-                      <Route path="/planos" element={
-                        <ProtectedRoute requireAdmin={true}>
-                          <Planos />
-                        </ProtectedRoute>
-                      } />
-                      <Route path="/financeiro" element={
-                        <ProtectedRoute requireAdmin={true}>
-                          <Financeiro />
-                        </ProtectedRoute>
-                      } />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </DashboardLayout>
-                </ProtectedRoute>
+                <DashboardLayout>
+                  <Routes>
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/empresas" element={<Empresas />} />
+                    <Route path="/usuarios" element={<Usuarios />} />
+                    <Route path="/templates" element={<Templates />} />
+                    <Route path="/consultas" element={<ConsultasSQL />} />
+                    <Route path="/agendamento" element={<Agendamento />} />
+                    <Route path="/qrcode" element={<QRCode />} />
+                    <Route path="/configuracao" element={<Configuracao />} />
+                    <Route path="/configuracao-sistema" element={<ConfiguracaoSistema />} />
+                    <Route path="/planos" element={<Planos />} />
+                    <Route path="/financeiro" element={<Financeiro />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </DashboardLayout>
               } />
             </Routes>
           </SidebarProvider>
