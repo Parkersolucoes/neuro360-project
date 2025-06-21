@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -239,7 +240,12 @@ export function useTemplates() {
   const createDefaultTemplates = async () => {
     try {
       if (!currentCompany) {
-        throw new Error('Empresa não selecionada');
+        toast({
+          title: "Erro",
+          description: "Nenhuma empresa selecionada",
+          variant: "destructive"
+        });
+        return;
       }
 
       const defaultTemplates = [
@@ -251,9 +257,7 @@ export function useTemplates() {
           category: "atendimento",
           variables: ["nome_cliente", "nome_empresa"],
           status: "active",
-          is_active: true,
-          company_id: currentCompany.id,
-          user_id: null
+          is_active: true
         },
         {
           name: "Cobrança Fatura Vencida",
@@ -263,9 +267,7 @@ export function useTemplates() {
           category: "cobranca",
           variables: ["nome_cliente", "valor", "data_vencimento", "numero_fatura", "dias_atraso", "chave_pix", "codigo_barras"],
           status: "active",
-          is_active: true,
-          company_id: currentCompany.id,
-          user_id: null
+          is_active: true
         },
         {
           name: "Confirmação de Pagamento",
@@ -275,9 +277,7 @@ export function useTemplates() {
           category: "financeiro",
           variables: ["nome_cliente", "valor", "data_pagamento", "metodo_pagamento", "numero_recibo"],
           status: "active",
-          is_active: true,
-          company_id: currentCompany.id,
-          user_id: null
+          is_active: true
         },
         {
           name: "Lembrete de Vencimento",
@@ -287,9 +287,7 @@ export function useTemplates() {
           category: "lembrete",
           variables: ["nome_cliente", "dias_restantes", "valor", "data_vencimento", "numero_fatura", "chave_pix", "link_boleto"],
           status: "active",
-          is_active: true,
-          company_id: currentCompany.id,
-          user_id: null
+          is_active: true
         },
         {
           name: "Agendamento de Reunião",
@@ -299,76 +297,14 @@ export function useTemplates() {
           category: "agendamento",
           variables: ["nome_cliente", "motivo_reuniao", "data_reuniao", "horario", "duracao", "local", "modalidade", "pauta_reuniao"],
           status: "active",
-          is_active: true,
-          company_id: currentCompany.id,
-          user_id: null
-        },
-        {
-          name: "Promoção Especial",
-          content: "🏷️ *PROMOÇÃO ESPECIAL*\n\nOlá {nome_cliente},\n\nTemos uma oferta *IMPERDÍVEL* para você!\n\n🎯 *{nome_promocao}*\n💰 Desconto: *{percentual_desconto}%*\n⏳ Válida até: *{data_validade}*\n🎁 Condições: {condicoes}\n\n📋 *Produtos/Serviços inclusos:*\n{lista_produtos}\n\n💡 *Como aproveitar:*\n{instrucoes_aproveitamento}\n\nNão perca esta oportunidade única!\n\n📞 Mais informações: {telefone_contato}\n💬 WhatsApp: {whatsapp_contato}",
-          description: "Template para divulgação de promoções especiais",
-          type: "message",
-          category: "promocao",
-          variables: ["nome_cliente", "nome_promocao", "percentual_desconto", "data_validade", "condicoes", "lista_produtos", "instrucoes_aproveitamento", "telefone_contato", "whatsapp_contato"],
-          status: "active",
-          is_active: true,
-          company_id: currentCompany.id,
-          user_id: null
-        },
-        {
-          name: "Solicitação de Documentos",
-          content: "📄 *SOLICITAÇÃO DE DOCUMENTOS*\n\nOlá {nome_cliente},\n\nPara dar continuidade ao *{nome_processo}*, precisamos dos seguintes documentos:\n\n📋 *Documentos necessários:*\n{lista_documentos}\n\n📤 *Como enviar:*\n• 📧 Email: {email_empresa}\n• 📱 WhatsApp: {telefone_empresa}\n• 🌐 Portal: {link_portal}\n\n⏰ *Prazo para entrega:* {prazo_entrega}\n\n💡 *Importante:* Documentos devem estar legíveis e atualizados.\n\nContamos com sua colaboração! 🤝",
-          description: "Template para solicitação de documentos",
-          type: "message",
-          category: "documentos",
-          variables: ["nome_cliente", "nome_processo", "lista_documentos", "email_empresa", "telefone_empresa", "link_portal", "prazo_entrega"],
-          status: "active",
-          is_active: true,
-          company_id: currentCompany.id,
-          user_id: null
-        },
-        {
-          name: "Pesquisa de Satisfação",
-          content: "⭐ *PESQUISA DE SATISFAÇÃO*\n\nOlá {nome_cliente},\n\nSua opinião é muito importante para nós!\n\nRecentemente você utilizou nosso {servico_utilizado}. Como foi sua experiência?\n\n📊 *Avalie de 1 a 5:*\n• Atendimento: ___\n• Qualidade: ___\n• Prazo: ___\n• Satisfação geral: ___\n\n💬 *Comentários e sugestões:*\n(Espaço livre para seus comentários)\n\n🎁 *Participando você concorre a:* {premio_pesquisa}\n\nSua avaliação nos ajuda a melhorar sempre!\n\nObrigado pela colaboração! 🙏",
-          description: "Template para pesquisa de satisfação do cliente",
-          type: "message",
-          category: "pesquisa",
-          variables: ["nome_cliente", "servico_utilizado", "premio_pesquisa"],
-          status: "active",
-          is_active: true,
-          company_id: currentCompany.id,
-          user_id: null
-        },
-        {
-          name: "Aviso de Manutenção",
-          content: "🔧 *AVISO DE MANUTENÇÃO PROGRAMADA*\n\nOlá {nome_cliente},\n\nInformamos que haverá manutenção programada em nossos sistemas:\n\n📅 *Quando:* {data_manutencao}\n⏰ *Horário:* {horario_inicio} às {horario_fim}\n🛠️ *Sistemas afetados:* {servicos_afetados}\n\n📋 *O que você pode esperar:*\n• {impactos_esperados}\n• Tempo de indisponibilidade: {tempo_indisponibilidade}\n• Melhorias que serão implementadas: {melhorias}\n\n💡 *Dicas:*\n{dicas_manutencao}\n\nPedimos desculpas pelo inconveniente e agradecemos a compreensão! 🙏",
-          description: "Template para avisos de manutenção programada",
-          type: "notification",
-          category: "manutencao",
-          variables: ["nome_cliente", "data_manutencao", "horario_inicio", "horario_fim", "servicos_afetados", "impactos_esperados", "tempo_indisponibilidade", "melhorias", "dicas_manutencao"],
-          status: "active",
-          is_active: true,
-          company_id: currentCompany.id,
-          user_id: null
-        },
-        {
-          name: "Follow-up Pós-Venda",
-          content: "🤝 *FOLLOW-UP PÓS-VENDA*\n\nOlá {nome_cliente},\n\nEsperamos que esteja satisfeito(a) com {produto_servico} adquirido em {data_compra}!\n\n✅ *Como está sua experiência até agora?*\n\n❓ *Precisa de ajuda com:*\n• Configuração/Instalação\n• Treinamento da equipe\n• Dúvidas sobre funcionalidades\n• Suporte técnico\n\n📚 *Recursos disponíveis:*\n• Manual: {link_manual}\n• Vídeos tutoriais: {link_videos}\n• Suporte: {telefone_suporte}\n\n🎯 *Próximos passos sugeridos:*\n{proximos_passos}\n\nEstamos aqui para garantir seu sucesso! 🚀",
-          description: "Template para follow-up pós-venda",
-          type: "followup",
-          category: "pos_venda",
-          variables: ["nome_cliente", "produto_servico", "data_compra", "link_manual", "link_videos", "telefone_suporte", "proximos_passos"],
-          status: "active",
-          is_active: true,
-          company_id: currentCompany.id,
-          user_id: null
+          is_active: true
         }
       ];
 
       // Verificar quais templates já existem para evitar duplicatas
-      const existingTemplates = templates.map(t => t.name);
+      const existingTemplateNames = templates.map(t => t.name);
       const templatesToCreate = defaultTemplates.filter(template => 
-        !existingTemplates.includes(template.name)
+        !existingTemplateNames.includes(template.name)
       );
 
       if (templatesToCreate.length === 0) {
@@ -379,29 +315,49 @@ export function useTemplates() {
         return;
       }
 
-      // Criar templates um por vez para melhor controle
-      let createdCount = 0;
-      for (const templateData of templatesToCreate) {
-        try {
-          await createTemplate(templateData);
-          createdCount++;
-        } catch (error) {
-          console.error('Error creating template:', templateData.name, error);
-        }
+      console.log('Creating default templates:', templatesToCreate.length);
+
+      // Criar templates diretamente no banco de dados
+      const templatesData = templatesToCreate.map(template => ({
+        name: template.name,
+        description: template.description,
+        content: template.content,
+        type: template.type,
+        category: template.category,
+        variables: template.variables,
+        status: template.status,
+        is_active: template.is_active,
+        company_id: currentCompany.id,
+        user_id: null
+      }));
+
+      const { data, error } = await supabase
+        .from('templates')
+        .insert(templatesData)
+        .select();
+
+      if (error) {
+        console.error('Error creating default templates:', error);
+        throw new Error(`Erro do banco de dados: ${error.message}`);
       }
 
-      if (createdCount > 0) {
-        toast({
-          title: "Sucesso",
-          description: `${createdCount} templates padrão criados com sucesso!`
-        });
-        await fetchTemplates(); // Recarregar a lista
-      }
+      console.log('Default templates created successfully:', data);
+
+      // Atualizar a lista de templates
+      setTemplates(prev => [...(data || []), ...prev]);
+
+      toast({
+        title: "Sucesso",
+        description: `${data?.length || 0} templates padrão criados com sucesso!`
+      });
+
     } catch (error) {
       console.error('Error creating default templates:', error);
+      const errorMessage = error instanceof Error ? error.message : "Erro ao criar templates padrão";
+      
       toast({
         title: "Erro",
-        description: "Erro ao criar templates padrão",
+        description: errorMessage,
         variant: "destructive"
       });
     }
