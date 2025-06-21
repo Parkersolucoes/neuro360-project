@@ -117,7 +117,7 @@ export function QueryForm({ connections, queries, onSaveQuery }: QueryFormProps)
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
                 Configure pelo menos uma conexão SQL na empresa "{currentCompany.name}" antes de criar consultas.
-                Acesse: Empresas > Configurações > SQL Server
+                Acesse: Empresas &gt; Configurações &gt; SQL Server
               </AlertDescription>
             </Alert>
           )}
