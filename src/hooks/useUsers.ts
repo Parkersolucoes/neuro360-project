@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -23,37 +22,31 @@ export function useUsers() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const { isAdmin } = useAdminAuth();
+  const { isAdmin, isMasterUser } = useAdminAuth();
   const { currentCompany } = useCompanies();
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      console.log('Fetching users...');
+      console.log('Fetching users for company:', currentCompany);
+
+      // Se não há empresa selecionada, não carregar usuários
+      if (!currentCompany) {
+        console.log('No company selected, clearing users');
+        setUsers([]);
+        setLoading(false);
+        return;
+      }
 
       let query = supabase
         .from('users')
         .select('*');
 
-      // Se não for admin, filtrar apenas usuários das empresas do usuário logado
-      if (!isAdmin && currentCompany) {
-        const { data: companyUsers } = await supabase
-          .from('user_companies')
-          .select('user_id')
-          .eq('company_id', currentCompany.id);
-        
-        if (companyUsers && companyUsers.length > 0) {
-          const userIds = companyUsers.map(uc => uc.user_id);
-          query = query.in('id', userIds);
-        } else {
-          setUsers([]);
-          setLoading(false);
-          return;
-        }
-      }
-
-      // Se há uma empresa selecionada, filtrar usuários dessa empresa
+      // Se for usuário master, pode ver todos os usuários da empresa selecionada
+      // Se for usuário comum, só pode ver usuários da sua empresa
       if (currentCompany) {
+        console.log('Filtering users for company:', currentCompany.id);
+        
         const { data: companyUsers } = await supabase
           .from('user_companies')
           .select('user_id')
@@ -61,8 +54,10 @@ export function useUsers() {
         
         if (companyUsers && companyUsers.length > 0) {
           const userIds = companyUsers.map(uc => uc.user_id);
+          console.log('Found user IDs for company:', userIds);
           query = query.in('id', userIds);
         } else {
+          console.log('No users found for company');
           setUsers([]);
           setLoading(false);
           return;
@@ -349,9 +344,11 @@ export function useUsers() {
     }
   };
 
+  // Effect principal que carrega usuários quando a empresa atual muda
   useEffect(() => {
+    console.log('useUsers effect triggered - currentCompany changed:', currentCompany);
     fetchUsers();
-  }, [isAdmin, currentCompany]);
+  }, [currentCompany?.id]); // Dependência específica no ID da empresa
 
   return {
     users,

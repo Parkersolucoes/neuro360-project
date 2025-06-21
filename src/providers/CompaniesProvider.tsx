@@ -91,6 +91,19 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const setCurrentCompanyAndNotify = (company: Company | null) => {
+    console.log('Setting current company and notifying:', company);
+    setCurrentCompany(company);
+    
+    // Disparar evento customizado para notificar outros componentes
+    if (company) {
+      const event = new CustomEvent('companyChanged', { 
+        detail: { company } 
+      });
+      window.dispatchEvent(event);
+    }
+  };
+
   const createCompany = async (companyData: Omit<Company, 'id' | 'created_at' | 'updated_at'>) => {
     try {
       console.log('Creating company with data:', companyData);
@@ -185,7 +198,7 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
       companies,
       currentCompany,
       loading,
-      setCurrentCompany,
+      setCurrentCompany: setCurrentCompanyAndNotify,
       createCompany,
       updateCompany,
       deleteCompany,
