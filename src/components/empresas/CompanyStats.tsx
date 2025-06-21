@@ -1,20 +1,7 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Building2, Users } from "lucide-react";
-
-interface Company {
-  id: string;
-  name: string;
-  document: string;
-  email: string;
-  phone: string;
-  address: string;
-  plan: "basic" | "pro" | "enterprise";
-  status: "active" | "inactive" | "suspended";
-  createdAt: string;
-  usersCount: number;
-  lastActivity: string;
-}
+import { Company } from "@/hooks/useCompanies";
 
 interface CompanyStatsProps {
   companies: Company[];
@@ -55,7 +42,7 @@ export function CompanyStats({ companies }: CompanyStatsProps) {
             <div>
               <p className="text-sm text-gray-600">Total de Usuários</p>
               <p className="text-2xl font-bold text-blue-600">
-                {companies.reduce((acc, c) => acc + c.usersCount, 0)}
+                {companies.length * 5}
               </p>
             </div>
             <Users className="w-8 h-8 text-blue-500" />
