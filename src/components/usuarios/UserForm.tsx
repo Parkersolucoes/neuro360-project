@@ -4,17 +4,20 @@ import { User } from "@/hooks/useUsers";
 import { UserBasicInfoForm } from "./UserBasicInfoForm";
 import { UserRoleAndStatusForm } from "./UserRoleAndStatusForm";
 import { UserFormActions } from "./UserFormActions";
+import { UserCompaniesDisplay } from "./UserCompaniesDisplay";
 
 interface UserFormProps {
   editingUser: User | null;
   onSave: (userData: Omit<User, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
   onCancel: () => void;
+  getUserCompanyNames?: (userId: string) => string;
 }
 
 export function UserForm({ 
   editingUser, 
   onSave, 
-  onCancel 
+  onCancel,
+  getUserCompanyNames
 }: UserFormProps) {
   const [formData, setFormData] = useState({
     name: "",
@@ -23,7 +26,7 @@ export function UserForm({
     whatsapp: "",
     role: "user",
     department: "",
-    is_admin: "1", // String: '0' = master, '1' = usuário comum
+    is_admin: "1", // String: '0' = recebe alertas, '1' = não recebe alertas
     status: "active" as 'active' | 'inactive'
   });
 
@@ -49,7 +52,7 @@ export function UserForm({
         whatsapp: "",
         role: "user",
         department: "",
-        is_admin: "1", // Default para usuário comum
+        is_admin: "1", // Default para não receber alertas
         status: "active"
       });
     }
@@ -63,7 +66,7 @@ export function UserForm({
       
       // Tratar campos específicos
       if (field === 'is_admin') {
-        // Converter boolean para string: true = '0' (master), false = '1' (usuário comum)
+        // Converter boolean para string: true = '0' (recebe alertas), false = '1' (não recebe alertas)
         newData.is_admin = value === true ? '0' : '1';
       } else if (field === 'status') {
         newData.status = String(value) as 'active' | 'inactive';
@@ -121,6 +124,12 @@ export function UserForm({
         formData={formData}
         onChange={handleFieldChange}
       />
+
+      {editingUser && getUserCompanyNames && (
+        <UserCompaniesDisplay 
+          userCompanyNames={getUserCompanyNames(editingUser.id)}
+        />
+      )}
 
       <UserFormActions
         isFormValid={isFormValid}

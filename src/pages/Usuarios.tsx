@@ -127,6 +127,7 @@ export default function Usuarios() {
         editingUser={editingUser}
         onSave={saveUser}
         onCancel={resetForm}
+        getUserCompanyNames={getUserCompanyNames}
       />
 
       {/* Apenas usuários master veem o diálogo de empresas */}

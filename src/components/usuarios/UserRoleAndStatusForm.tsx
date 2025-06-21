@@ -2,7 +2,7 @@
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Shield, Crown } from "lucide-react";
+import { Bell } from "lucide-react";
 
 interface UserRoleAndStatusFormProps {
   formData: {
@@ -29,9 +29,8 @@ const departments = [
 ];
 
 export function UserRoleAndStatusForm({ formData, onChange }: UserRoleAndStatusFormProps) {
-  // is_admin = '0' significa master, is_admin = '1' significa usuário comum
-  const isMaster = formData.is_admin === '0';
-  const isAdmin = formData.is_admin === '0'; // Master é admin também
+  // is_admin = '0' significa recebe alertas, is_admin = '1' significa não recebe
+  const receiveAlerts = formData.is_admin === '0';
 
   return (
     <div className="space-y-4">
@@ -86,27 +85,14 @@ export function UserRoleAndStatusForm({ formData, onChange }: UserRoleAndStatusF
       <div className="space-y-3">
         <div className="flex items-center space-x-2">
           <Checkbox
-            id="is_admin"
-            checked={isAdmin}
+            id="receive_alerts"
+            checked={receiveAlerts}
             onCheckedChange={(checked) => onChange('is_admin', checked === true)}
             className="border-blue-200 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
           />
-          <Label htmlFor="is_admin" className="flex items-center space-x-2">
-            <Shield className="w-4 h-4 text-blue-500" />
-            <span>Usuário Administrador (recebe alertas de erro)</span>
-          </Label>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="is_master"
-            checked={isMaster}
-            onCheckedChange={(checked) => onChange('is_admin', checked === true)}
-            className="border-amber-200 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
-          />
-          <Label htmlFor="is_master" className="flex items-center space-x-2">
-            <Crown className="w-4 h-4 text-amber-500" />
-            <span>Usuário Master (controle total do sistema)</span>
+          <Label htmlFor="receive_alerts" className="flex items-center space-x-2">
+            <Bell className="w-4 h-4 text-blue-500" />
+            <span>Alertas (recebe notificações de erro do sistema)</span>
           </Label>
         </div>
       </div>

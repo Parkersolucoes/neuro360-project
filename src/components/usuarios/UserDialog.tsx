@@ -9,6 +9,7 @@ interface UserDialogProps {
   editingUser: User | null;
   onSave: (userData: Omit<User, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
   onCancel: () => void;
+  getUserCompanyNames?: (userId: string) => string;
 }
 
 export function UserDialog({
@@ -16,7 +17,8 @@ export function UserDialog({
   onOpenChange,
   editingUser,
   onSave,
-  onCancel
+  onCancel,
+  getUserCompanyNames
 }: UserDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -31,6 +33,7 @@ export function UserDialog({
             editingUser={editingUser}
             onSave={onSave}
             onCancel={onCancel}
+            getUserCompanyNames={getUserCompanyNames}
           />
         </div>
       </DialogContent>

@@ -32,7 +32,7 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { CompanySelector } from "./CompanySelector";
+import { UserMenu } from "./UserMenu";
 import { useCompanies } from "@/hooks/useCompanies";
 import { useAuth } from "@/hooks/useAuth";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
@@ -110,23 +110,25 @@ export function AppSidebar() {
   return (
     <Sidebar className="border-r border-gray-700 bg-slate-900">
       <SidebarHeader className="p-6 bg-slate-900">
-        <div className="flex items-center space-x-3 mb-4">
-          <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-            <BarChart3 className="w-5 h-5 text-white" />
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+              <BarChart3 className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-lg font-semibold text-white">
+                {systemConfig?.system_name || "Visão 360"}
+              </h1>
+              <p className="text-sm text-gray-300">
+                {systemDescription}
+              </p>
+              {currentCompany && (
+                <p className="text-xs text-blue-400 font-medium mt-1">{currentCompany.name}</p>
+              )}
+            </div>
           </div>
-          <div>
-            <h1 className="text-lg font-semibold text-white">
-              {systemConfig?.system_name || "Visão 360"}
-            </h1>
-            <p className="text-sm text-gray-300">
-              {systemDescription}
-            </p>
-            {currentCompany && (
-              <p className="text-xs text-blue-400 font-medium mt-1">{currentCompany.name}</p>
-            )}
-          </div>
+          <UserMenu />
         </div>
-        <CompanySelector />
       </SidebarHeader>
       
       <SidebarContent className="bg-slate-900">
@@ -195,12 +197,6 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="p-4 bg-slate-900">
-        {userLogin && (
-          <div className="mb-3 p-2 bg-slate-800 rounded-lg">
-            <p className="text-sm text-white font-medium">{userLogin.name}</p>
-            <p className="text-xs text-gray-400">{userLogin.email}</p>
-          </div>
-        )}
         <Button 
           variant="ghost" 
           className="w-full justify-start text-gray-300 hover:text-red-400 hover:bg-slate-800"
