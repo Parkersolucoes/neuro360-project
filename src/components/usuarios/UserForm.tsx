@@ -59,17 +59,18 @@ export function UserForm({
     console.log('Field changed:', field, 'Value:', value, 'Type:', typeof value);
     
     setFormData(prev => {
-      const updates: Partial<typeof prev> = {};
+      const newData = { ...prev };
       
       if (field === 'is_admin') {
-        updates.is_admin = Boolean(value);
+        newData.is_admin = Boolean(value);
       } else if (field === 'status') {
-        updates.status = value as 'active' | 'inactive';
+        newData.status = value as 'active' | 'inactive';
       } else {
-        (updates as any)[field] = String(value);
+        // Para todos os outros campos, garantir que são strings
+        (newData as any)[field] = String(value);
       }
       
-      return { ...prev, ...updates };
+      return newData;
     });
   };
 
