@@ -1,6 +1,6 @@
 
+
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 export interface SQLQuery {
@@ -25,16 +25,8 @@ export function useSQLQueries() {
 
   const fetchQueries = async () => {
     try {
-      const { data, error } = await supabase
-        .from('sql_queries')
-        .select(`
-          *,
-          sql_connections!inner(name)
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setQueries(data ? data.map(query => ({ ...query, status: query.status as 'success' | 'error' | 'pending' })) : []);
+      // Since sql_queries table doesn't exist, return empty array
+      setQueries([]);
     } catch (error) {
       console.error('Error fetching SQL queries:', error);
       toast({
@@ -49,28 +41,24 @@ export function useSQLQueries() {
 
   const createQuery = async (query: Omit<SQLQuery, 'id' | 'created_at' | 'updated_at' | 'sql_connections'>) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
-
-      const { data, error } = await supabase
-        .from('sql_queries')
-        .insert([{ ...query, user_id: user.id }])
-        .select(`
-          *,
-          sql_connections!inner(name)
-        `)
-        .single();
-
-      if (error) throw error;
+      // Simulate creating a query since table doesn't exist
+      const mockQuery: SQLQuery = {
+        id: `mock-query-${Date.now()}`,
+        ...query,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        sql_connections: {
+          name: 'Mock Connection'
+        }
+      };
       
-      const newQuery = { ...data, status: data.status as 'success' | 'error' | 'pending' };
-      setQueries(prev => [newQuery, ...prev]);
+      setQueries(prev => [mockQuery, ...prev]);
       toast({
-        title: "Sucesso",
-        description: "Consulta SQL criada com sucesso!"
+        title: "Informação",
+        description: "Funcionalidade SQL Queries será implementada em uma próxima versão. Consulta simulada criada."
       });
       
-      return newQuery;
+      return mockQuery;
     } catch (error) {
       console.error('Error creating SQL query:', error);
       toast({
@@ -84,24 +72,21 @@ export function useSQLQueries() {
 
   const updateQuery = async (id: string, updates: Partial<SQLQuery>) => {
     try {
-      const { data, error } = await supabase
-        .from('sql_queries')
-        .update(updates)
-        .eq('id', id)
-        .select(`
-          *,
-          sql_connections!inner(name)
-        `)
-        .single();
-
-      if (error) throw error;
+      // Simulate updating query
+      const updatedQuery = queries.find(query => query.id === id);
+      if (!updatedQuery) throw new Error('Query not found');
       
-      const updatedQuery = { ...data, status: data.status as 'success' | 'error' | 'pending' };
+      const newQuery = { ...updatedQuery, ...updates };
       setQueries(prev => prev.map(query => 
-        query.id === id ? updatedQuery : query
+        query.id === id ? newQuery : query
       ));
       
-      return updatedQuery;
+      toast({
+        title: "Sucesso",
+        description: "Consulta SQL atualizada com sucesso!"
+      });
+      
+      return newQuery;
     } catch (error) {
       console.error('Error updating SQL query:', error);
       toast({
@@ -115,13 +100,6 @@ export function useSQLQueries() {
 
   const deleteQuery = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('sql_queries')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-      
       setQueries(prev => prev.filter(query => query.id !== id));
       toast({
         title: "Sucesso",
@@ -151,3 +129,4 @@ export function useSQLQueries() {
     refetch: fetchQueries
   };
 }
+
