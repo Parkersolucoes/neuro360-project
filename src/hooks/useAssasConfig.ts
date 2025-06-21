@@ -10,6 +10,7 @@ export interface AssasConfig {
   wallet_id?: string;
   webhook_url?: string;
   is_sandbox: boolean;
+  is_active: boolean;
   status: 'connected' | 'disconnected' | 'testing';
   created_at?: string;
   updated_at?: string;
