@@ -65,9 +65,9 @@ export function UserForm({
         newData.is_admin = Boolean(value);
       } else if (field === 'status') {
         newData.status = value as 'active' | 'inactive';
-      } else {
-        // Para todos os outros campos, garantir que são strings
-        (newData as any)[field] = String(value);
+      } else if (field === 'name' || field === 'email' || field === 'phone' || field === 'whatsapp' || field === 'role' || field === 'department') {
+        // Para campos de string específicos, garantir que são strings
+        newData[field as keyof typeof newData] = String(value) as any;
       }
       
       return newData;
