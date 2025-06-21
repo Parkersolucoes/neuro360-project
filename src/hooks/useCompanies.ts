@@ -1,84 +1,105 @@
-import { useState, useEffect } from 'react';
-import { useToast } from '@/hooks/use-toast';
+import { useState, useEffect, createContext, useContext } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 export interface Company {
   id: string;
   name: string;
   document: string;
   email: string;
-  phone: string;
-  address: string;
-  plan_id: string | null;
-  status: "active" | "inactive" | "suspended";
+  phone?: string;
+  address?: string;
+  status: string;
+  plan_id?: string;
   created_at: string;
   updated_at: string;
 }
 
-export function useCompanies() {
+interface CompaniesContextType {
+  companies: Company[];
+  currentCompany: Company | null;
+  loading: boolean;
+  setCurrentCompany: (company: Company | null) => void;
+  createCompany: (company: Omit<Company, 'id' | 'created_at' | 'updated_at'>) => Promise<Company>;
+  updateCompany: (id: string, updates: Partial<Company>) => Promise<Company>;
+  deleteCompany: (id: string) => Promise<void>;
+  refetch: () => Promise<void>;
+}
+
+const CompaniesContext = createContext<CompaniesContextType | undefined>(undefined);
+
+export function CompaniesProvider({ children }: { children: React.ReactNode }) {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [currentCompany, setCurrentCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const { isAdmin } = useAdminAuth();
+  const { userLogin } = useAuth();
 
   const fetchCompanies = async () => {
     try {
       setLoading(true);
+      console.log('Fetching companies...');
       
-      let query = supabase
-        .from('companies')
-        .select('*');
+      // Se for usuário master, buscar todas as empresas
+      if (userLogin?.is_master) {
+        const { data, error } = await supabase
+          .from('companies')
+          .select('*')
+          .order('name', { ascending: true });
 
-      // Se não for admin, filtrar apenas empresas do usuário
-      if (!isAdmin) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { data: userCompanies } = await supabase
-            .from('user_companies')
-            .select('company_id')
-            .eq('user_id', user.id);
-          
-          if (userCompanies && userCompanies.length > 0) {
-            const companyIds = userCompanies.map(uc => uc.company_id);
-            query = query.in('id', companyIds);
-          } else {
-            // Se não há empresas associadas, retornar lista vazia
-            setCompanies([]);
-            setCurrentCompany(null);
-            return;
-          }
+        if (error) throw error;
+        console.log('All companies fetched for master user:', data);
+        setCompanies(data || []);
+        
+        // Se ainda não há empresa selecionada, selecionar a primeira ou a empresa padrão
+        if (!currentCompany && data && data.length > 0) {
+          const defaultCompany = data.find(c => c.id === '0a988013-fa43-4d9d-9bfa-22c245c0c1ea') || data[0];
+          setCurrentCompany(defaultCompany);
         }
-      }
-
-      const { data, error } = await query.order('name');
-
-      if (error) {
-        console.error('Error fetching companies:', error);
-        toast({
-          title: "Erro",
-          description: "Erro ao carregar empresas",
-          variant: "destructive"
-        });
-        setCompanies([]); // Garantir que sempre seja um array
         return;
       }
 
-      const companiesData: Company[] = (data || []).map(company => ({
-        ...company,
-        status: company.status as "active" | "inactive" | "suspended"
-      }));
-      
-      setCompanies(companiesData);
-      
-      // Se não há empresa selecionada e há empresas disponíveis, selecionar a primeira
-      if (!currentCompany && companiesData.length > 0) {
-        setCurrentCompany(companiesData[0]);
+      // Para usuários normais, buscar apenas empresas associadas
+      if (!userLogin) {
+        setCompanies([]);
+        return;
       }
+
+      const { data, error } = await supabase
+        .from('user_companies')
+        .select(`
+          companies (
+            id,
+            name,
+            document,
+            email,
+            phone,
+            address,
+            status,
+            plan_id,
+            created_at,
+            updated_at
+          )
+        `)
+        .eq('user_id', userLogin.id);
+
+      if (error) throw error;
+
+      const userCompanies = (data || [])
+        .map(item => item.companies)
+        .filter(Boolean) as Company[];
+
+      console.log('User companies fetched:', userCompanies);
+      setCompanies(userCompanies);
+
+      // Se ainda não há empresa selecionada, selecionar a primeira
+      if (!currentCompany && userCompanies.length > 0) {
+        setCurrentCompany(userCompanies[0]);
+      }
+
     } catch (error) {
       console.error('Error fetching companies:', error);
-      setCompanies([]); // Garantir que sempre seja um array
       toast({
         title: "Erro",
         description: "Erro ao carregar empresas",
@@ -93,34 +114,26 @@ export function useCompanies() {
     try {
       const { data, error } = await supabase
         .from('companies')
-        .insert([companyData])
+        .insert(companyData)
         .select()
         .single();
 
-      if (error) {
-        console.error('Error creating company:', error);
-        toast({
-          title: "Erro",
-          description: "Erro ao criar empresa",
-          variant: "destructive"
-        });
-        throw error;
-      }
-      
-      const newCompany: Company = {
-        ...data,
-        status: data.status as "active" | "inactive" | "suspended"
-      };
-      
-      setCompanies(prev => [newCompany, ...prev]);
+      if (error) throw error;
+
       toast({
         title: "Sucesso",
-        description: "Empresa criada com sucesso!"
+        description: "Empresa criada com sucesso"
       });
-      
-      return newCompany;
+
+      await fetchCompanies();
+      return data;
     } catch (error) {
       console.error('Error creating company:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao criar empresa",
+        variant: "destructive"
+      });
       throw error;
     }
   };
@@ -129,42 +142,27 @@ export function useCompanies() {
     try {
       const { data, error } = await supabase
         .from('companies')
-        .update({ ...updates, updated_at: new Date().toISOString() })
+        .update(updates)
         .eq('id', id)
         .select()
         .single();
 
-      if (error) {
-        console.error('Error updating company:', error);
-        toast({
-          title: "Erro",
-          description: "Erro ao atualizar empresa",
-          variant: "destructive"
-        });
-        throw error;
-      }
-      
-      const updatedCompany: Company = {
-        ...data,
-        status: data.status as "active" | "inactive" | "suspended"
-      };
-      
-      setCompanies(prev => prev.map(company => 
-        company.id === id ? updatedCompany : company
-      ));
-      
-      if (currentCompany?.id === id) {
-        setCurrentCompany(updatedCompany);
-      }
-      
+      if (error) throw error;
+
       toast({
         title: "Sucesso",
-        description: "Empresa atualizada com sucesso!"
+        description: "Empresa atualizada com sucesso"
       });
-      
-      return updatedCompany;
+
+      await fetchCompanies();
+      return data;
     } catch (error) {
       console.error('Error updating company:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar empresa",
+        variant: "destructive"
+      });
       throw error;
     }
   };
@@ -176,45 +174,49 @@ export function useCompanies() {
         .delete()
         .eq('id', id);
 
-      if (error) {
-        console.error('Error deleting company:', error);
-        toast({
-          title: "Erro",
-          description: "Erro ao remover empresa",
-          variant: "destructive"
-        });
-        throw error;
-      }
+      if (error) throw error;
 
-      setCompanies(prev => prev.filter(company => company.id !== id));
-      
-      if (currentCompany?.id === id) {
-        const remainingCompanies = companies.filter(company => company.id !== id);
-        setCurrentCompany(remainingCompanies.length > 0 ? remainingCompanies[0] : null);
-      }
-      
       toast({
         title: "Sucesso",
-        description: "Empresa removida com sucesso!"
+        description: "Empresa removida com sucesso"
       });
+
+      await fetchCompanies();
     } catch (error) {
       console.error('Error deleting company:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao remover empresa",
+        variant: "destructive"
+      });
       throw error;
     }
   };
 
   useEffect(() => {
     fetchCompanies();
-  }, [isAdmin]);
+  }, [userLogin]);
 
-  return {
-    companies,
-    currentCompany,
-    setCurrentCompany,
-    loading,
-    createCompany,
-    updateCompany,
-    deleteCompany,
-    refetch: fetchCompanies
-  };
+  return (
+    <CompaniesContext.Provider value={{
+      companies,
+      currentCompany,
+      loading,
+      setCurrentCompany,
+      createCompany,
+      updateCompany,
+      deleteCompany,
+      refetch: fetchCompanies
+    }}>
+      {children}
+    </CompaniesContext.Provider>
+  );
+}
+
+export function useCompanies() {
+  const context = useContext(CompaniesContext);
+  if (context === undefined) {
+    throw new Error('useCompanies must be used within a CompaniesProvider');
+  }
+  return context;
 }
