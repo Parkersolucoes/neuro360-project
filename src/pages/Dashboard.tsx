@@ -4,12 +4,12 @@ import { Badge } from "@/components/ui/badge";
 import { BarChart3, MessageSquare, Calendar, CheckCircle, AlertTriangle, Activity, Database, Building2 } from "lucide-react";
 import { useCompanies } from "@/hooks/useCompanies";
 import { useSQLConnections } from "@/hooks/useSQLConnections";
-import { useEvolutionConfig } from "@/hooks/useEvolutionConfig";
+import { useEvolutionConfigs } from "@/hooks/useEvolutionConfigs";
 
 export default function Dashboard() {
   const { currentCompany, companies } = useCompanies();
   const { connections } = useSQLConnections();
-  const { config } = useEvolutionConfig();
+  const { configs } = useEvolutionConfigs();
 
   const stats = [
     {
@@ -69,14 +69,15 @@ export default function Dashboard() {
     },
   ];
 
-  // Filter connections by current company (assuming connections will have company_id field in future)
+  // Filter connections by current company
   const companyConnections = connections.filter(conn => 
-    // For now, show all connections until company_id field is added to sql_connections table
-    true
+    currentCompany ? conn.company_id === currentCompany.id : false
   );
 
-  // Show evolution config for current company
-  const evolutionConfigs = config ? [config] : [];
+  // Show evolution configs for current company
+  const evolutionConfigs = configs.filter(config =>
+    currentCompany ? config.company_id === currentCompany.id : false
+  );
 
   return (
     <div className="space-y-6">
@@ -184,7 +185,7 @@ export default function Dashboard() {
                 <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center space-x-3">
                     <div className={`w-3 h-3 rounded-full ${
-                      connection.is_active ? 'bg-green-500' : 'bg-red-500'
+                      connection.status === 'active' ? 'bg-green-500' : 'bg-red-500'
                     }`}></div>
                     <div>
                       <span className="font-medium text-gray-900 text-sm">{connection.name}</span>
@@ -192,11 +193,11 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <Badge className={
-                    connection.is_active 
+                    connection.status === 'active' 
                       ? "bg-green-100 text-green-800" 
                       : "bg-red-100 text-red-800"
                   }>
-                    {connection.is_active ? 'Conectado' : 'Desconectado'}
+                    {connection.status === 'active' ? 'Conectado' : 'Desconectado'}
                   </Badge>
                 </div>
               ))
@@ -212,16 +213,16 @@ export default function Dashboard() {
                   <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-2">
                     <div className="flex items-center space-x-3">
                       <div className={`w-3 h-3 rounded-full ${
-                        evolutionConfig.is_active ? 'bg-green-500' : 'bg-red-500'
+                        evolutionConfig.status === 'connected' ? 'bg-green-500' : 'bg-red-500'
                       }`}></div>
                       <span className="font-medium text-gray-900 text-sm">{evolutionConfig.instance_name}</span>
                     </div>
                     <Badge className={
-                      evolutionConfig.is_active 
+                      evolutionConfig.status === 'connected' 
                         ? "bg-green-100 text-green-800" 
                         : "bg-red-100 text-red-800"
                     }>
-                      {evolutionConfig.is_active ? 'Online' : 'Offline'}
+                      {evolutionConfig.status === 'connected' ? 'Online' : 'Offline'}
                     </Badge>
                   </div>
                 ))

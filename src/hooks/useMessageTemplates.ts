@@ -43,7 +43,9 @@ export function useMessageTemplates() {
       if (error) throw error;
       setTemplates((data || []).map(item => ({
         ...item,
-        variables: Array.isArray(item.variables) ? item.variables : [],
+        variables: Array.isArray(item.variables) 
+          ? (item.variables as any[]).map(v => String(v))
+          : [],
         status: item.status as 'active' | 'inactive'
       })));
     } catch (error) {

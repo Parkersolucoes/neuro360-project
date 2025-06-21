@@ -10,14 +10,11 @@ import { Badge } from "@/components/ui/badge";
 import { CreditCard, Plus, FileText, DollarSign, TrendingUp, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTransactions } from "@/hooks/useTransactions";
-import { useAssasConfig } from "@/hooks/useAssasConfig";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
-import { supabase } from "@/integrations/supabase/client";
 
 export default function Financeiro() {
   const { toast } = useToast();
   const { transactions, createTransaction, loading } = useTransactions();
-  const { config: assasConfig } = useAssasConfig();
   const { isAdmin } = useAdminAuth();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newBoleto, setNewBoleto] = useState({
@@ -39,28 +36,14 @@ export default function Financeiro() {
       return;
     }
 
-    if (!assasConfig || assasConfig.status !== 'connected') {
-      toast({
-        title: "Erro",
-        description: "Configure a integração com ASSAS primeiro",
-        variant: "destructive"
-      });
-      return;
-    }
-
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
-
       await createTransaction({
-        user_id: user.id,
         amount: parseFloat(newBoleto.amount),
-        currency: "BRL",
+        type: "payment" as const,
         status: "pending" as const,
         payment_method: "boleto",
         description: newBoleto.description,
-        transaction_date: new Date().toISOString(),
-        subscription_id: null
+        plan_id: null
       });
       
       setNewBoleto({
@@ -292,7 +275,7 @@ export default function Financeiro() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {new Date(transaction.transaction_date).toLocaleDateString('pt-BR')}
+                    {new Date(transaction.created_at).toLocaleDateString('pt-BR')}
                   </TableCell>
                 </TableRow>
               ))}

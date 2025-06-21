@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -49,7 +50,7 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
         port: editingConnection.port,
         database_name: editingConnection.database_name,
         username: editingConnection.username,
-        password_encrypted: editingConnection.password,
+        password: "", // Sempre vazio por segurança
         connection_type: editingConnection.connection_type
       });
       setIsFormVisible(true);
@@ -88,7 +89,7 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
         password_encrypted: connectionForm.password,
         connection_type: connectionForm.connection_type,
         company_id: effectiveCompanyId,
-        status: 'active'
+        status: 'active' as const
       };
 
       console.log('Salvando conexão SQL:', connectionData);
