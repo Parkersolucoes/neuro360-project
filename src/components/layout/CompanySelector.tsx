@@ -6,13 +6,20 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Building2, Check, ChevronsUpDown, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCompanies } from "@/hooks/useCompanies";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useToast } from "@/hooks/use-toast";
 
 export function CompanySelector() {
   const [open, setOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<string>("");
   const { companies = [], currentCompany, setCurrentCompany, loading, refetch } = useCompanies();
+  const { isMasterUser } = useAdminAuth();
   const { toast } = useToast();
+
+  // Só mostrar o seletor para usuários master
+  if (!isMasterUser) {
+    return null;
+  }
 
   // Garantir que companies é sempre um array
   const safeCompanies = Array.isArray(companies) ? companies : [];

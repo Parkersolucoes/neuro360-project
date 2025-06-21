@@ -5,40 +5,30 @@ import { useAuth } from '@/hooks/useAuth';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requireAdmin?: boolean;
 }
 
-export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRouteProps) {
-  const { user, profile, loading } = useAuth();
+export function ProtectedRoute({ children }: ProtectedRouteProps) {
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading) {
-      if (!user) {
-        navigate('/auth');
-        return;
-      }
-
-      if (requireAdmin && profile && !profile.is_admin) {
-        navigate('/dashboard');
-        return;
-      }
+    if (!loading && !user) {
+      navigate('/auth', { replace: true });
     }
-  }, [user, profile, loading, navigate, requireAdmin]);
+  }, [user, loading, navigate]);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-96">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="text-gray-600 mt-2">Verificando autenticação...</p>
+        </div>
       </div>
     );
   }
 
   if (!user) {
-    return null;
-  }
-
-  if (requireAdmin && profile && !profile.is_admin) {
     return null;
   }
 

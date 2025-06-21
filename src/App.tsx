@@ -21,6 +21,7 @@ import ConfiguracaoSistema from "./pages/ConfiguracaoSistema";
 import Planos from "./pages/Planos";
 import Financeiro from "./pages/Financeiro";
 import NotFound from "./pages/NotFound";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -33,28 +34,32 @@ const App = () => (
         <AuthProvider>
           <SidebarProvider>
             <Routes>
-              {/* Redirecionar todas as rotas principais para o dashboard */}
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/auth" element={<Navigate to="/dashboard" replace />} />
+              {/* Rota pública para autenticação */}
+              <Route path="/auth" element={<Auth />} />
               
-              {/* Rotas do dashboard sem proteção */}
+              {/* Redirecionar para auth se não autenticado */}
+              <Route path="/" element={<Navigate to="/auth" replace />} />
+              
+              {/* Rotas protegidas do dashboard */}
               <Route path="/*" element={
-                <DashboardLayout>
-                  <Routes>
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/empresas" element={<Empresas />} />
-                    <Route path="/usuarios" element={<Usuarios />} />
-                    <Route path="/templates" element={<Templates />} />
-                    <Route path="/consultas" element={<ConsultasSQL />} />
-                    <Route path="/agendamento" element={<Agendamento />} />
-                    <Route path="/qrcode" element={<QRCode />} />
-                    <Route path="/configuracao" element={<Configuracao />} />
-                    <Route path="/configuracao-sistema" element={<ConfiguracaoSistema />} />
-                    <Route path="/planos" element={<Planos />} />
-                    <Route path="/financeiro" element={<Financeiro />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </DashboardLayout>
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <Routes>
+                      <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/empresas" element={<Empresas />} />
+                      <Route path="/usuarios" element={<Usuarios />} />
+                      <Route path="/templates" element={<Templates />} />
+                      <Route path="/consultas" element={<ConsultasSQL />} />
+                      <Route path="/agendamento" element={<Agendamento />} />
+                      <Route path="/qrcode" element={<QRCode />} />
+                      <Route path="/configuracao" element={<Configuracao />} />
+                      <Route path="/configuracao-sistema" element={<ConfiguracaoSistema />} />
+                      <Route path="/planos" element={<Planos />} />
+                      <Route path="/financeiro" element={<Financeiro />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </DashboardLayout>
+                </ProtectedRoute>
               } />
             </Routes>
           </SidebarProvider>
