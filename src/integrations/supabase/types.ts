@@ -386,7 +386,7 @@ export type Database = {
       }
       sql_connections: {
         Row: {
-          company_id: string | null
+          company_id: string
           connection_type: string
           created_at: string
           database_name: string
@@ -400,7 +400,7 @@ export type Database = {
           username: string
         }
         Insert: {
-          company_id?: string | null
+          company_id: string
           connection_type?: string
           created_at?: string
           database_name: string
@@ -414,7 +414,7 @@ export type Database = {
           username: string
         }
         Update: {
-          company_id?: string | null
+          company_id?: string
           connection_type?: string
           created_at?: string
           database_name?: string

@@ -55,6 +55,7 @@ export function useSQLConnections() {
         return;
       }
 
+      console.log('SQL connections fetched:', data);
       setConnections(data || []);
     } catch (error) {
       console.error('Error fetching SQL connections:', error);
@@ -68,7 +69,7 @@ export function useSQLConnections() {
     }
   };
 
-  const createConnection = async (connectionData: Omit<SQLConnection, 'id' | 'created_at' | 'updated_at'>) => {
+  const createConnection = async (connectionData: Omit<SQLConnection, 'id' | 'created_at' | 'updated_at' | 'company_id'>) => {
     try {
       if (!currentCompany) {
         throw new Error('Nenhuma empresa selecionada');
@@ -76,12 +77,24 @@ export function useSQLConnections() {
 
       console.log('Creating SQL connection:', connectionData);
       
+      // Preparar dados para inserção
+      const insertData = {
+        company_id: currentCompany.id,
+        name: connectionData.name,
+        host: connectionData.host,
+        database_name: connectionData.database_name,
+        username: connectionData.username,
+        password_encrypted: connectionData.password_encrypted,
+        port: connectionData.port,
+        connection_type: connectionData.connection_type,
+        status: connectionData.status || 'active'
+      };
+
+      console.log('Insert data:', insertData);
+      
       const { data, error } = await supabase
         .from('sql_connections')
-        .insert({
-          ...connectionData,
-          company_id: currentCompany.id
-        })
+        .insert(insertData)
         .select()
         .single();
 
@@ -90,6 +103,8 @@ export function useSQLConnections() {
         throw error;
       }
 
+      console.log('SQL connection created successfully:', data);
+      
       toast({
         title: "Sucesso",
         description: "Conexão SQL criada com sucesso"
@@ -108,7 +123,7 @@ export function useSQLConnections() {
     }
   };
 
-  const updateConnection = async (id: string, updates: Partial<SQLConnection>) => {
+  const updateConnection = async (id: string, updates: Partial<Omit<SQLConnection, 'id' | 'created_at' | 'company_id'>>) => {
     try {
       console.log('Updating SQL connection:', id, updates);
       
@@ -119,6 +134,7 @@ export function useSQLConnections() {
           updated_at: new Date().toISOString()
         })
         .eq('id', id)
+        .eq('company_id', currentCompany?.id) // Garantir que só atualiza conexões da empresa atual
         .select()
         .single();
 
@@ -126,6 +142,8 @@ export function useSQLConnections() {
         console.error('Error updating SQL connection:', error);
         throw error;
       }
+
+      console.log('SQL connection updated successfully:', data);
 
       toast({
         title: "Sucesso",
@@ -152,12 +170,15 @@ export function useSQLConnections() {
       const { error } = await supabase
         .from('sql_connections')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('company_id', currentCompany?.id); // Garantir que só deleta conexões da empresa atual
 
       if (error) {
         console.error('Error deleting SQL connection:', error);
         throw error;
       }
+
+      console.log('SQL connection deleted successfully');
 
       toast({
         title: "Sucesso",
