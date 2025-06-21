@@ -64,24 +64,16 @@ export function UserForm({
     setFormData(prev => {
       const newData = { ...prev };
       
+      // Tratar campos boolean especificamente
       if (field === 'is_admin') {
-        newData.is_admin = Boolean(value);
+        newData.is_admin = typeof value === 'boolean' ? value : value === 'true';
       } else if (field === 'is_master') {
-        newData.is_master = Boolean(value);
+        newData.is_master = typeof value === 'boolean' ? value : value === 'true';
       } else if (field === 'status') {
         newData.status = value as 'active' | 'inactive';
-      } else if (field === 'name') {
-        newData.name = String(value);
-      } else if (field === 'email') {
-        newData.email = String(value);
-      } else if (field === 'phone') {
-        newData.phone = String(value);
-      } else if (field === 'whatsapp') {
-        newData.whatsapp = String(value);
-      } else if (field === 'role') {
-        newData.role = String(value);
-      } else if (field === 'department') {
-        newData.department = String(value);
+      } else {
+        // Para campos string
+        (newData as any)[field] = String(value);
       }
       
       return newData;
