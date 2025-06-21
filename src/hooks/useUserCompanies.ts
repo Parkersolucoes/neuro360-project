@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 export interface UserCompany {
   id: string;
@@ -21,11 +22,13 @@ export function useUserCompanies() {
   const [userCompanies, setUserCompanies] = useState<UserCompany[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { isAdmin } = useAdminAuth();
 
   const fetchUserCompanies = async () => {
     try {
       console.log('Fetching user companies...');
-      const { data, error } = await supabase
+      
+      let query = supabase
         .from('user_companies')
         .select(`
           *,
@@ -33,8 +36,25 @@ export function useUserCompanies() {
             id,
             name
           )
-        `)
-        .order('created_at', { ascending: false });
+        `);
+
+      // Se não for admin, filtrar apenas associações das empresas do usuário
+      if (!isAdmin) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: userCompaniesData } = await supabase
+            .from('user_companies')
+            .select('company_id')
+            .eq('user_id', user.id);
+          
+          if (userCompaniesData && userCompaniesData.length > 0) {
+            const companyIds = userCompaniesData.map(uc => uc.company_id);
+            query = query.in('company_id', companyIds);
+          }
+        }
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) {
         console.error('Supabase error:', error);
@@ -85,7 +105,7 @@ export function useUserCompanies() {
         user_id: userId,
         company_id: companyId,
         role: 'user',
-        is_primary: companyId === primaryCompanyId || (companyIds.length === 1)
+        is_primary: companyId === primaryCompanyId || (companyIds.length === 1 && !primaryCompanyId)
       }));
 
       console.log('Inserting associations:', associations);
@@ -121,7 +141,7 @@ export function useUserCompanies() {
       console.error('Error creating user companies:', error);
       toast({
         title: "Erro",
-        description: "Erro ao associar usuário às empresas",
+        description: "Erro ao associar usuário às empresas. Verifique suas permissões.",
         variant: "destructive"
       });
       throw error;
@@ -146,7 +166,7 @@ export function useUserCompanies() {
 
   useEffect(() => {
     fetchUserCompanies();
-  }, []);
+  }, [isAdmin]);
 
   return {
     userCompanies,

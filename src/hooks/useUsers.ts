@@ -1,7 +1,7 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 export interface User {
   id: string;
@@ -21,13 +21,49 @@ export function useUsers() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { isAdmin } = useAdminAuth();
 
   const fetchUsers = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('users')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('*');
+
+      // Se não for admin, filtrar apenas usuários das empresas do usuário logado
+      if (!isAdmin) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          // Buscar empresas do usuário logado
+          const { data: userCompanies } = await supabase
+            .from('user_companies')
+            .select('company_id')
+            .eq('user_id', user.id);
+          
+          if (userCompanies && userCompanies.length > 0) {
+            const companyIds = userCompanies.map(uc => uc.company_id);
+            
+            // Buscar usuários que fazem parte das mesmas empresas
+            const { data: sameCompanyUsers } = await supabase
+              .from('user_companies')
+              .select('user_id')
+              .in('company_id', companyIds);
+            
+            if (sameCompanyUsers && sameCompanyUsers.length > 0) {
+              const userIds = sameCompanyUsers.map(uc => uc.user_id);
+              query = query.in('id', userIds);
+            } else {
+              // Se não há usuários da mesma empresa, retornar lista vazia
+              setUsers([]);
+              return;
+            }
+          } else {
+            // Se o usuário não está associado a nenhuma empresa, mostrar apenas ele mesmo
+            query = query.eq('id', user.id);
+          }
+        }
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
       
@@ -146,7 +182,7 @@ export function useUsers() {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [isAdmin]);
 
   return {
     users,

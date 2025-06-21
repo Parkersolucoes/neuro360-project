@@ -1,7 +1,7 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 export interface Company {
   id: string;
@@ -21,14 +21,38 @@ export function useCompanies() {
   const [currentCompany, setCurrentCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { isAdmin } = useAdminAuth();
 
   const fetchCompanies = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      let query = supabase
         .from('companies')
-        .select('*')
-        .order('name');
+        .select('*');
+
+      // Se não for admin, filtrar apenas empresas do usuário
+      if (!isAdmin) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: userCompanies } = await supabase
+            .from('user_companies')
+            .select('company_id')
+            .eq('user_id', user.id);
+          
+          if (userCompanies && userCompanies.length > 0) {
+            const companyIds = userCompanies.map(uc => uc.company_id);
+            query = query.in('id', companyIds);
+          } else {
+            // Se não há empresas associadas, retornar lista vazia
+            setCompanies([]);
+            setCurrentCompany(null);
+            return;
+          }
+        }
+      }
+
+      const { data, error } = await query.order('name');
 
       if (error) {
         console.error('Error fetching companies:', error);
@@ -181,7 +205,7 @@ export function useCompanies() {
 
   useEffect(() => {
     fetchCompanies();
-  }, []);
+  }, [isAdmin]);
 
   return {
     companies,

@@ -123,23 +123,24 @@ export default function Usuarios() {
 
   const handleCompanyToggle = (companyId: string, checked: boolean) => {
     if (checked) {
-      setSelectedCompanies(prev => [...prev, companyId]);
+      const newSelectedCompanies = [...selectedCompanies, companyId];
+      setSelectedCompanies(newSelectedCompanies);
       // Se é a primeira empresa selecionada, torna ela principal
       if (selectedCompanies.length === 0) {
         setPrimaryCompany(companyId);
       }
     } else {
-      setSelectedCompanies(prev => prev.filter(id => id !== companyId));
-      // Se removeu a empresa principal, limpa ou define outra
+      const newSelectedCompanies = selectedCompanies.filter(id => id !== companyId);
+      setSelectedCompanies(newSelectedCompanies);
+      // Se removeu a empresa principal, define a primeira restante como principal
       if (primaryCompany === companyId) {
-        const remaining = selectedCompanies.filter(id => id !== companyId);
-        setPrimaryCompany(remaining.length > 0 ? remaining[0] : '');
+        setPrimaryCompany(newSelectedCompanies.length > 0 ? newSelectedCompanies[0] : '');
       }
     }
   };
 
   const handlePrimaryCompanyChange = (companyId: string, checked: boolean) => {
-    if (checked) {
+    if (checked && selectedCompanies.includes(companyId)) {
       setPrimaryCompany(companyId);
     }
   };
