@@ -13,24 +13,23 @@ export function useSystemDescription() {
       const { data, error } = await supabase
         .from('system_configs')
         .select('config_value')
-        .eq('config_key', 'system_description')
+        .eq('config_key', 'system_appearance')
         .single();
 
       if (error) {
-        console.log('System description config not found, using default');
+        console.log('System appearance config not found, using default');
         setSystemDescription('Soluções em Dados');
         return;
       }
 
       if (data?.config_value) {
-        // O config_value pode ser uma string direta ou um objeto JSON
+        // O config_value é um objeto JSON com as configurações de aparência
         let description = 'Soluções em Dados';
         
-        if (typeof data.config_value === 'string') {
-          description = data.config_value;
-        } else if (typeof data.config_value === 'object' && data.config_value !== null) {
-          // Se for um objeto, procura pela propriedade 'description'
-          description = (data.config_value as any)?.description || 'Soluções em Dados';
+        if (typeof data.config_value === 'object' && data.config_value !== null) {
+          // Buscar pela propriedade 'system_description' dentro do objeto de aparência
+          const configValue = data.config_value as any;
+          description = configValue?.system_description || 'Soluções em Dados';
         }
         
         setSystemDescription(description);
