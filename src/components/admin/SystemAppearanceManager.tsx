@@ -1,24 +1,16 @@
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { 
-  Settings,
-  Upload,
-  Eye,
-  Save,
-  Image as ImageIcon
-} from "lucide-react";
+import { Settings, Eye, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
+import { SystemInfoForm } from "./appearance/SystemInfoForm";
+import { ImageUploadSection } from "./appearance/ImageUploadSection";
 
 export function SystemAppearanceManager() {
   const { config, saveConfig, uploadImage, loading } = useSystemConfig();
   const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     system_name: "360 Solutions",
@@ -125,112 +117,21 @@ export function SystemAppearanceManager() {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="system_name">Nome do Sistema</Label>
-                <Input
-                  id="system_name"
-                  value={formData.system_name}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    system_name: e.target.value
-                  }))}
-                  placeholder="Nome do sistema"
-                  required
-                />
-              </div>
+            <SystemInfoForm
+              systemName={formData.system_name}
+              systemDescription={formData.system_description}
+              primaryColor={formData.primary_color}
+              onSystemNameChange={(value) => setFormData(prev => ({ ...prev, system_name: value }))}
+              onSystemDescriptionChange={(value) => setFormData(prev => ({ ...prev, system_description: value }))}
+              onPrimaryColorChange={(value) => setFormData(prev => ({ ...prev, primary_color: value }))}
+            />
 
-              <div className="space-y-2">
-                <Label htmlFor="system_description">Descrição</Label>
-                <Textarea
-                  id="system_description"
-                  value={formData.system_description}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    system_description: e.target.value
-                  }))}
-                  placeholder="Descrição do sistema"
-                  rows={3}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="primary_color">Cor Primária</Label>
-                <div className="flex space-x-2">
-                  <Input
-                    id="primary_color"
-                    type="color"
-                    value={formData.primary_color}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      primary_color: e.target.value
-                    }))}
-                    className="w-20 h-10"
-                  />
-                  <Input
-                    value={formData.primary_color}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      primary_color: e.target.value
-                    }))}
-                    placeholder="#1e293b"
-                    className="flex-1"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Imagem de Fundo do Login</Label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                  {previewImage || formData.login_background_image ? (
-                    <div className="space-y-3">
-                      <img
-                        src={previewImage || formData.login_background_image}
-                        alt="Preview"
-                        className="w-full h-48 object-cover rounded-lg"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={isUploading}
-                      >
-                        <Upload className="w-4 h-4 mr-2" />
-                        {isUploading ? 'Enviando...' : 'Alterar Imagem'}
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <ImageIcon className="w-12 h-12 text-gray-400 mx-auto" />
-                      <p className="text-gray-600">
-                        Clique para adicionar uma imagem de fundo
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        Recomendado: 1920x1080px, máximo 5MB
-                      </p>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={isUploading}
-                      >
-                        <Upload className="w-4 h-4 mr-2" />
-                        {isUploading ? 'Enviando...' : 'Escolher Imagem'}
-                      </Button>
-                    </div>
-                  )}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                  />
-                </div>
-              </div>
-            </div>
+            <ImageUploadSection
+              currentImage={formData.login_background_image}
+              previewImage={previewImage}
+              isUploading={isUploading}
+              onImageUpload={handleImageUpload}
+            />
           </div>
 
           <div className="flex justify-between items-center pt-4 border-t">
