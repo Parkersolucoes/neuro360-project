@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { CompaniesContext } from '@/contexts/CompaniesContext';
 import { Company } from '@/types/company';
