@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,7 +22,17 @@ export default function Agendamento() {
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingScheduling, setEditingScheduling] = useState<Scheduling | null>(null);
-  const [newScheduling, setNewScheduling] = useState({
+  const [newScheduling, setNewScheduling] = useState<{
+    title: string;
+    description: string;
+    scheduled_date: string;
+    scheduled_time: string;
+    recipient_phone: string;
+    message_content: string;
+    template_id: string;
+    company_id: string;
+    status: 'pending' | 'sent' | 'failed';
+  }>({
     title: "",
     description: "",
     scheduled_date: "",
@@ -32,7 +41,7 @@ export default function Agendamento() {
     message_content: "",
     template_id: "",
     company_id: currentCompany?.id || "",
-    status: "pending" as const
+    status: "pending"
   });
 
   const saveScheduling = async () => {
