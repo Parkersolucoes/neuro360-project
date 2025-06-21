@@ -47,13 +47,22 @@ export function useQRSessions() {
 
       console.log('QRSessions: Fetched session:', data);
       if (data) {
-        setSession({
-          ...data,
-          qr_code_data: data.qr_code_data || null,
+        // Mapear dados do banco para a interface QRSession
+        const mappedSession: QRSession = {
+          id: data.id,
+          company_id: data.company_id,
+          evolution_config_id: data.evolution_config_id || null,
+          instance_name: data.instance_name || '',
+          session_name: data.session_name,
+          session_status: data.status || 'disconnected',
+          qr_code_data: data.qr_code || null,
           phone_number: data.phone_number || null,
           connected_at: data.connected_at || null,
-          last_activity: data.last_activity || null
-        });
+          last_activity: data.last_activity || null,
+          created_at: data.created_at,
+          updated_at: data.updated_at
+        };
+        setSession(mappedSession);
       } else {
         setSession(null);
       }
@@ -82,8 +91,8 @@ export function useQRSessions() {
         evolution_config_id: evolutionConfigId,
         instance_name: instanceName,
         session_name: `session_${instanceName}_${Date.now()}`,
-        session_status: 'waiting',
-        qr_code_data: null,
+        status: 'waiting',
+        qr_code: null,
         phone_number: null
       };
 
@@ -96,20 +105,31 @@ export function useQRSessions() {
       if (error) throw error;
 
       console.log('QRSessions: Session created successfully:', data);
-      setSession({
-        ...data,
-        qr_code_data: data.qr_code_data || null,
+      
+      // Mapear dados do banco para a interface QRSession
+      const mappedSession: QRSession = {
+        id: data.id,
+        company_id: data.company_id,
+        evolution_config_id: data.evolution_config_id || null,
+        instance_name: data.instance_name || '',
+        session_name: data.session_name,
+        session_status: data.status || 'waiting',
+        qr_code_data: data.qr_code || null,
         phone_number: data.phone_number || null,
         connected_at: data.connected_at || null,
-        last_activity: data.last_activity || null
-      });
+        last_activity: data.last_activity || null,
+        created_at: data.created_at,
+        updated_at: data.updated_at
+      };
+      
+      setSession(mappedSession);
       
       toast({
         title: "Sucesso",
         description: "Sessão QR criada com sucesso!"
       });
       
-      return data;
+      return mappedSession;
     } catch (error) {
       console.error('Error creating QR session:', error);
       toast({
@@ -129,9 +149,18 @@ export function useQRSessions() {
 
       console.log('QRSessions: Updating session:', session.id, updates);
       
+      // Mapear atualizações da interface para os nomes das colunas do banco
+      const dbUpdates: any = {};
+      if (updates.session_status !== undefined) dbUpdates.status = updates.session_status;
+      if (updates.qr_code_data !== undefined) dbUpdates.qr_code = updates.qr_code_data;
+      if (updates.phone_number !== undefined) dbUpdates.phone_number = updates.phone_number;
+      if (updates.connected_at !== undefined) dbUpdates.connected_at = updates.connected_at;
+      if (updates.last_activity !== undefined) dbUpdates.last_activity = updates.last_activity;
+      if (updates.updated_at !== undefined) dbUpdates.updated_at = updates.updated_at;
+
       const { data, error } = await supabase
         .from('qr_sessions')
-        .update(updates)
+        .update(dbUpdates)
         .eq('id', session.id)
         .select()
         .single();
@@ -139,13 +168,24 @@ export function useQRSessions() {
       if (error) throw error;
 
       console.log('QRSessions: Session updated successfully:', data);
-      setSession({
-        ...data,
-        qr_code_data: data.qr_code_data || null,
+      
+      // Mapear dados do banco para a interface QRSession
+      const mappedSession: QRSession = {
+        id: data.id,
+        company_id: data.company_id,
+        evolution_config_id: data.evolution_config_id || null,
+        instance_name: data.instance_name || '',
+        session_name: data.session_name,
+        session_status: data.status || 'disconnected',
+        qr_code_data: data.qr_code || null,
         phone_number: data.phone_number || null,
         connected_at: data.connected_at || null,
-        last_activity: data.last_activity || null
-      });
+        last_activity: data.last_activity || null,
+        created_at: data.created_at,
+        updated_at: data.updated_at
+      };
+      
+      setSession(mappedSession);
       
       toast({
         title: "Sucesso",
@@ -172,8 +212,8 @@ export function useQRSessions() {
       const { error } = await supabase
         .from('qr_sessions')
         .update({ 
-          session_status: 'disconnected',
-          qr_code_data: null,
+          status: 'disconnected',
+          qr_code: null,
           phone_number: null
         })
         .eq('id', session.id);
