@@ -1,35 +1,53 @@
 
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { useCompanies } from '@/hooks/useCompanies';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface Transaction {
   id: string;
+  company_id: string;
   user_id: string;
-  subscription_id?: string;
+  plan_id: string | null;
   amount: number;
-  currency: string;
-  status: 'pending' | 'completed' | 'failed' | 'refunded';
-  payment_method?: string;
-  transaction_date: string;
-  description?: string;
-  created_at?: string;
-  updated_at?: string;
-  user_subscriptions?: {
-    plans?: {
-      name: string;
-    };
-  };
+  type: 'payment' | 'refund' | 'subscription';
+  status: 'pending' | 'completed' | 'failed' | 'cancelled';
+  payment_method: string | null;
+  external_id: string | null;
+  description: string | null;
+  processed_at: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export function useTransactions() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { currentCompany } = useCompanies();
+  const { userLogin } = useAuth();
 
   const fetchTransactions = async () => {
     try {
-      // Since transactions table doesn't exist, return empty array
-      setTransactions([]);
+      setLoading(true);
+      
+      if (!currentCompany) {
+        setTransactions([]);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('transactions')
+        .select(`
+          *,
+          plans(name, price)
+        `)
+        .eq('company_id', currentCompany.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setTransactions(data || []);
     } catch (error) {
       console.error('Error fetching transactions:', error);
       toast({
@@ -42,28 +60,29 @@ export function useTransactions() {
     }
   };
 
-  const createTransaction = async (transaction: Omit<Transaction, 'id' | 'created_at' | 'updated_at' | 'user_subscriptions'>) => {
+  const createTransaction = async (transactionData: Omit<Transaction, 'id' | 'created_at' | 'updated_at' | 'company_id' | 'user_id'>) => {
     try {
-      // Simulate creating a transaction since table doesn't exist
-      const mockTransaction: Transaction = {
-        id: `mock-transaction-${Date.now()}`,
-        ...transaction,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        user_subscriptions: {
-          plans: {
-            name: 'Mock Plan'
-          }
-        }
-      };
-      
-      setTransactions(prev => [mockTransaction, ...prev]);
+      if (!currentCompany || !userLogin) throw new Error('Dados necessários não encontrados');
+
+      const { data, error } = await supabase
+        .from('transactions')
+        .insert({
+          ...transactionData,
+          company_id: currentCompany.id,
+          user_id: userLogin.id
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
       toast({
-        title: "Informação",
-        description: "Funcionalidade Transações será implementada em uma próxima versão. Transação simulada criada."
+        title: "Sucesso",
+        description: "Transação criada com sucesso"
       });
-      
-      return mockTransaction;
+
+      await fetchTransactions();
+      return data;
     } catch (error) {
       console.error('Error creating transaction:', error);
       toast({
@@ -77,21 +96,22 @@ export function useTransactions() {
 
   const updateTransaction = async (id: string, updates: Partial<Transaction>) => {
     try {
-      // Simulate updating transaction
-      const updatedTransaction = transactions.find(transaction => transaction.id === id);
-      if (!updatedTransaction) throw new Error('Transaction not found');
-      
-      const newTransaction = { ...updatedTransaction, ...updates };
-      setTransactions(prev => prev.map(transaction => 
-        transaction.id === id ? newTransaction : transaction
-      ));
-      
+      const { data, error } = await supabase
+        .from('transactions')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
       toast({
         title: "Sucesso",
-        description: "Transação atualizada com sucesso!"
+        description: "Transação atualizada com sucesso"
       });
-      
-      return newTransaction;
+
+      await fetchTransactions();
+      return data;
     } catch (error) {
       console.error('Error updating transaction:', error);
       toast({
@@ -105,7 +125,7 @@ export function useTransactions() {
 
   useEffect(() => {
     fetchTransactions();
-  }, []);
+  }, [currentCompany]);
 
   return {
     transactions,

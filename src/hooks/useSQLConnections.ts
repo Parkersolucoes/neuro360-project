@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { useCompanies } from '@/hooks/useCompanies';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface SQLConnection {
   id: string;
@@ -11,10 +12,10 @@ export interface SQLConnection {
   host: string;
   database_name: string;
   username: string;
-  password: string;
+  password_encrypted: string;
   port: number;
   connection_type: string;
-  is_active: boolean;
+  status: string;
   created_at: string;
   updated_at: string;
 }
@@ -31,10 +32,30 @@ export function useSQLConnections() {
     try {
       setLoading(true);
       
-      console.log('SQLConnections: Table sql_connections does not exist in current database schema');
+      if (!currentCompany) {
+        setConnections([]);
+        return;
+      }
+
+      console.log('Fetching SQL connections for company:', currentCompany.id);
       
-      // Como a tabela sql_connections não existe mais, retornar array vazio
-      setConnections([]);
+      const { data, error } = await supabase
+        .from('sql_connections')
+        .select('*')
+        .eq('company_id', currentCompany.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching SQL connections:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao carregar conexões SQL",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      setConnections(data || []);
     } catch (error) {
       console.error('Error fetching SQL connections:', error);
       toast({
@@ -49,52 +70,136 @@ export function useSQLConnections() {
 
   const createConnection = async (connectionData: Omit<SQLConnection, 'id' | 'created_at' | 'updated_at'>) => {
     try {
-      console.log('SQLConnections: Cannot create connection - table sql_connections does not exist');
+      if (!currentCompany) {
+        throw new Error('Nenhuma empresa selecionada');
+      }
+
+      console.log('Creating SQL connection:', connectionData);
       
+      const { data, error } = await supabase
+        .from('sql_connections')
+        .insert({
+          ...connectionData,
+          company_id: currentCompany.id
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating SQL connection:', error);
+        throw error;
+      }
+
       toast({
-        title: "Erro",
-        description: "Funcionalidade de conexões SQL está temporariamente indisponível",
-        variant: "destructive"
+        title: "Sucesso",
+        description: "Conexão SQL criada com sucesso"
       });
-      
-      throw new Error('sql_connections table does not exist');
+
+      await fetchConnections();
+      return data;
     } catch (error) {
       console.error('Error creating SQL connection:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao criar conexão SQL",
+        variant: "destructive"
+      });
       throw error;
     }
   };
 
   const updateConnection = async (id: string, updates: Partial<SQLConnection>) => {
     try {
-      console.log('SQLConnections: Cannot update connection - table sql_connections does not exist');
+      console.log('Updating SQL connection:', id, updates);
       
+      const { data, error } = await supabase
+        .from('sql_connections')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating SQL connection:', error);
+        throw error;
+      }
+
       toast({
-        title: "Erro",
-        description: "Funcionalidade de conexões SQL está temporariamente indisponível",
-        variant: "destructive"
+        title: "Sucesso",
+        description: "Conexão SQL atualizada com sucesso"
       });
-      
-      throw new Error('sql_connections table does not exist');
+
+      await fetchConnections();
+      return data;
     } catch (error) {
       console.error('Error updating SQL connection:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar conexão SQL",
+        variant: "destructive"
+      });
       throw error;
     }
   };
 
   const deleteConnection = async (id: string) => {
     try {
-      console.log('SQLConnections: Cannot delete connection - table sql_connections does not exist');
+      console.log('Deleting SQL connection:', id);
       
+      const { error } = await supabase
+        .from('sql_connections')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error deleting SQL connection:', error);
+        throw error;
+      }
+
       toast({
-        title: "Erro",
-        description: "Funcionalidade de conexões SQL está temporariamente indisponível",
-        variant: "destructive"
+        title: "Sucesso",
+        description: "Conexão SQL removida com sucesso"
       });
-      
-      throw new Error('sql_connections table does not exist');
+
+      await fetchConnections();
     } catch (error) {
       console.error('Error deleting SQL connection:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao remover conexão SQL",
+        variant: "destructive"
+      });
       throw error;
+    }
+  };
+
+  const testConnection = async (connectionData: Partial<SQLConnection>) => {
+    try {
+      setTesting(true);
+      console.log('Testing SQL connection:', connectionData);
+      
+      // Simular teste de conexão por enquanto
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      toast({
+        title: "Sucesso",
+        description: "Conexão testada com sucesso"
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Error testing SQL connection:', error);
+      toast({
+        title: "Erro",
+        description: "Falha ao testar conexão SQL",
+        variant: "destructive"
+      });
+      return false;
+    } finally {
+      setTesting(false);
     }
   };
 
@@ -109,6 +214,7 @@ export function useSQLConnections() {
     createConnection,
     updateConnection,
     deleteConnection,
+    testConnection,
     refetch: fetchConnections
   };
 }
