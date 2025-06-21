@@ -58,7 +58,14 @@ export default function Empresas() {
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
-  const [newCompany, setNewCompany] = useState({
+  const [newCompany, setNewCompany] = useState<{
+    name: string;
+    document: string;
+    email: string;
+    phone: string;
+    address: string;
+    plan: "basic" | "pro" | "enterprise";
+  }>({
     name: "",
     document: "",
     email: "",
@@ -213,7 +220,7 @@ export default function Empresas() {
                   id="plan"
                   className="w-full p-2 border border-gray-300 rounded-md"
                   value={newCompany.plan}
-                  onChange={(e) => setNewCompany({...newCompany, plan: e.target.value})}
+                  onChange={(e) => setNewCompany({...newCompany, plan: e.target.value as "basic" | "pro" | "enterprise"})}
                 >
                   {plans.map((plan) => (
                     <option key={plan.value} value={plan.value}>
