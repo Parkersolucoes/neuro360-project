@@ -39,7 +39,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Configurar listener de mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
@@ -47,7 +46,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Buscar perfil do usuário
           setTimeout(async () => {
             await fetchProfile(session.user.id);
           }, 0);
@@ -58,7 +56,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    // Verificar sessão existente
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -95,7 +92,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('Creating master user...');
       
-      // Criar usuário no auth se não existir
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: 'contato@parkersolucoes.com.br',
         password: 'Parker@2024',
@@ -111,21 +107,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      let userId = authData?.user?.id;
-      
-      // Se o usuário já existe, buscar o ID
-      if (!userId) {
-        const { data: users } = await supabase.auth.admin.listUsers();
-        const existingUser = users.users?.find(u => u.email === 'contato@parkersolucoes.com.br');
-        userId = existingUser?.id;
-      }
-
-      if (userId) {
-        // Atualizar ou criar perfil como master
+      // If user creation was successful or user already exists
+      if (authData?.user?.id) {
         const { error: profileError } = await supabase
           .from('profiles')
           .upsert({
-            id: userId,
+            id: authData.user.id,
             name: 'Master User - Parker Soluções',
             email: 'contato@parkersolucoes.com.br',
             role: 'admin',
@@ -172,7 +159,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string) => {
     console.log('Attempting login for:', email);
     
-    // Se for o usuário master, tentar criar antes do login
     if (email === 'contato@parkersolucoes.com.br') {
       await createMasterUser();
     }
@@ -212,13 +198,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const hasPermission = (action: 'create' | 'edit' | 'delete') => {
     if (!profile) return false;
     
-    // Usuários master têm todas as permissões
     if (profile.is_master_user) return true;
-    
-    // Administradores têm todas as permissões
     if (profile.is_admin) return true;
     
-    // Usuários comuns podem criar e editar, mas não deletar
     if (action === 'delete') return false;
     
     return true;
