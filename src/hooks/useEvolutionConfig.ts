@@ -44,7 +44,14 @@ export function useEvolutionConfig(companyId?: string) {
       }
 
       console.log('EvolutionConfig: Fetched config:', data);
-      setConfig(data as EvolutionConfig);
+      if (data) {
+        setConfig({
+          ...data,
+          status: data.status as 'connected' | 'disconnected' | 'testing'
+        });
+      } else {
+        setConfig(null);
+      }
     } catch (error) {
       console.error('Error fetching Evolution config:', error);
       toast({
@@ -70,7 +77,10 @@ export function useEvolutionConfig(companyId?: string) {
       if (error) throw error;
 
       console.log('EvolutionConfig: Config created successfully:', data);
-      setConfig(data as EvolutionConfig);
+      setConfig({
+        ...data,
+        status: data.status as 'connected' | 'disconnected' | 'testing'
+      });
       
       toast({
         title: "Sucesso",
@@ -103,7 +113,10 @@ export function useEvolutionConfig(companyId?: string) {
       if (error) throw error;
 
       console.log('EvolutionConfig: Config updated successfully:', data);
-      setConfig(data as EvolutionConfig);
+      setConfig({
+        ...data,
+        status: data.status as 'connected' | 'disconnected' | 'testing'
+      });
       
       toast({
         title: "Sucesso",
