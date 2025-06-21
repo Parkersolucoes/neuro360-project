@@ -26,8 +26,8 @@ import { useAdminAuth } from "@/hooks/useAdminAuth";
 export default function Configuracao() {
   const { toast } = useToast();
   const { connections, createConnection } = useSQLConnections();
-  const { config: evolutionConfig, createConfig: createEvolutionConfig } = useEvolutionConfig();
-  const { config: assasConfig, createConfig: createAssasConfig } = useAssasConfig();
+  const { config: evolutionConfig, saveConfig: saveEvolutionConfig } = useEvolutionConfig();
+  const { config: assasConfig, saveConfig: saveAssasConfig } = useAssasConfig();
   const { isAdmin } = useAdminAuth();
 
   // Estados para formulários
@@ -57,7 +57,10 @@ export default function Configuracao() {
   const handleSQLSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await createConnection(sqlForm);
+      await createConnection({
+        ...sqlForm,
+        status: 'disconnected'
+      });
       setSqlForm({
         name: "",
         server: "",
@@ -78,7 +81,10 @@ export default function Configuracao() {
   const handleEvolutionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await createEvolutionConfig(evolutionForm);
+      await saveEvolutionConfig({
+        ...evolutionForm,
+        status: 'disconnected'
+      });
       setEvolutionForm({
         instance_name: "",
         api_url: "",
@@ -105,7 +111,10 @@ export default function Configuracao() {
     }
 
     try {
-      await createAssasConfig(assasForm);
+      await saveAssasConfig({
+        ...assasForm,
+        status: 'disconnected'
+      });
       setAssasForm({
         api_key: "",
         api_url: "https://www.asaas.com/api/v3",
