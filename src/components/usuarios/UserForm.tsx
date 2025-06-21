@@ -1,13 +1,11 @@
 
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Shield, Building2 } from "lucide-react";
 import { User } from "@/hooks/useUsers";
 import { Company } from "@/hooks/useCompanies";
+import { UserBasicInfoForm } from "./UserBasicInfoForm";
+import { UserRoleAndStatusForm } from "./UserRoleAndStatusForm";
+import { UserCompaniesSection } from "./UserCompaniesSection";
+import { UserFormActions } from "./UserFormActions";
 
 interface UserFormProps {
   editingUser: User | null;
@@ -43,20 +41,6 @@ export function UserForm({
 
   const [isSaving, setIsSaving] = useState(false);
 
-  const roles = [
-    { value: "admin", label: "Administrador" },
-    { value: "manager", label: "Gerente" },
-    { value: "user", label: "Usuário" }
-  ];
-
-  const departments = [
-    { value: "vendas", label: "Vendas" },
-    { value: "marketing", label: "Marketing" },
-    { value: "financeiro", label: "Financeiro" },
-    { value: "ti", label: "TI" },
-    { value: "rh", label: "Recursos Humanos" }
-  ];
-
   useEffect(() => {
     if (editingUser) {
       setFormData({
@@ -82,6 +66,10 @@ export function UserForm({
       });
     }
   }, [editingUser]);
+
+  const handleFieldChange = (field: string, value: string | boolean) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
 
   const handleCompanyToggle = (companyId: string, checked: boolean) => {
     let newSelected: string[];
@@ -125,164 +113,31 @@ export function UserForm({
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="name">Nome Completo</Label>
-          <Input
-            id="name"
-            placeholder="Nome do usuário"
-            value={formData.name}
-            onChange={(e) => setFormData({...formData, name: e.target.value})}
-            className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="email">E-mail</Label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="email@empresa.com"
-            value={formData.email}
-            onChange={(e) => setFormData({...formData, email: e.target.value})}
-            className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="phone">Telefone</Label>
-          <Input
-            id="phone"
-            placeholder="(11) 99999-9999"
-            value={formData.phone}
-            onChange={(e) => setFormData({...formData, phone: e.target.value})}
-            className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="whatsapp">WhatsApp</Label>
-          <Input
-            id="whatsapp"
-            placeholder="(11) 99999-9999"
-            value={formData.whatsapp}
-            onChange={(e) => setFormData({...formData, whatsapp: e.target.value})}
-            className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="role">Função</Label>
-          <Select value={formData.role} onValueChange={(value) => setFormData({...formData, role: value})}>
-            <SelectTrigger className="border-blue-200 focus:border-blue-500 focus:ring-blue-500">
-              <SelectValue placeholder="Selecione a função" />
-            </SelectTrigger>
-            <SelectContent>
-              {roles.map((role) => (
-                <SelectItem key={role.value} value={role.value}>
-                  {role.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="department">Departamento</Label>
-          <Select value={formData.department} onValueChange={(value) => setFormData({...formData, department: value})}>
-            <SelectTrigger className="border-blue-200 focus:border-blue-500 focus:ring-blue-500">
-              <SelectValue placeholder="Selecione o departamento" />
-            </SelectTrigger>
-            <SelectContent>
-              {departments.map((dept) => (
-                <SelectItem key={dept.value} value={dept.value}>
-                  {dept.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="status">Status</Label>
-          <Select 
-            value={formData.status} 
-            onValueChange={(value: 'active' | 'inactive') => setFormData({...formData, status: value})}
-          >
-            <SelectTrigger className="border-blue-200 focus:border-blue-500 focus:ring-blue-500">
-              <SelectValue placeholder="Selecione o status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="active">Ativo</SelectItem>
-              <SelectItem value="inactive">Inativo</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      <UserBasicInfoForm 
+        formData={formData}
+        onChange={handleFieldChange}
+      />
 
-      <div className="space-y-4">
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="is_admin"
-            checked={formData.is_admin}
-            onCheckedChange={(checked) => setFormData({...formData, is_admin: checked as boolean})}
-            className="border-blue-200 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
-          />
-          <Label htmlFor="is_admin" className="flex items-center space-x-2">
-            <Shield className="w-4 h-4 text-blue-500" />
-            <span>Usuário Administrador (recebe alertas de erro)</span>
-          </Label>
-        </div>
-        
-        <div className="space-y-3">
-          <Label className="text-base font-medium flex items-center space-x-2">
-            <Building2 className="w-4 h-4 text-blue-500" />
-            <span>Empresas</span>
-          </Label>
-          <div className="border border-blue-200 rounded-lg p-4 space-y-3 max-h-48 overflow-y-auto">
-            {companies.map((company) => (
-              <div key={company.id} className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <Checkbox
-                    id={`company-${company.id}`}
-                    checked={selectedCompanies.includes(company.id)}
-                    onCheckedChange={(checked) => handleCompanyToggle(company.id, checked as boolean)}
-                    className="border-blue-200 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
-                  />
-                  <Label htmlFor={`company-${company.id}`} className="flex-1">
-                    {company.name}
-                  </Label>
-                </div>
-                {selectedCompanies.includes(company.id) && (
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`primary-${company.id}`}
-                      checked={primaryCompany === company.id}
-                      onCheckedChange={(checked) => handlePrimaryCompanyChange(company.id, checked as boolean)}
-                      className="border-blue-200 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
-                    />
-                    <Label htmlFor={`primary-${company.id}`} className="text-sm text-blue-600">
-                      Principal
-                    </Label>
-                  </div>
-                )}
-              </div>
-            ))}
-            {companies.length === 0 && (
-              <p className="text-sm text-gray-500 text-center py-4">
-                Nenhuma empresa cadastrada
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
+      <UserRoleAndStatusForm 
+        formData={formData}
+        onChange={handleFieldChange}
+      />
 
-      <div className="flex justify-end space-x-2 mt-6">
-        <Button variant="outline" onClick={onCancel} className="border-blue-200 text-blue-600 hover:bg-blue-50">
-          Cancelar
-        </Button>
-        <Button 
-          onClick={handleSave} 
-          disabled={!isFormValid || isSaving}
-          className="bg-blue-500 hover:bg-blue-600 text-white"
-        >
-          {isSaving ? "Salvando..." : (editingUser ? "Atualizar" : "Criar")} Usuário
-        </Button>
-      </div>
+      <UserCompaniesSection
+        companies={companies}
+        selectedCompanies={selectedCompanies}
+        primaryCompany={primaryCompany}
+        onCompanyToggle={handleCompanyToggle}
+        onPrimaryCompanyChange={handlePrimaryCompanyChange}
+      />
+
+      <UserFormActions
+        isFormValid={isFormValid}
+        isSaving={isSaving}
+        editingUser={!!editingUser}
+        onSave={handleSave}
+        onCancel={onCancel}
+      />
     </div>
   );
 }
