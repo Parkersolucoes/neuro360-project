@@ -48,7 +48,7 @@ export default {
 					foreground: '#FFFFFF'
 				},
 				warning: {
-					DEFAULT: '#F59E0B',
+					DEFAULT: '#FFD700',
 					foreground: '#FFFFFF'
 				},
 				destructive: {
@@ -80,6 +80,19 @@ export default {
 					'accent-foreground': '#475569',
 					border: '#E2E8F0',
 					ring: '#3B82F6'
+				},
+				yellow: {
+					DEFAULT: '#FFD700',
+					50: '#FFFDF7',
+					100: '#FFFAEB',
+					200: '#FFF3C4',
+					300: '#FFEC9D',
+					400: '#FFE066',
+					500: '#FFD700',
+					600: '#E6C200',
+					700: '#B8A000',
+					800: '#8A7800',
+					900: '#5C5000'
 				}
 			},
 			borderRadius: {
