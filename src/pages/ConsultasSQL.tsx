@@ -158,7 +158,7 @@ export default function ConsultasSQL() {
                     <SelectContent className="bg-white border-black">
                       {connections.map((connection) => (
                         <SelectItem key={connection.id} value={connection.id}>
-                          {connection.name} ({connection.server})
+                          {connection.name} ({connection.host})
                         </SelectItem>
                       ))}
                     </SelectContent>
