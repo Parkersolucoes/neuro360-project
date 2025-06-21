@@ -49,9 +49,9 @@ export function useCompanies() {
         .from('user_companies')
         .select(`
           *,
-          companies:company_id(
+          companies!inner(
             *,
-            plans:plan_id(name, price, max_sql_connections, max_sql_queries)
+            plans(name, price, max_sql_connections, max_sql_queries)
           )
         `)
         .eq('user_id', user.id)
@@ -94,7 +94,7 @@ export function useCompanies() {
         }])
         .select(`
           *,
-          plans:plan_id(name, price, max_sql_connections, max_sql_queries)
+          plans(name, price, max_sql_connections, max_sql_queries)
         `)
         .single();
 
@@ -144,7 +144,7 @@ export function useCompanies() {
         .eq('id', id)
         .select(`
           *,
-          plans:plan_id(name, price, max_sql_connections, max_sql_queries)
+          plans(name, price, max_sql_connections, max_sql_queries)
         `)
         .single();
 

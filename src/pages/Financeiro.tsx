@@ -1,10 +1,8 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +10,7 @@ import { CreditCard, Plus, FileText, DollarSign, TrendingUp } from "lucide-react
 import { useToast } from "@/hooks/use-toast";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useAssasConfig } from "@/hooks/useAssasConfig";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Financeiro() {
   const { toast } = useToast();
@@ -89,7 +88,7 @@ export default function Financeiro() {
       value: "8",
       subtitle: "Aguardando pagamento",
       icon: FileText,
-      color: "bg-yellow-500",
+      color: "bg-blue-500",
     },
     {
       title: "Transações",
