@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -45,34 +44,53 @@ export function useCompanies() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data, error } = await supabase
+      // First get user companies
+      const { data: userCompaniesData, error: userCompaniesError } = await supabase
         .from('user_companies')
-        .select(`
-          *,
-          companies!inner(
-            *,
-            plans(name, price, max_sql_connections, max_sql_queries)
-          )
-        `)
+        .select('*')
         .eq('user_id', user.id)
         .eq('is_active', true);
 
-      if (error) throw error;
+      if (userCompaniesError) throw userCompaniesError;
+
+      if (!userCompaniesData || userCompaniesData.length === 0) {
+        setUserCompanies([]);
+        setLoading(false);
+        return;
+      }
+
+      // Get company IDs to fetch company details
+      const companyIds = userCompaniesData.map(uc => uc.company_id);
+
+      // Fetch companies with their plans
+      const { data: companiesData, error: companiesError } = await supabase
+        .from('companies')
+        .select(`
+          *,
+          plans(name, price, max_sql_connections, max_sql_queries)
+        `)
+        .in('id', companyIds);
+
+      if (companiesError) throw companiesError;
+
+      // Combine user_companies with companies data
+      const enrichedUserCompanies: UserCompany[] = userCompaniesData.map(uc => {
+        const company = companiesData?.find(c => c.id === uc.company_id);
+        return {
+          ...uc,
+          role: uc.role as 'admin' | 'user' | 'manager',
+          companies: company ? {
+            ...company,
+            status: company.status as 'active' | 'inactive' | 'suspended'
+          } : undefined
+        };
+      });
       
-      const typedData: UserCompany[] = (data || []).map(item => ({
-        ...item,
-        role: item.role as 'admin' | 'user' | 'manager',
-        companies: item.companies ? {
-          ...item.companies,
-          status: item.companies.status as 'active' | 'inactive' | 'suspended'
-        } : undefined
-      }));
-      
-      setUserCompanies(typedData);
+      setUserCompanies(enrichedUserCompanies);
       
       // Set first company as current if none selected
-      if (typedData.length > 0 && !currentCompany && typedData[0].companies) {
-        setCurrentCompany(typedData[0].companies);
+      if (enrichedUserCompanies.length > 0 && !currentCompany && enrichedUserCompanies[0].companies) {
+        setCurrentCompany(enrichedUserCompanies[0].companies);
       }
     } catch (error) {
       console.error('Error fetching user companies:', error);
