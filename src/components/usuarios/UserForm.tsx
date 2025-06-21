@@ -70,10 +70,17 @@ export function UserForm({
     console.log('Field changed:', field, 'Value:', value, 'Type:', typeof value);
     
     setFormData(prev => {
+      const updates: Partial<typeof prev> = {};
+      
       if (field === 'is_admin') {
-        return { ...prev, [field]: Boolean(value) };
+        updates.is_admin = Boolean(value);
+      } else if (field === 'status') {
+        updates.status = value as 'active' | 'inactive';
+      } else {
+        (updates as any)[field] = value;
       }
-      return { ...prev, [field]: value };
+      
+      return { ...prev, ...updates };
     });
   };
 
