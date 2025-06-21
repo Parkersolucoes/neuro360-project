@@ -29,7 +29,7 @@ export function QRCodeGenerator({
   const [isGenerating, setIsGenerating] = useState(false);
   const [evolutionService, setEvolutionService] = useState<EvolutionApiService | null>(null);
 
-  const sessionStatus = session?.status || "disconnected";
+  const sessionStatus = session?.session_status || "disconnected";
 
   // Buscar sessão existente ao carregar o componente
   useEffect(() => {
@@ -88,8 +88,8 @@ export function QRCodeGenerator({
       
       // Atualizar sessão com o QR Code
       await updateSession({
-        status: 'waiting',
-        qr_code: qrResponse.qrCode,
+        session_status: 'waiting',
+        qr_code_data: qrResponse.qrCode,
         updated_at: new Date().toISOString()
       });
       
@@ -122,7 +122,7 @@ export function QRCodeGenerator({
         if (status.status === 'open') {
           // Instância conectada
           await updateSession({
-            status: 'connected',
+            session_status: 'connected',
             connected_at: new Date().toISOString(),
             last_activity: new Date().toISOString()
           });
@@ -172,8 +172,8 @@ export function QRCodeGenerator({
   };
 
   useEffect(() => {
-    if (session?.qr_code) {
-      setQrCode(session.qr_code);
+    if (session?.qr_code_data) {
+      setQrCode(session.qr_code_data);
     }
   }, [session]);
 
