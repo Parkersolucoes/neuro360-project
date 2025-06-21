@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { User } from "@/hooks/useUsers";
 import { UserBasicInfoForm } from "./UserBasicInfoForm";
@@ -82,8 +81,10 @@ export function UserForm({
       } else if (field === 'status') {
         newData.status = String(value) as 'active' | 'inactive';
       } else {
-        // Para campos string
-        (newData as any)[field] = String(value);
+        // Para campos string - apenas estes campos devem receber String(value)
+        if (field === 'name' || field === 'email' || field === 'phone' || field === 'whatsapp' || field === 'role' || field === 'department') {
+          (newData as any)[field] = String(value);
+        }
       }
       
       return newData;
