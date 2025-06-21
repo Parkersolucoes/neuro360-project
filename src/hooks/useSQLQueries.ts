@@ -53,7 +53,23 @@ export function useSQLQueries() {
         return;
       }
 
-      setQueries(data || []);
+      // Mapear os dados do Supabase para o formato SQLQuery
+      const mappedQueries: SQLQuery[] = (data || []).map(item => ({
+        id: item.id,
+        connection_id: item.connection_id,
+        name: item.name,
+        description: item.description,
+        query_text: item.query_text,
+        status: 'pending' as const, // Valor padrão
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        created_by: item.created_by,
+        sql_connections: {
+          name: item.sql_connections.name
+        }
+      }));
+
+      setQueries(mappedQueries);
     } catch (error) {
       console.error('Error fetching SQL queries:', error);
       toast({
@@ -82,7 +98,10 @@ export function useSQLQueries() {
       const { data, error } = await supabase
         .from('sql_queries')
         .insert([{
-          ...query,
+          connection_id: query.connection_id,
+          name: query.name,
+          description: query.description,
+          query_text: query.query_text,
           created_by: currentUser.user?.id
         }])
         .select(`
@@ -101,13 +120,29 @@ export function useSQLQueries() {
         throw error;
       }
       
-      setQueries(prev => [data, ...prev]);
+      // Mapear o resultado para o formato SQLQuery
+      const mappedQuery: SQLQuery = {
+        id: data.id,
+        connection_id: data.connection_id,
+        name: data.name,
+        description: data.description,
+        query_text: data.query_text,
+        status: 'pending' as const,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        created_by: data.created_by,
+        sql_connections: data.sql_connections ? {
+          name: data.sql_connections.name
+        } : undefined
+      };
+
+      setQueries(prev => [mappedQuery, ...prev]);
       toast({
         title: "Sucesso",
         description: "Consulta SQL criada com sucesso!"
       });
       
-      return data;
+      return mappedQuery;
     } catch (error) {
       console.error('Error creating SQL query:', error);
       throw error;
@@ -118,7 +153,12 @@ export function useSQLQueries() {
     try {
       const { data, error } = await supabase
         .from('sql_queries')
-        .update({ ...updates, updated_at: new Date().toISOString() })
+        .update({ 
+          name: updates.name,
+          description: updates.description,
+          query_text: updates.query_text,
+          updated_at: new Date().toISOString() 
+        })
         .eq('id', id)
         .select(`
           *,
@@ -136,8 +176,24 @@ export function useSQLQueries() {
         throw error;
       }
       
+      // Mapear o resultado para o formato SQLQuery
+      const mappedQuery: SQLQuery = {
+        id: data.id,
+        connection_id: data.connection_id,
+        name: data.name,
+        description: data.description,
+        query_text: data.query_text,
+        status: updates.status || 'pending' as const,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        created_by: data.created_by,
+        sql_connections: data.sql_connections ? {
+          name: data.sql_connections.name
+        } : undefined
+      };
+
       setQueries(prev => prev.map(query => 
-        query.id === id ? data : query
+        query.id === id ? mappedQuery : query
       ));
       
       toast({
@@ -145,7 +201,7 @@ export function useSQLQueries() {
         description: "Consulta SQL atualizada com sucesso!"
       });
       
-      return data;
+      return mappedQuery;
     } catch (error) {
       console.error('Error updating SQL query:', error);
       throw error;
