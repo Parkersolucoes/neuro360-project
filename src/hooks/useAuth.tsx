@@ -103,8 +103,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // Tenta fazer login primeiro para ver se o usuário existe
       const { data: loginAttempt, error: loginError } = await supabase.auth.signInWithPassword({
-        email: 'contato@parkersolucoes.com.br',
-        password: 'Parker@2024'
+        email: 'admin@visao360.com.br',
+        password: 'Visao360@2024'
       });
 
       console.log('Login attempt result:', { loginAttempt, loginError });
@@ -128,8 +128,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .from('profiles')
             .upsert({
               id: loginAttempt.user.id,
-              name: 'Master User - Parker Soluções',
-              email: 'contato@parkersolucoes.com.br',
+              name: 'Administrador Master - Visão 360',
+              email: 'admin@visao360.com.br',
               role: 'admin',
               is_admin: true,
               is_master_user: true,
@@ -154,11 +154,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('Master user does not exist, creating...');
       
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: 'contato@parkersolucoes.com.br',
-        password: 'Parker@2024',
+        email: 'admin@visao360.com.br',
+        password: 'Visao360@2024',
         options: {
           data: {
-            name: 'Master User - Parker Soluções'
+            name: 'Administrador Master - Visão 360'
           }
         }
       });
@@ -182,8 +182,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .from('profiles')
           .upsert({
             id: authData.user.id,
-            name: 'Master User - Parker Soluções',
-            email: 'contato@parkersolucoes.com.br',
+            name: 'Administrador Master - Visão 360',
+            email: 'admin@visao360.com.br',
             role: 'admin',
             is_admin: true,
             is_master_user: true,
@@ -239,7 +239,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await supabase.auth.signOut();
       
       // Se for o email master, garante que o usuário master existe
-      if (email === 'contato@parkersolucoes.com.br') {
+      if (email === 'admin@visao360.com.br') {
         console.log('Email master detectado, garantindo que usuário existe...');
         await createMasterUser();
       }
