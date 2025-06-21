@@ -89,7 +89,7 @@ export function useSystemConfig() {
           system_description: 'Plataforma completa para análise e gestão de dados empresariais',
           primary_color: '#1e293b',
           login_background_image: ''
-        } as SystemConfigValue,
+        },
         description: 'Configurações de aparência do sistema',
         is_public: true
       };
@@ -131,7 +131,7 @@ export function useSystemConfig() {
           system_description: updates.system_description || config?.system_description,
           primary_color: updates.primary_color || config?.primary_color,
           login_background_image: updates.login_background_image || config?.login_background_image
-        } as SystemConfigValue,
+        },
         description: 'Configurações de aparência do sistema',
         is_public: true
       };
