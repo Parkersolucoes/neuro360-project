@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,7 +42,9 @@ export default function Financeiro() {
         status: "pending" as const,
         payment_method: "boleto",
         description: newBoleto.description,
-        plan_id: null
+        plan_id: null,
+        external_id: null,
+        processed_at: null
       });
       
       setNewBoleto({
