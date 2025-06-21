@@ -74,7 +74,7 @@ export function UserForm({
       
       if (field === 'is_admin') {
         // Garantir que is_admin seja sempre boolean
-        updates.is_admin = value === true || value === 'true' || value === true;
+        updates.is_admin = Boolean(value);
       } else if (field === 'status') {
         updates.status = value as 'active' | 'inactive';
       } else {
