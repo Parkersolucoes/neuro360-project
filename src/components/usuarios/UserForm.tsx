@@ -1,30 +1,18 @@
 
 import { useState, useEffect } from "react";
 import { User } from "@/hooks/useUsers";
-import { Company } from "@/hooks/useCompanies";
 import { UserBasicInfoForm } from "./UserBasicInfoForm";
 import { UserRoleAndStatusForm } from "./UserRoleAndStatusForm";
-import { UserCompaniesSection } from "./UserCompaniesSection";
 import { UserFormActions } from "./UserFormActions";
 
 interface UserFormProps {
   editingUser: User | null;
-  companies: Company[];
-  selectedCompanies: string[];
-  primaryCompany: string;
-  onSelectedCompaniesChange: (companies: string[]) => void;
-  onPrimaryCompanyChange: (company: string) => void;
   onSave: (userData: Omit<User, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
   onCancel: () => void;
 }
 
 export function UserForm({ 
   editingUser, 
-  companies, 
-  selectedCompanies, 
-  primaryCompany,
-  onSelectedCompaniesChange,
-  onPrimaryCompanyChange,
   onSave, 
   onCancel 
 }: UserFormProps) {
@@ -74,12 +62,10 @@ export function UserForm({
       const updates: Partial<typeof prev> = {};
       
       if (field === 'is_admin') {
-        // Garantir que is_admin seja sempre boolean
         updates.is_admin = Boolean(value);
       } else if (field === 'status') {
         updates.status = value as 'active' | 'inactive';
       } else {
-        // Para outros campos string
         (updates as any)[field] = String(value);
       }
       
@@ -87,44 +73,13 @@ export function UserForm({
     });
   };
 
-  const handleCompanyToggle = (companyId: string, checked: boolean) => {
-    let newSelected: string[];
-    if (checked) {
-      newSelected = [...selectedCompanies, companyId];
-      if (selectedCompanies.length === 0) {
-        onPrimaryCompanyChange(companyId);
-      }
-    } else {
-      newSelected = selectedCompanies.filter(id => id !== companyId);
-      if (primaryCompany === companyId) {
-        onPrimaryCompanyChange(newSelected.length > 0 ? newSelected[0] : '');
-      }
-    }
-    onSelectedCompaniesChange(newSelected);
-  };
-
-  const handlePrimaryCompanyChange = (companyId: string, checked: boolean) => {
-    if (checked && selectedCompanies.includes(companyId)) {
-      onPrimaryCompanyChange(companyId);
-    }
-  };
-
   const handleSave = async () => {
     if (isSaving) return;
-    
-    // Validar se há pelo menos uma empresa selecionada
-    if (selectedCompanies.length === 0) {
-      alert('Selecione pelo menos uma empresa para o usuário.');
-      return;
-    }
     
     try {
       setIsSaving(true);
       console.log('Submitting form data:', formData);
-      console.log('Selected companies:', selectedCompanies);
-      console.log('Primary company:', primaryCompany);
       
-      // Garantir que todos os campos obrigatórios estão preenchidos
       const userData = {
         name: formData.name.trim(),
         email: formData.email.trim().toLowerCase(),
@@ -148,8 +103,7 @@ export function UserForm({
                      formData.email.trim() && 
                      formData.phone.trim() && 
                      formData.whatsapp.trim() && 
-                     formData.department.trim() &&
-                     selectedCompanies.length > 0;
+                     formData.department.trim();
 
   return (
     <div className="space-y-6 bg-white">
@@ -161,14 +115,6 @@ export function UserForm({
       <UserRoleAndStatusForm 
         formData={formData}
         onChange={handleFieldChange}
-      />
-
-      <UserCompaniesSection
-        companies={companies}
-        selectedCompanies={selectedCompanies}
-        primaryCompany={primaryCompany}
-        onCompanyToggle={handleCompanyToggle}
-        onPrimaryCompanyChange={handlePrimaryCompanyChange}
       />
 
       <UserFormActions

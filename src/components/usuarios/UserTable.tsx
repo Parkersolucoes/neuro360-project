@@ -2,17 +2,24 @@
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2, Phone, Mail, Shield, MessageSquare } from "lucide-react";
+import { Edit, Trash2, Phone, Mail, Shield, MessageSquare, Building2 } from "lucide-react";
 import { User } from "@/hooks/useUsers";
 
 interface UserTableProps {
   users: User[];
   onEditUser: (user: User) => void;
   onDeleteUser: (userId: string) => void;
+  onManageCompanies: (user: User) => void;
   getUserCompanyNames: (userId: string) => string;
 }
 
-export function UserTable({ users, onEditUser, onDeleteUser, getUserCompanyNames }: UserTableProps) {
+export function UserTable({ 
+  users, 
+  onEditUser, 
+  onDeleteUser, 
+  onManageCompanies,
+  getUserCompanyNames 
+}: UserTableProps) {
   const roles = [
     { value: "admin", label: "Administrador" },
     { value: "manager", label: "Gerente" },
@@ -100,7 +107,17 @@ export function UserTable({ users, onEditUser, onDeleteUser, getUserCompanyNames
                 <Button
                   size="sm"
                   variant="outline"
+                  onClick={() => onManageCompanies(user)}
+                  title="Gerenciar Empresas"
+                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                >
+                  <Building2 className="w-3 h-3" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
                   onClick={() => onEditUser(user)}
+                  title="Editar"
                 >
                   <Edit className="w-3 h-3" />
                 </Button>
@@ -109,6 +126,7 @@ export function UserTable({ users, onEditUser, onDeleteUser, getUserCompanyNames
                   variant="outline"
                   className="text-red-600 hover:text-red-700 hover:bg-red-50"
                   onClick={() => handleDeleteUser(user.id)}
+                  title="Excluir"
                 >
                   <Trash2 className="w-3 h-3" />
                 </Button>

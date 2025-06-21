@@ -7,6 +7,7 @@ import { useUsers, User } from "@/hooks/useUsers";
 import { useCompanies } from "@/hooks/useCompanies";
 import { useUserCompanies } from "@/hooks/useUserCompanies";
 import { UserDialog } from "@/components/usuarios/UserDialog";
+import { UserCompaniesDialog } from "@/components/usuarios/UserCompaniesDialog";
 import { UserTable } from "@/components/usuarios/UserTable";
 
 export default function Usuarios() {
@@ -15,29 +16,20 @@ export default function Usuarios() {
   const { createUserCompanies, getUserCompanies, getUserCompanyNames } = useUserCompanies();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isCompaniesDialogOpen, setIsCompaniesDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [managingUser, setManagingUser] = useState<User | null>(null);
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
   const [primaryCompany, setPrimaryCompany] = useState<string>('');
 
   const saveUser = async (userData: Omit<User, 'id' | 'created_at' | 'updated_at'>) => {
     try {
       console.log('Saving user with data:', userData);
-      console.log('Selected companies:', selectedCompanies);
-      console.log('Primary company:', primaryCompany);
       
-      let savedUser;
       if (editingUser) {
-        savedUser = await updateUser(editingUser.id, userData);
-        // Atualizar associações de empresas
-        if (selectedCompanies.length > 0) {
-          await createUserCompanies(editingUser.id, selectedCompanies, primaryCompany);
-        }
+        await updateUser(editingUser.id, userData);
       } else {
-        savedUser = await createUser(userData);
-        // Criar associações de empresas
-        if (selectedCompanies.length > 0) {
-          await createUserCompanies(savedUser.id, selectedCompanies, primaryCompany);
-        }
+        await createUser(userData);
       }
       
       resetForm();
@@ -46,33 +38,50 @@ export default function Usuarios() {
     }
   };
 
+  const saveUserCompanies = async (userId: string, companies: string[], primaryCompany: string) => {
+    try {
+      await createUserCompanies(userId, companies, primaryCompany);
+    } catch (error) {
+      console.error('Error saving user companies:', error);
+    }
+  };
+
   const resetForm = () => {
-    setSelectedCompanies([]);
-    setPrimaryCompany('');
     setEditingUser(null);
     setIsDialogOpen(false);
+  };
+
+  const resetCompaniesForm = () => {
+    setSelectedCompanies([]);
+    setPrimaryCompany('');
+    setManagingUser(null);
+    setIsCompaniesDialogOpen(false);
   };
 
   const editUser = (user: User) => {
     console.log('Editing user:', user.id);
     setEditingUser(user);
+    setIsDialogOpen(true);
+  };
+
+  const manageUserCompanies = (user: User) => {
+    console.log('Managing companies for user:', user.id);
+    setManagingUser(user);
     
     // Carregar empresas associadas ao usuário
     const userCompanies = getUserCompanies(user.id);
-    console.log('User companies for editing:', userCompanies);
+    console.log('User companies for managing:', userCompanies);
     const companyIds = userCompanies.map(uc => uc.company_id);
     const primary = userCompanies.find(uc => uc.is_primary)?.company_id || '';
     
     setSelectedCompanies(companyIds);
     setPrimaryCompany(primary);
-    setIsDialogOpen(true);
+    setIsCompaniesDialogOpen(true);
   };
 
   const openNewUserDialog = () => {
     console.log('Opening new user dialog');
     setEditingUser(null);
-    setSelectedCompanies([]);
-    setPrimaryCompany('');
     setIsDialogOpen(true);
   };
 
@@ -107,13 +116,20 @@ export default function Usuarios() {
         isOpen={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         editingUser={editingUser}
+        onSave={saveUser}
+        onCancel={resetForm}
+      />
+
+      <UserCompaniesDialog
+        isOpen={isCompaniesDialogOpen}
+        onOpenChange={setIsCompaniesDialogOpen}
+        user={managingUser}
         companies={companies}
         selectedCompanies={selectedCompanies}
         primaryCompany={primaryCompany}
         onSelectedCompaniesChange={setSelectedCompanies}
         onPrimaryCompanyChange={setPrimaryCompany}
-        onSave={saveUser}
-        onCancel={resetForm}
+        onSave={saveUserCompanies}
       />
 
       <Card>
@@ -128,6 +144,7 @@ export default function Usuarios() {
             users={users}
             onEditUser={editUser}
             onDeleteUser={deleteUser}
+            onManageCompanies={manageUserCompanies}
             getUserCompanyNames={getUserCompanyNames}
           />
         </CardContent>
