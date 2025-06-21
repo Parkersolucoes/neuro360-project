@@ -66,9 +66,19 @@ export function UserForm({
       
       // Tratar campos boolean especificamente
       if (field === 'is_admin') {
-        newData.is_admin = Boolean(value);
+        // Converter corretamente para boolean
+        if (typeof value === 'boolean') {
+          newData.is_admin = value;
+        } else {
+          newData.is_admin = value === 'true' || value === true;
+        }
       } else if (field === 'is_master') {
-        newData.is_master = Boolean(value);
+        // Converter corretamente para boolean
+        if (typeof value === 'boolean') {
+          newData.is_master = value;
+        } else {
+          newData.is_master = value === 'true' || value === true;
+        }
       } else if (field === 'status') {
         newData.status = String(value) as 'active' | 'inactive';
       } else {
