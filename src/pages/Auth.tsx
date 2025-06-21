@@ -4,7 +4,6 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useSystemConfig } from '@/hooks/useSystemConfig';
 import { Database, BarChart3, TrendingUp } from 'lucide-react';
 
@@ -50,19 +49,19 @@ export default function Auth() {
       {/* Grid pattern overlay */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:50px_50px]"></div>
 
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-4">
-        <div className="grid lg:grid-cols-2 gap-8 items-center">
-          {/* Left side - Feature showcase with login data */}
-          <div className="hidden lg:block">
+      <div className="relative z-10 w-full max-w-4xl mx-auto px-4">
+        <div className="flex items-center justify-center">
+          {/* Quadro único com propaganda e login */}
+          <div className="w-full max-w-2xl">
             <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-8 rounded-2xl border border-slate-700/50 shadow-2xl backdrop-blur-xl">
               <div className="space-y-6">
-                <h1 className="text-5xl font-bold text-white leading-tight">
+                <h1 className="text-5xl font-bold text-white leading-tight text-center">
                   {config?.system_name || 'Visão 360'}
                   <span className="block text-[#FFD700] text-3xl font-normal mt-2">
                     Soluções em Dados
                   </span>
                 </h1>
-                <p className="text-xl text-gray-300 leading-relaxed">
+                <p className="text-xl text-gray-300 leading-relaxed text-center">
                   {config?.system_description || 'Plataforma completa para análise e gestão de dados empresariais com tecnologia avançada'}
                 </p>
               </div>
@@ -99,33 +98,13 @@ export default function Auth() {
                 </div>
               </div>
 
-              {/* Login data moved here */}
-              <div className="mt-8 p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
-                <p className="text-sm text-blue-300 font-medium mb-2">Dados para teste:</p>
-                <div className="space-y-1 text-sm text-gray-300">
-                  <p><span className="text-[#FFD700]">Email:</span> admin@visao360.com.br</p>
-                  <p><span className="text-[#FFD700]">Senha:</span> 123456</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right side - Login form with vertical separator */}
-          <div className="relative">
-            {/* Separator line for large screens */}
-            <div className="hidden lg:block absolute -left-4 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[#FFD700]/50 to-transparent"></div>
-            
-            <Card className="bg-white/10 backdrop-blur-xl border-white/20 shadow-2xl">
-              <CardHeader className="text-center pb-8">
-                <CardTitle className="text-3xl font-bold text-white mb-2">
-                  Bem-vindo
-                </CardTitle>
-                <p className="text-gray-300">
+              {/* Seção de Login */}
+              <div className="mt-8 p-6 bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl">
+                <h2 className="text-2xl font-bold text-white mb-4 text-center">
                   Faça login para acessar sua plataforma
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <form onSubmit={handleSubmit} className="space-y-5">
+                </h2>
+                
+                <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
                     <Input
                       type="email"
@@ -168,8 +147,17 @@ export default function Auth() {
                     )}
                   </Button>
                 </form>
-              </CardContent>
-            </Card>
+              </div>
+
+              {/* Dados para teste */}
+              <div className="mt-6 p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                <p className="text-sm text-blue-300 font-medium mb-2">Dados para teste:</p>
+                <div className="space-y-1 text-sm text-gray-300">
+                  <p><span className="text-[#FFD700]">Email:</span> admin@visao360.com.br</p>
+                  <p><span className="text-[#FFD700]">Senha:</span> 123456</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
