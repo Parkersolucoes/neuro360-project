@@ -1,8 +1,7 @@
-
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2, Users, Calendar } from "lucide-react";
+import { Edit, Trash2, Users, Calendar, Settings } from "lucide-react";
 
 interface Company {
   id: string;
@@ -22,6 +21,7 @@ interface CompanyTableProps {
   companies: Company[];
   onEdit: (company: Company) => void;
   onDelete: (companyId: string) => void;
+  onConfigure?: (company: Company) => void;
 }
 
 const plans = [
@@ -30,7 +30,7 @@ const plans = [
   { value: "enterprise", label: "Empresarial", color: "bg-purple-100 text-purple-800" }
 ];
 
-export function CompanyTable({ companies, onEdit, onDelete }: CompanyTableProps) {
+export function CompanyTable({ companies, onEdit, onDelete, onConfigure }: CompanyTableProps) {
   const getPlanLabel = (plan: string) => {
     const planObj = plans.find(p => p.value === plan);
     return planObj ? planObj.label : plan;
@@ -107,6 +107,15 @@ export function CompanyTable({ companies, onEdit, onDelete }: CompanyTableProps)
                 >
                   <Edit className="w-3 h-3" />
                 </Button>
+                {onConfigure && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => onConfigure(company)}
+                  >
+                    <Settings className="w-3 h-3" />
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   variant="outline"
