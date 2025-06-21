@@ -1,3 +1,4 @@
+
 import { useState, useEffect, createContext, useContext } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -86,7 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('Profile fetched:', data);
         setProfile(data);
       } else {
-        console.log('No profile found, will be created via trigger or manual creation');
+        console.log('No profile found for user:', userId);
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -97,18 +98,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('Creating master user...');
       
-      // Primeiro, tenta fazer login para ver se o usuário já existe
-      const { data: existingSession, error: loginError } = await supabase.auth.signInWithPassword({
+      // Primeiro, verifica se o usuário já existe no auth
+      console.log('Checking if master user exists in auth...');
+      
+      // Tenta fazer login primeiro para ver se o usuário existe
+      const { data: loginAttempt, error: loginError } = await supabase.auth.signInWithPassword({
         email: 'contato@parkersolucoes.com.br',
         password: 'Parker@2024'
       });
 
-      if (existingSession?.user && !loginError) {
-        console.log('Master user already exists and can login');
+      console.log('Login attempt result:', { loginAttempt, loginError });
+
+      if (loginAttempt?.user && !loginError) {
+        console.log('Master user already exists and can login, checking profile...');
+        
+        // Verifica se tem perfil
+        const { data: existingProfile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', loginAttempt.user.id)
+          .maybeSingle();
+
+        console.log('Profile check result:', { existingProfile, profileError });
+
+        if (!existingProfile && !profileError) {
+          console.log('User exists but no profile, creating profile...');
+          
+          const { error: createProfileError } = await supabase
+            .from('profiles')
+            .upsert({
+              id: loginAttempt.user.id,
+              name: 'Master User - Parker Soluções',
+              email: 'contato@parkersolucoes.com.br',
+              role: 'admin',
+              is_admin: true,
+              is_master_user: true,
+              is_test_user: false
+            }, {
+              onConflict: 'id'
+            });
+
+          if (createProfileError) {
+            console.error('Error creating profile for existing user:', createProfileError);
+          } else {
+            console.log('Profile created for existing user');
+          }
+        }
+        
+        // Faz logout após verificação
+        await supabase.auth.signOut();
         return;
       }
 
-      // Se o login falhar, tenta criar o usuário
+      // Se chegou aqui, o usuário não existe, então cria
+      console.log('Master user does not exist, creating...');
+      
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: 'contato@parkersolucoes.com.br',
         password: 'Parker@2024',
@@ -119,56 +163,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       });
 
-      if (authError && !authError.message.includes('already registered')) {
-        console.error('Error creating auth user:', authError);
-        return;
-      }
+      console.log('SignUp result:', { authData, authError });
 
-      // Se o usuário foi criado ou já existe, garante que o perfil existe
-      let userId = authData?.user?.id;
-      
-      if (!userId) {
-        // Se não conseguiu o ID do usuário criado, tenta pegar da tabela auth
-        const { data: userData } = await supabase.auth.signInWithPassword({
-          email: 'contato@parkersolucoes.com.br',
-          password: 'Parker@2024'
-        });
-        userId = userData?.user?.id;
-      }
-
-      if (userId) {
-        // Verifica se o perfil já existe
-        const { data: existingProfile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', userId)
-          .maybeSingle();
-
-        if (!existingProfile) {
-          // Cria o perfil se não existir
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .insert({
-              id: userId,
-              name: 'Master User - Parker Soluções',
-              email: 'contato@parkersolucoes.com.br',
-              role: 'admin',
-              is_admin: true,
-              is_master_user: true,
-              is_test_user: false
-            });
-
-          if (profileError) {
-            console.error('Error creating profile:', profileError);
-          } else {
-            console.log('Master user profile created successfully');
-          }
+      if (authError) {
+        if (authError.message.includes('already registered')) {
+          console.log('User already registered, this is expected');
         } else {
-          console.log('Master user profile already exists');
+          console.error('Error creating auth user:', authError);
+          return;
         }
       }
+
+      // Garante que o perfil existe
+      if (authData?.user?.id) {
+        console.log('Creating profile for new user:', authData.user.id);
+        
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: authData.user.id,
+            name: 'Master User - Parker Soluções',
+            email: 'contato@parkersolucoes.com.br',
+            role: 'admin',
+            is_admin: true,
+            is_master_user: true,
+            is_test_user: false
+          }, {
+            onConflict: 'id'
+          });
+
+        if (profileError) {
+          console.error('Error creating profile for new user:', profileError);
+        } else {
+          console.log('Profile created for new user');
+        }
+      }
+
     } catch (error) {
-      console.error('Error creating master user:', error);
+      console.error('Unexpected error in createMasterUser:', error);
     }
   };
 
@@ -197,42 +229,95 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    console.log('SignIn function called with email:', email);
-    
-    // Limpar qualquer sessão anterior
-    await supabase.auth.signOut();
+    console.log('=== INÍCIO DO PROCESSO DE LOGIN ===');
+    console.log('Email:', email);
+    console.log('Timestamp:', new Date().toISOString());
     
     try {
+      // Limpar qualquer sessão anterior
+      console.log('Limpando sessão anterior...');
+      await supabase.auth.signOut();
+      
       // Se for o email master, garante que o usuário master existe
       if (email === 'contato@parkersolucoes.com.br') {
-        console.log('Master user email detected, ensuring master user exists...');
+        console.log('Email master detectado, garantindo que usuário existe...');
         await createMasterUser();
       }
 
-      console.log('Attempting Supabase signInWithPassword...');
+      console.log('Tentando login com Supabase...');
+      const startTime = Date.now();
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password: password
       });
 
-      console.log('Supabase signIn response:', { data, error });
+      const endTime = Date.now();
+      console.log(`Login completado em ${endTime - startTime}ms`);
+      console.log('Resposta completa do Supabase:', JSON.stringify({ data, error }, null, 2));
 
       if (error) {
-        console.error('Supabase signIn error:', error);
-        return { error };
+        console.error('=== ERRO NO LOGIN ===');
+        console.error('Código do erro:', error.code);
+        console.error('Mensagem do erro:', error.message);
+        console.error('Status do erro:', error.status);
+        console.error('Nome do erro:', error.name);
+        
+        // Mensagens de erro mais específicas
+        let errorMessage = "Erro ao fazer login";
+        
+        switch (error.code) {
+          case 'invalid_credentials':
+            errorMessage = "Email ou senha incorretos. Verifique suas credenciais e tente novamente.";
+            break;
+          case 'email_not_confirmed':
+            errorMessage = "Email não confirmado. Verifique sua caixa de entrada e clique no link de confirmação.";
+            break;
+          case 'too_many_requests':
+            errorMessage = "Muitas tentativas de login. Aguarde alguns minutos antes de tentar novamente.";
+            break;
+          case 'signup_disabled':
+            errorMessage = "Cadastro desabilitado. Entre em contato com o administrador.";
+            break;
+          default:
+            errorMessage = `Erro: ${error.message} (${error.code})`;
+        }
+        
+        console.error('Mensagem de erro para o usuário:', errorMessage);
+        return { error: { ...error, userMessage: errorMessage } };
       }
 
-      if (data?.user) {
-        console.log('Login successful for user:', data.user.email);
-        // O estado será atualizado automaticamente pelo onAuthStateChange
+      if (data?.user && data?.session) {
+        console.log('=== LOGIN BEM-SUCEDIDO ===');
+        console.log('User ID:', data.user.id);
+        console.log('Email:', data.user.email);
+        console.log('Session válida:', !!data.session.access_token);
+        
         return { error: null };
       } else {
-        console.error('No user data returned from signIn');
-        return { error: { message: 'Nenhum dado de usuário retornado' } };
+        console.error('=== DADOS INCOMPLETOS ===');
+        console.error('User:', !!data?.user);
+        console.error('Session:', !!data?.session);
+        
+        return { 
+          error: { 
+            message: 'Dados de login incompletos retornados pelo servidor',
+            code: 'incomplete_data'
+          } 
+        };
       }
     } catch (error: any) {
-      console.error('Unexpected error during signIn:', error);
-      return { error: { message: error.message || 'Erro inesperado durante o login' } };
+      console.error('=== ERRO INESPERADO ===');
+      console.error('Tipo do erro:', typeof error);
+      console.error('Erro completo:', error);
+      console.error('Stack trace:', error.stack);
+      
+      return { 
+        error: { 
+          message: `Erro inesperado: ${error.message || 'Erro desconhecido'}`,
+          code: 'unexpected_error'
+        } 
+      };
     }
   };
 

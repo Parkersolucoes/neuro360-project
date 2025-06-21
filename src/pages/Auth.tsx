@@ -62,11 +62,12 @@ export default function Auth() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Login attempt started with:', { email: loginForm.email });
+    console.log('=== INICIANDO TENTATIVA DE LOGIN ===');
+    console.log('Form data:', { email: loginForm.email, passwordLength: loginForm.password.length });
     
     if (!loginForm.email || !loginForm.password) {
       toast({
-        title: "Erro",
+        title: "Erro de Validação",
         description: "Email e senha são obrigatórios",
         variant: "destructive"
       });
@@ -76,19 +77,37 @@ export default function Auth() {
     setIsSubmitting(true);
 
     try {
-      console.log('Calling signIn function...');
+      console.log('Chamando função signIn...');
       const { error } = await signIn(loginForm.email.trim(), loginForm.password);
       
+      console.log('Resultado do signIn:', { error });
+      
       if (error) {
-        console.error('Login error details:', error);
+        console.error('Erro detalhado do login:', error);
+        
         let errorMessage = "Erro ao fazer login";
         
-        if (error.message.includes('Invalid login credentials') || error.message.includes('invalid_credentials')) {
-          errorMessage = "Email ou senha incorretos. Verifique suas credenciais.";
-        } else if (error.message.includes('Email not confirmed')) {
-          errorMessage = "Email não confirmado. Verifique sua caixa de entrada";
-        } else if (error.message.includes('too_many_requests')) {
-          errorMessage = "Muitas tentativas de login. Tente novamente em alguns minutos.";
+        // Usar a mensagem personalizada se disponível
+        if (error.userMessage) {
+          errorMessage = error.userMessage;
+        } else {
+          // Fallback para mensagens baseadas no código
+          switch (error.code) {
+            case 'invalid_credentials':
+              errorMessage = "Email ou senha incorretos. Verifique suas credenciais.";
+              break;
+            case 'email_not_confirmed':
+              errorMessage = "Email não confirmado. Verifique sua caixa de entrada.";
+              break;
+            case 'too_many_requests':
+              errorMessage = "Muitas tentativas. Aguarde alguns minutos.";
+              break;
+            case 'signup_disabled':
+              errorMessage = "Sistema de cadastro desabilitado.";
+              break;
+            default:
+              errorMessage = `Erro: ${error.message || 'Erro desconhecido'}`;
+          }
         }
         
         toast({
@@ -97,18 +116,18 @@ export default function Auth() {
           variant: "destructive"
         });
       } else {
-        console.log('Login successful, redirecting...');
+        console.log('Login realizado com sucesso!');
         toast({
           title: "Sucesso",
           description: "Login realizado com sucesso!"
         });
         navigate('/dashboard');
       }
-    } catch (error) {
-      console.error('Unexpected login error:', error);
+    } catch (error: any) {
+      console.error('Erro inesperado no handleLogin:', error);
       toast({
-        title: "Erro",
-        description: "Erro inesperado ao fazer login. Tente novamente.",
+        title: "Erro Inesperado",
+        description: `Erro inesperado: ${error.message || 'Erro desconhecido'}`,
         variant: "destructive"
       });
     } finally {
@@ -212,31 +231,37 @@ export default function Auth() {
   };
 
   const testMasterLogin = async () => {
-    console.log('Testing master user login...');
+    console.log('=== TESTE DE LOGIN MASTER ===');
+    console.log('Timestamp:', new Date().toISOString());
+    
     setIsSubmitting(true);
     
     try {
+      console.log('Iniciando teste de login master...');
       const { error } = await signIn("contato@parkersolucoes.com.br", "Parker@2024");
       
+      console.log('Resultado do teste:', { error });
+      
       if (error) {
-        console.error('Test login failed:', error);
+        console.error('Teste falhou:', error);
         toast({
           title: "Teste Falhou",
-          description: `Erro no teste: ${error.message}`,
+          description: `Erro: ${error.userMessage || error.message}`,
           variant: "destructive"
         });
       } else {
+        console.log('Teste bem-sucedido!');
         toast({
           title: "Teste Bem-sucedido",
           description: "Login do usuário master funcionou!",
         });
         navigate('/dashboard');
       }
-    } catch (error) {
-      console.error('Test login error:', error);
+    } catch (error: any) {
+      console.error('Erro no teste:', error);
       toast({
         title: "Erro no Teste",
-        description: "Erro inesperado no teste de login",
+        description: `Erro inesperado: ${error.message || 'Erro desconhecido'}`,
         variant: "destructive"
       });
     } finally {
