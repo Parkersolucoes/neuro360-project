@@ -11,7 +11,6 @@ export interface User {
   whatsapp: string;
   role: string;
   department: string;
-  company_id?: string;
   is_admin: boolean;
   status: 'active' | 'inactive';
   created_at: string;

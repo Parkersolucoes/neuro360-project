@@ -607,9 +607,53 @@ export type Database = {
           },
         ]
       }
+      user_companies: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          is_primary: boolean
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          role?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_companies_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_companies_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
-          company_id: string | null
           created_at: string
           department: string
           email: string
@@ -623,7 +667,6 @@ export type Database = {
           whatsapp: string
         }
         Insert: {
-          company_id?: string | null
           created_at?: string
           department: string
           email: string
@@ -637,7 +680,6 @@ export type Database = {
           whatsapp: string
         }
         Update: {
-          company_id?: string | null
           created_at?: string
           department?: string
           email?: string
@@ -650,15 +692,7 @@ export type Database = {
           updated_at?: string
           whatsapp?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "users_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       webhook_configs: {
         Row: {
@@ -706,6 +740,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      is_admin_user_check: {
+        Args: { user_uuid?: string }
+        Returns: boolean
+      }
       is_master_user: {
         Args: { user_uuid?: string }
         Returns: boolean
