@@ -1,6 +1,5 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 export interface AssasConfig {
@@ -23,21 +22,8 @@ export function useAssasConfig() {
 
   const fetchConfig = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from('assas_configs')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (error && error.code !== 'PGRST116') throw error;
-      
-      setConfig(data ? {
-        ...data,
-        status: data.status as 'connected' | 'disconnected' | 'testing'
-      } : null);
+      // Como a tabela assas_configs não existe mais, vamos simular uma configuração vazia
+      setConfig(null);
     } catch (error) {
       console.error('Error fetching ASSAS config:', error);
     } finally {
@@ -47,43 +33,14 @@ export function useAssasConfig() {
 
   const saveConfig = async (configData: Omit<AssasConfig, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
-
-      const configPayload = {
-        ...configData,
-        user_id: user.id,
-        status: configData.status as 'connected' | 'disconnected' | 'testing'
-      };
-
-      const { data, error } = config
-        ? await supabase
-            .from('assas_configs')
-            .update(configPayload)
-            .eq('id', config.id)
-            .select()
-            .single()
-        : await supabase
-            .from('assas_configs')
-            .insert([configPayload])
-            .select()
-            .single();
-
-      if (error) throw error;
-      
-      const typedData = {
-        ...data,
-        status: data.status as 'connected' | 'disconnected' | 'testing'
-      };
-      
-      setConfig(typedData);
-      
+      // Simular o salvamento da configuração
+      // Como não temos a tabela assas_configs, vamos apenas mostrar uma mensagem de sucesso
       toast({
-        title: "Sucesso",
-        description: "Configuração ASSAS salva com sucesso!"
+        title: "Informação",
+        description: "A funcionalidade ASSAS será implementada em uma próxima versão."
       });
       
-      return typedData;
+      return null;
     } catch (error) {
       console.error('Error saving ASSAS config:', error);
       toast({
@@ -96,33 +53,11 @@ export function useAssasConfig() {
   };
 
   const testConnection = async () => {
-    if (!config) return;
-    
     try {
-      await supabase
-        .from('assas_configs')
-        .update({ status: 'testing' })
-        .eq('id', config.id);
-      
-      setConfig(prev => prev ? { ...prev, status: 'testing' } : null);
-      
-      // Simular teste de conexão
-      setTimeout(async () => {
-        const { data, error } = await supabase
-          .from('assas_configs')
-          .update({ status: 'connected' })
-          .eq('id', config.id)
-          .select()
-          .single();
-          
-        if (!error) {
-          setConfig(prev => prev ? { ...prev, status: 'connected' } : null);
-          toast({
-            title: "Sucesso",
-            description: "Conexão com ASSAS estabelecida!"
-          });
-        }
-      }, 2000);
+      toast({
+        title: "Informação",
+        description: "A funcionalidade de teste de conexão ASSAS será implementada em uma próxima versão."
+      });
     } catch (error) {
       console.error('Error testing ASSAS connection:', error);
     }

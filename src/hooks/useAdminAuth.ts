@@ -28,17 +28,9 @@ export function useAdminAuth() {
         console.error('Error fetching profile:', profileError);
         setIsAdmin(false);
       } else {
-        // Se é master user ou admin, ou tem entrada na tabela admin_users
+        // Se é master user ou admin
         const isMasterOrAdmin = profile?.is_master_user || profile?.is_admin;
-        
-        if (!isMasterOrAdmin) {
-          // Verificar na tabela admin_users
-          const { data, error } = await supabase.rpc('is_admin_user');
-          if (error) throw error;
-          setIsAdmin(data || false);
-        } else {
-          setIsAdmin(true);
-        }
+        setIsAdmin(isMasterOrAdmin || false);
       }
     } catch (error) {
       console.error('Error checking admin status:', error);
@@ -71,13 +63,11 @@ export function useAdminAuth() {
 
       // Para usuários não-master, usar a senha admin temporária
       if (masterPassword === 'admin123') {
+        // Atualizar o perfil para ser admin
         const { error } = await supabase
-          .from('admin_users')
-          .upsert({
-            user_id: user.id,
-            master_password_hash: 'hashed_password',
-            is_active: true
-          });
+          .from('profiles')
+          .update({ is_admin: true })
+          .eq('id', user.id);
 
         if (error) throw error;
         
