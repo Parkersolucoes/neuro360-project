@@ -13,7 +13,7 @@ export interface User {
   whatsapp: string;
   role: string;
   department: string;
-  is_admin: string; // Agora é string: '0' = master, '1' = usuário comum
+  is_admin: string; // String: '0' = master, '1' = usuário comum
   status: 'active' | 'inactive';
   created_at: string;
   updated_at: string;
@@ -28,6 +28,9 @@ export function useUsers() {
 
   const fetchUsers = async () => {
     try {
+      setLoading(true);
+      console.log('Fetching users...');
+
       let query = supabase
         .from('users')
         .select('*');
@@ -68,7 +71,12 @@ export function useUsers() {
 
       const { data, error } = await query.order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+      
+      console.log('Users fetched successfully:', data);
       
       const formattedUsers = (data || []).map(user => ({
         ...user,
@@ -151,7 +159,7 @@ export function useUsers() {
         .single();
 
       if (error) {
-        console.error('Supabase error:', error);
+        console.error('Supabase error creating user:', error);
         
         // Tratar erros específicos do Supabase
         if (error.code === '23505') {
@@ -190,6 +198,8 @@ export function useUsers() {
 
   const updateUser = async (id: string, updates: Partial<User>) => {
     try {
+      console.log('Updating user:', id, 'with data:', updates);
+
       // Validações básicas para atualização
       if (updates.email) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -255,6 +265,8 @@ export function useUsers() {
         throw new Error(`Erro do banco de dados: ${error.message}`);
       }
       
+      console.log('User updated successfully:', data);
+      
       const formattedUser = {
         ...data,
         status: data.status as 'active' | 'inactive'
@@ -285,12 +297,39 @@ export function useUsers() {
 
   const deleteUser = async (id: string) => {
     try {
+      console.log('Deleting user:', id);
+
+      // Verificar se há associações do usuário com empresas
+      const { data: userCompanies } = await supabase
+        .from('user_companies')
+        .select('id')
+        .eq('user_id', id)
+        .limit(1);
+
+      if (userCompanies && userCompanies.length > 0) {
+        // Remover associações primeiro
+        const { error: deleteAssociationsError } = await supabase
+          .from('user_companies')
+          .delete()
+          .eq('user_id', id);
+
+        if (deleteAssociationsError) {
+          console.error('Error deleting user associations:', deleteAssociationsError);
+          throw new Error('Erro ao remover associações do usuário');
+        }
+      }
+
       const { error } = await supabase
         .from('users')
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase delete error:', error);
+        throw new Error(`Erro do banco de dados: ${error.message}`);
+      }
+      
+      console.log('User deleted successfully:', id);
       
       setUsers(prev => prev.filter(user => user.id !== id));
       toast({
@@ -299,9 +338,11 @@ export function useUsers() {
       });
     } catch (error) {
       console.error('Error deleting user:', error);
+      const errorMessage = error instanceof Error ? error.message : "Erro ao remover usuário";
+      
       toast({
         title: "Erro",
-        description: "Erro ao remover usuário",
+        description: errorMessage,
         variant: "destructive"
       });
       throw error;

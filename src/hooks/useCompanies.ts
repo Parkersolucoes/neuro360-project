@@ -113,26 +113,83 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
 
   const createCompany = async (companyData: Omit<Company, 'id' | 'created_at' | 'updated_at'>) => {
     try {
+      console.log('Creating company with data:', companyData);
+
+      // Validações básicas
+      if (!companyData.name?.trim()) {
+        throw new Error('Nome da empresa é obrigatório');
+      }
+      
+      if (!companyData.document?.trim()) {
+        throw new Error('CNPJ é obrigatório');
+      }
+      
+      if (!companyData.email?.trim()) {
+        throw new Error('Email é obrigatório');
+      }
+
+      // Verificar se CNPJ já existe
+      const { data: existingCompany } = await supabase
+        .from('companies')
+        .select('id')
+        .eq('document', companyData.document.trim())
+        .maybeSingle();
+
+      if (existingCompany) {
+        throw new Error('Já existe uma empresa com este CNPJ');
+      }
+
+      // Verificar se email já existe
+      const { data: existingEmailCompany } = await supabase
+        .from('companies')
+        .select('id')
+        .eq('email', companyData.email.trim().toLowerCase())
+        .maybeSingle();
+
+      if (existingEmailCompany) {
+        throw new Error('Já existe uma empresa com este email');
+      }
+
+      const companyToInsert = {
+        name: companyData.name.trim(),
+        document: companyData.document.trim(),
+        email: companyData.email.trim().toLowerCase(),
+        phone: companyData.phone?.trim() || null,
+        address: companyData.address?.trim() || null,
+        status: companyData.status || 'active',
+        plan_id: companyData.plan_id || null
+      };
+
       const { data, error } = await supabase
         .from('companies')
-        .insert(companyData)
+        .insert([companyToInsert])
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        if (error.code === '23505') {
+          throw new Error('CNPJ ou email já está em uso por outra empresa');
+        }
+        throw new Error(`Erro do banco de dados: ${error.message}`);
+      }
+
+      console.log('Company created successfully:', data);
 
       toast({
         title: "Sucesso",
-        description: "Empresa criada com sucesso"
+        description: "Empresa criada com sucesso!"
       });
 
       await fetchCompanies();
       return data;
     } catch (error) {
       console.error('Error creating company:', error);
+      const errorMessage = error instanceof Error ? error.message : "Erro ao criar empresa";
+      
       toast({
         title: "Erro",
-        description: "Erro ao criar empresa",
+        description: errorMessage,
         variant: "destructive"
       });
       throw error;
@@ -141,27 +198,93 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
 
   const updateCompany = async (id: string, updates: Partial<Company>) => {
     try {
+      console.log('Updating company:', id, 'with data:', updates);
+
+      // Validações para atualização
+      if (updates.email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(updates.email)) {
+          throw new Error('Formato de email inválido');
+        }
+
+        // Verificar se email já existe em outra empresa
+        const { data: existingCompany } = await supabase
+          .from('companies')
+          .select('id')
+          .eq('email', updates.email.toLowerCase())
+          .neq('id', id)
+          .maybeSingle();
+
+        if (existingCompany) {
+          throw new Error('Já existe outra empresa com este email');
+        }
+      }
+
+      if (updates.document) {
+        // Verificar se CNPJ já existe em outra empresa
+        const { data: existingCompany } = await supabase
+          .from('companies')
+          .select('id')
+          .eq('document', updates.document.trim())
+          .neq('id', id)
+          .maybeSingle();
+
+        if (existingCompany) {
+          throw new Error('Já existe outra empresa com este CNPJ');
+        }
+      }
+
+      const updateData: any = { ...updates };
+      
+      if (updateData.email) {
+        updateData.email = updateData.email.toLowerCase();
+      }
+      
+      if (updateData.name) {
+        updateData.name = updateData.name.trim();
+      }
+      
+      if (updateData.document) {
+        updateData.document = updateData.document.trim();
+      }
+      
+      if (updateData.phone) {
+        updateData.phone = updateData.phone.trim();
+      }
+      
+      if (updateData.address) {
+        updateData.address = updateData.address.trim();
+      }
+
       const { data, error } = await supabase
         .from('companies')
-        .update(updates)
+        .update(updateData)
         .eq('id', id)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase update error:', error);
+        if (error.code === '23505') {
+          throw new Error('CNPJ ou email já está em uso por outra empresa');
+        }
+        throw new Error(`Erro do banco de dados: ${error.message}`);
+      }
 
       toast({
         title: "Sucesso",
-        description: "Empresa atualizada com sucesso"
+        description: "Empresa atualizada com sucesso!"
       });
 
       await fetchCompanies();
       return data;
     } catch (error) {
       console.error('Error updating company:', error);
+      const errorMessage = error instanceof Error ? error.message : "Erro ao atualizar empresa";
+      
       toast({
         title: "Erro",
-        description: "Erro ao atualizar empresa",
+        description: errorMessage,
         variant: "destructive"
       });
       throw error;
@@ -170,24 +293,42 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
 
   const deleteCompany = async (id: string) => {
     try {
+      console.log('Deleting company:', id);
+
+      // Verificar se há usuários associados à empresa
+      const { data: userCompanies } = await supabase
+        .from('user_companies')
+        .select('id')
+        .eq('company_id', id)
+        .limit(1);
+
+      if (userCompanies && userCompanies.length > 0) {
+        throw new Error('Não é possível excluir uma empresa que possui usuários associados');
+      }
+
       const { error } = await supabase
         .from('companies')
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase delete error:', error);
+        throw new Error(`Erro do banco de dados: ${error.message}`);
+      }
 
       toast({
         title: "Sucesso",
-        description: "Empresa removida com sucesso"
+        description: "Empresa removida com sucesso!"
       });
 
       await fetchCompanies();
     } catch (error) {
       console.error('Error deleting company:', error);
+      const errorMessage = error instanceof Error ? error.message : "Erro ao remover empresa";
+      
       toast({
         title: "Erro",
-        description: "Erro ao remover empresa",
+        description: errorMessage,
         variant: "destructive"
       });
       throw error;
