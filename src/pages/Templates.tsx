@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, MessageSquare, Edit, Trash2, Wand2 } from "lucide-react";
+import { Plus, MessageSquare, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTemplates } from "@/hooks/useTemplates";
 import { usePlans } from "@/hooks/usePlans";
@@ -20,7 +20,7 @@ import { useCompanies } from "@/hooks/useCompanies";
 
 export default function Templates() {
   const { toast } = useToast();
-  const { templates, planTemplates, loading, createTemplate, updateTemplate, deleteTemplate, linkTemplateToPlan, unlinkTemplateFromPlan, createDefaultTemplates } = useTemplates();
+  const { templates, planTemplates, loading, createTemplate, updateTemplate, deleteTemplate, linkTemplateToPlan, unlinkTemplateFromPlan } = useTemplates();
   const { plans } = usePlans();
   const { userLogin } = useAuth();
   const { currentCompany } = useCompanies();
@@ -72,13 +72,16 @@ export default function Templates() {
 
       // Preparar dados do template
       const templateData = {
-        ...newTemplate,
         name: newTemplate.name.trim(),
-        description: newTemplate.description.trim(),
+        description: newTemplate.description.trim() || undefined,
         content: newTemplate.content.trim(),
+        type: newTemplate.type,
+        category: newTemplate.category,
+        is_active: newTemplate.is_active,
+        status: newTemplate.status,
+        variables: newTemplate.variables || [],
         company_id: currentCompany?.id || null,
-        user_id: userLogin?.id || null,
-        variables: newTemplate.variables || []
+        user_id: userLogin?.id || null
       };
 
       let template;
@@ -190,14 +193,6 @@ export default function Templates() {
     }
   };
 
-  const handleCreateDefaultTemplates = async () => {
-    try {
-      await createDefaultTemplates();
-    } catch (error) {
-      console.error('Error creating default templates:', error);
-    }
-  };
-
   const handleDialogClose = () => {
     setIsDialogOpen(false);
     setEditingTemplate(null);
@@ -220,7 +215,7 @@ export default function Templates() {
     return (
       <div className="flex items-center justify-center min-h-96">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
           <p className="text-gray-600 mt-2">Carregando templates...</p>
         </div>
       </div>
@@ -228,65 +223,57 @@ export default function Templates() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-gray-50 min-h-screen p-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Templates</h1>
           <p className="text-gray-600 mt-2">Gerencie os templates de mensagens para WhatsApp</p>
         </div>
         <div className="flex space-x-3">
-          <Button 
-            onClick={handleCreateDefaultTemplates}
-            variant="outline" 
-            className="bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100"
-          >
-            <Wand2 className="w-4 h-4 mr-2" />
-            Criar Templates Padrão
-          </Button>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-blue-600 hover:bg-blue-700">
+              <Button className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg">
                 <Plus className="w-4 h-4 mr-2" />
                 Novo Template
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white">
+              <DialogHeader className="bg-indigo-50 -mx-6 -mt-6 px-6 py-4 border-b">
+                <DialogTitle className="text-indigo-800 text-xl font-semibold">
                   {editingTemplate ? "Editar Template" : "Novo Template"}
                 </DialogTitle>
               </DialogHeader>
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-2 gap-6 pt-6">
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Nome do Template *</Label>
+                    <Label htmlFor="name" className="text-gray-700 font-medium">Nome do Template *</Label>
                     <Input
                       id="name"
                       placeholder="Nome do template"
                       value={newTemplate.name}
                       onChange={(e) => setNewTemplate({...newTemplate, name: e.target.value})}
-                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 bg-white"
                     />
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="description">Descrição</Label>
+                    <Label htmlFor="description" className="text-gray-700 font-medium">Descrição</Label>
                     <Input
                       id="description"
                       placeholder="Descrição do template"
                       value={newTemplate.description}
                       onChange={(e) => setNewTemplate({...newTemplate, description: e.target.value})}
-                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 bg-white"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="type">Tipo</Label>
+                    <Label htmlFor="type" className="text-gray-700 font-medium">Tipo</Label>
                     <Select value={newTemplate.type} onValueChange={(value) => setNewTemplate({...newTemplate, type: value})}>
-                      <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                      <SelectTrigger className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 bg-white">
                         <SelectValue placeholder="Selecione o tipo" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-white">
                         {templateTypes.map((type) => (
                           <SelectItem key={type.value} value={type.value}>
                             {type.label}
@@ -297,33 +284,33 @@ export default function Templates() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="content">Conteúdo *</Label>
+                    <Label htmlFor="content" className="text-gray-700 font-medium">Conteúdo *</Label>
                     <Textarea
                       id="content"
                       placeholder="Digite o conteúdo do template..."
                       value={newTemplate.content}
                       onChange={(e) => setNewTemplate({...newTemplate, content: e.target.value})}
-                      className="min-h-32 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      className="min-h-32 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 bg-white"
                     />
                   </div>
 
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 p-3 bg-indigo-50 rounded-lg">
                     <Switch
                       id="is_active"
                       checked={newTemplate.is_active}
                       onCheckedChange={(checked) => setNewTemplate({...newTemplate, is_active: checked})}
                     />
-                    <Label htmlFor="is_active">Template Ativo</Label>
+                    <Label htmlFor="is_active" className="text-indigo-700 font-medium">Template Ativo</Label>
                   </div>
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <Label className="text-base font-medium mb-3 block">Planos Associados</Label>
+                    <Label className="text-base font-medium mb-3 block text-gray-700">Planos Associados</Label>
                     <p className="text-sm text-gray-600 mb-4">Selecione os planos que terão acesso a este template:</p>
-                    <div className="space-y-3 border border-gray-200 rounded-lg p-4 max-h-64 overflow-y-auto">
+                    <div className="space-y-3 border border-gray-200 rounded-lg p-4 max-h-64 overflow-y-auto bg-gray-50">
                       {plans.map((plan) => (
-                        <div key={plan.id} className="flex items-center space-x-3">
+                        <div key={plan.id} className="flex items-center space-x-3 p-2 bg-white rounded border">
                           <Checkbox
                             id={`plan-${plan.id}`}
                             checked={selectedPlans.includes(plan.id)}
@@ -331,8 +318,8 @@ export default function Templates() {
                           />
                           <Label htmlFor={`plan-${plan.id}`} className="flex-1 cursor-pointer">
                             <div className="flex items-center justify-between">
-                              <span className="font-medium">{plan.name}</span>
-                              <Badge variant="outline" className="text-xs">
+                              <span className="font-medium text-gray-800">{plan.name}</span>
+                              <Badge variant="outline" className="text-xs bg-indigo-100 text-indigo-800">
                                 R$ {plan.price.toFixed(2)}
                               </Badge>
                             </div>
@@ -347,14 +334,14 @@ export default function Templates() {
                 </div>
               </div>
               
-              <div className="flex justify-end space-x-2 mt-6">
-                <Button variant="outline" onClick={handleDialogClose}>
+              <div className="flex justify-end space-x-2 mt-6 pt-4 border-t bg-gray-50 -mx-6 -mb-6 px-6 pb-6">
+                <Button variant="outline" onClick={handleDialogClose} className="border-gray-300 text-gray-700 hover:bg-gray-50">
                   Cancelar
                 </Button>
                 <Button 
                   onClick={saveTemplate} 
                   disabled={!newTemplate.name.trim() || !newTemplate.content.trim()}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg"
                 >
                   {editingTemplate ? "Atualizar" : "Criar"} Template
                 </Button>
@@ -365,77 +352,67 @@ export default function Templates() {
       </div>
 
       {templates.length === 0 && !loading && (
-        <Card className="border-dashed border-2 border-gray-200">
+        <Card className="border-dashed border-2 border-gray-300 bg-white">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <MessageSquare className="w-12 h-12 text-gray-400 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum template encontrado</h3>
             <p className="text-gray-500 text-center mb-6">
-              Comece criando templates padrão ou crie um novo template personalizado
+              Comece criando um novo template personalizado
             </p>
-            <div className="flex space-x-3">
-              <Button 
-                onClick={handleCreateDefaultTemplates}
-                variant="outline" 
-                className="bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100"
-              >
-                <Wand2 className="w-4 h-4 mr-2" />
-                Criar Templates Padrão
-              </Button>
-              <Button onClick={() => setIsDialogOpen(true)} className="bg-blue-600 hover:bg-blue-700">
-                <Plus className="w-4 h-4 mr-2" />
-                Criar Template
-              </Button>
-            </div>
+            <Button onClick={() => setIsDialogOpen(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+              <Plus className="w-4 h-4 mr-2" />
+              Criar Template
+            </Button>
           </CardContent>
         </Card>
       )}
 
       {templates.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <MessageSquare className="w-5 h-5 text-blue-500" />
+        <Card className="bg-white shadow-lg">
+          <CardHeader className="bg-indigo-50 border-b">
+            <CardTitle className="flex items-center space-x-2 text-indigo-800">
+              <MessageSquare className="w-5 h-5" />
               <span>Lista de Templates ({templates.length})</span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Categoria</TableHead>
-                  <TableHead>Planos Associados</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Criado em</TableHead>
-                  <TableHead>Ações</TableHead>
+                <TableRow className="bg-gray-50 border-b">
+                  <TableHead className="font-semibold text-gray-700">Nome</TableHead>
+                  <TableHead className="font-semibold text-gray-700">Tipo</TableHead>
+                  <TableHead className="font-semibold text-gray-700">Categoria</TableHead>
+                  <TableHead className="font-semibold text-gray-700">Planos Associados</TableHead>
+                  <TableHead className="font-semibold text-gray-700">Status</TableHead>
+                  <TableHead className="font-semibold text-gray-700">Criado em</TableHead>
+                  <TableHead className="font-semibold text-gray-700">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {templates.map((template) => (
-                  <TableRow key={template.id}>
+                  <TableRow key={template.id} className="hover:bg-gray-50">
                     <TableCell>
                       <div>
-                        <div className="font-medium">{template.name}</div>
+                        <div className="font-medium text-gray-900">{template.name}</div>
                         {template.description && (
                           <div className="text-sm text-gray-500">{template.description}</div>
                         )}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary">
+                      <Badge className="bg-indigo-100 text-indigo-800">
                         {getTypeLabel(template.type)}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="capitalize">
+                      <Badge variant="outline" className="capitalize border-gray-300 text-gray-700">
                         {template.category.replace('_', ' ')}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
                         {getAssociatedPlans(template.id).map((plan) => (
-                          <Badge key={plan.id} variant="outline" className="text-xs">
+                          <Badge key={plan.id} variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
                             {plan.name}
                           </Badge>
                         ))}
@@ -453,7 +430,7 @@ export default function Templates() {
                         {template.is_active ? "Ativo" : "Inativo"}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-gray-600">
                       {new Date(template.created_at).toLocaleDateString('pt-BR')}
                     </TableCell>
                     <TableCell>
@@ -462,13 +439,14 @@ export default function Templates() {
                           size="sm"
                           variant="outline"
                           onClick={() => editTemplate(template)}
+                          className="border-indigo-200 text-indigo-600 hover:bg-indigo-50"
                         >
                           <Edit className="w-3 h-3" />
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
                           onClick={() => handleDeleteTemplate(template.id)}
                         >
                           <Trash2 className="w-3 h-3" />
