@@ -30,7 +30,12 @@ export default function Templates() {
     description: "",
     content: "",
     type: "message",
-    is_active: true
+    category: "general",
+    is_active: true,
+    status: "active",
+    variables: [],
+    company_id: null,
+    user_id: null
   });
 
   const [selectedPlans, setSelectedPlans] = useState<string[]>([]);
@@ -45,15 +50,11 @@ export default function Templates() {
   const saveTemplate = async () => {
     try {
       let template;
-      const templateData = {
-        ...newTemplate,
-        company_id: null // Definindo company_id como necessário pela interface
-      };
       
       if (editingTemplate) {
-        template = await updateTemplate(editingTemplate.id, templateData);
+        template = await updateTemplate(editingTemplate.id, newTemplate);
       } else {
-        template = await createTemplate(templateData);
+        template = await createTemplate(newTemplate);
       }
 
       // Gerenciar associações com planos
@@ -80,8 +81,13 @@ export default function Templates() {
         name: "", 
         description: "", 
         content: "", 
-        type: "message", 
-        is_active: true 
+        type: "message",
+        category: "general", 
+        is_active: true,
+        status: "active",
+        variables: [],
+        company_id: null,
+        user_id: null
       });
       setSelectedPlans([]);
       setEditingTemplate(null);
@@ -97,8 +103,13 @@ export default function Templates() {
       name: template.name,
       description: template.description || "",
       content: template.content,
-      type: template.type,
-      is_active: template.is_active || true
+      type: template.type || "message",
+      category: template.category || "general",
+      is_active: template.is_active !== false,
+      status: template.status || "active",
+      variables: template.variables || [],
+      company_id: template.company_id,
+      user_id: template.user_id
     });
     
     // Carregar planos associados
@@ -283,8 +294,13 @@ export default function Templates() {
                     name: "", 
                     description: "", 
                     content: "", 
-                    type: "message", 
-                    is_active: true 
+                    type: "message",
+                    category: "general", 
+                    is_active: true,
+                    status: "active",
+                    variables: [],
+                    company_id: null,
+                    user_id: null
                   });
                 }}>
                   Cancelar

@@ -7,9 +7,12 @@ export interface Template {
   id: string;
   name: string;
   content: string;
+  description?: string;
+  type: string;
   category: string;
   variables: any[];
   status: string;
+  is_active: boolean;
   company_id: string | null;
   user_id: string | null;
   created_at: string;
