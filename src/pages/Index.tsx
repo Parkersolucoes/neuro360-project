@@ -1,12 +1,15 @@
+
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { BarChart3, ArrowRight, Zap, Shield, BarChart } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useSystemConfig } from "@/hooks/useSystemConfig";
 
 export default function Index() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
+  const { config: systemConfig } = useSystemConfig();
 
   useEffect(() => {
     // Redirecionar usuários autenticados para o dashboard
@@ -33,10 +36,10 @@ export default function Index() {
             </div>
           </div>
           <h1 className="text-5xl font-bold text-gray-900 mb-6">
-            Visão 360 <span className="text-blue-600">Soluções empresariais</span>
+            {systemConfig?.system_name || "Visão 360"} <span className="text-blue-600">Soluções empresariais</span>
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Soluções de Análise dados para seu negócio com nossa plataforma completa de gestão e automação.
+            {systemConfig?.system_description || "Soluções de Análise dados para seu negócio"} com nossa plataforma completa de gestão e automação.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 

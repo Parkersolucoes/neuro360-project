@@ -35,6 +35,7 @@ import { Button } from "@/components/ui/button";
 import { CompanySelector } from "./CompanySelector";
 import { useCompanies } from "@/hooks/useCompanies";
 import { useAuth } from "@/hooks/useAuth";
+import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 const menuItems = [
@@ -97,6 +98,7 @@ export function AppSidebar() {
   const location = useLocation();
   const { currentCompany } = useCompanies();
   const { profile, signOut } = useAuth();
+  const { config: systemConfig } = useSystemConfig();
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
 
   const handleSignOut = () => {
@@ -108,11 +110,15 @@ export function AppSidebar() {
       <SidebarHeader className="p-6 bg-slate-900">
         <div className="flex items-center space-x-3 mb-4">
           <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-            <MessageSquare className="w-5 h-5 text-white" />
+            <BarChart3 className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-white">WhatsApp</h1>
-            <p className="text-sm text-gray-300">Automation</p>
+            <h1 className="text-lg font-semibold text-white">
+              {systemConfig?.system_name || "Visão 360"}
+            </h1>
+            <p className="text-sm text-gray-300">
+              {systemConfig?.system_description || "Soluções em Dados"}
+            </p>
             {currentCompany && (
               <p className="text-xs text-blue-400 font-medium mt-1">{currentCompany.name}</p>
             )}

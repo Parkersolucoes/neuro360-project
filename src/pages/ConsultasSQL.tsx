@@ -101,8 +101,7 @@ export default function ConsultasSQL() {
               </DialogTitle>
             </DialogHeader>
             <QueryForm
-              initialData={editingQuery}
-              connections={connections}
+              query={editingQuery}
               onSubmit={editingQuery ? handleUpdateQuery : handleCreateQuery}
               onCancel={resetForm}
             />
@@ -120,7 +119,6 @@ export default function ConsultasSQL() {
         <CardContent>
           <QueryList
             queries={queries}
-            connections={connections}
             onEdit={handleEditQuery}
             onDelete={handleDeleteQuery}
             onView={handleViewQuery}
@@ -138,8 +136,7 @@ export default function ConsultasSQL() {
           </DialogHeader>
           {selectedQuery && (
             <QueryDetails
-              query={selectedQuery}
-              connections={connections}
+              queryId={selectedQuery.id}
             />
           )}
         </DialogContent>
