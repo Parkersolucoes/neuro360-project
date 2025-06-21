@@ -8,7 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { useCompanies } from "@/hooks/useCompanies";
-import { usePlans } from "@/hooks/usePlans";
 import { useSQLConnections } from "@/hooks/useSQLConnections";
 import { useToast } from "@/hooks/use-toast";
 import { SQLQuery } from "@/types/sqlQuery";
@@ -21,7 +20,6 @@ interface QueryFormProps {
 
 export function QueryForm({ query, onSubmit, onCancel }: QueryFormProps) {
   const { currentCompany } = useCompanies();
-  const { plans } = usePlans();
   const { connections } = useSQLConnections();
   const { toast } = useToast();
   
@@ -29,7 +27,8 @@ export function QueryForm({ query, onSubmit, onCancel }: QueryFormProps) {
     name: query?.name || "",
     description: query?.description || "",
     query_text: query?.query_text || "",
-    connection_id: query?.connection_id || ""
+    connection_id: query?.connection_id || "",
+    status: query?.status || 'pending' as const
   });
 
   // Filtrar conexões apenas da empresa atual
