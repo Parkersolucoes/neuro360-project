@@ -40,7 +40,10 @@ export function useTransactions() {
         .order('transaction_date', { ascending: false });
 
       if (error) throw error;
-      setTransactions(data || []);
+      setTransactions((data || []).map(transaction => ({
+        ...transaction,
+        status: transaction.status as 'pending' | 'completed' | 'failed' | 'refunded'
+      })));
     } catch (error) {
       console.error('Error fetching transactions:', error);
       toast({
@@ -71,13 +74,18 @@ export function useTransactions() {
 
       if (error) throw error;
       
-      setTransactions(prev => [data, ...prev]);
+      const typedData = {
+        ...data,
+        status: data.status as 'pending' | 'completed' | 'failed' | 'refunded'
+      };
+      
+      setTransactions(prev => [typedData, ...prev]);
       toast({
         title: "Sucesso",
         description: "Transação criada com sucesso!"
       });
       
-      return data;
+      return typedData;
     } catch (error) {
       console.error('Error creating transaction:', error);
       toast({
@@ -105,11 +113,16 @@ export function useTransactions() {
 
       if (error) throw error;
       
+      const typedData = {
+        ...data,
+        status: data.status as 'pending' | 'completed' | 'failed' | 'refunded'
+      };
+      
       setTransactions(prev => prev.map(transaction => 
-        transaction.id === id ? data : transaction
+        transaction.id === id ? typedData : transaction
       ));
       
-      return data;
+      return typedData;
     } catch (error) {
       console.error('Error updating transaction:', error);
       throw error;

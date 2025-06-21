@@ -43,7 +43,10 @@ export function useSubscriptions() {
         .single();
 
       if (error && error.code !== 'PGRST116') throw error;
-      setUserSubscription(data);
+      setUserSubscription(data ? {
+        ...data,
+        status: data.status as 'active' | 'inactive' | 'cancelled' | 'expired'
+      } : null);
     } catch (error) {
       console.error('Error fetching user subscription:', error);
     } finally {
@@ -62,7 +65,10 @@ export function useSubscriptions() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setSubscriptions(data || []);
+      setSubscriptions((data || []).map(sub => ({
+        ...sub,
+        status: sub.status as 'active' | 'inactive' | 'cancelled' | 'expired'
+      })));
     } catch (error) {
       console.error('Error fetching subscriptions:', error);
       toast({
@@ -100,13 +106,18 @@ export function useSubscriptions() {
 
       if (error) throw error;
       
-      setUserSubscription(data);
+      const typedData = {
+        ...data,
+        status: data.status as 'active' | 'inactive' | 'cancelled' | 'expired'
+      };
+      
+      setUserSubscription(typedData);
       toast({
         title: "Sucesso",
         description: "Assinatura criada com sucesso!"
       });
       
-      return data;
+      return typedData;
     } catch (error) {
       console.error('Error creating subscription:', error);
       toast({
@@ -132,11 +143,16 @@ export function useSubscriptions() {
 
       if (error) throw error;
       
+      const typedData = {
+        ...data,
+        status: data.status as 'active' | 'inactive' | 'cancelled' | 'expired'
+      };
+      
       setSubscriptions(prev => prev.map(sub => 
-        sub.id === id ? data : sub
+        sub.id === id ? typedData : sub
       ));
       
-      return data;
+      return typedData;
     } catch (error) {
       console.error('Error updating subscription:', error);
       throw error;
