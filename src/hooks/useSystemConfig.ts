@@ -20,16 +20,22 @@ export function useSystemConfig() {
 
   const fetchConfig = async () => {
     try {
-      // Use the generic query method to avoid TypeScript issues
       const { data, error } = await supabase
-        .from('system_configs' as any)
+        .from('system_configs')
         .select('*')
         .maybeSingle();
 
       if (error && error.code !== 'PGRST116') throw error;
-      setConfig(data);
+      
+      // Ensure we only set config if data exists and is properly typed
+      if (data) {
+        setConfig(data as SystemConfig);
+      } else {
+        setConfig(null);
+      }
     } catch (error) {
       console.error('Error fetching system config:', error);
+      setConfig(null);
     } finally {
       setLoading(false);
     }
@@ -40,24 +46,28 @@ export function useSystemConfig() {
       if (config) {
         // Atualizar configuração existente
         const { data, error } = await supabase
-          .from('system_configs' as any)
+          .from('system_configs')
           .update(configData)
           .eq('id', config.id)
           .select()
           .single();
 
         if (error) throw error;
-        setConfig(data);
+        if (data) {
+          setConfig(data as SystemConfig);
+        }
       } else {
         // Criar nova configuração
         const { data, error } = await supabase
-          .from('system_configs' as any)
+          .from('system_configs')
           .insert([configData])
           .select()
           .single();
 
         if (error) throw error;
-        setConfig(data);
+        if (data) {
+          setConfig(data as SystemConfig);
+        }
       }
 
       toast({
