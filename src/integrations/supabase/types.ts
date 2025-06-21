@@ -746,8 +746,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      is_master_user: {
+        Args: { user_uuid?: string }
+        Returns: boolean
+      }
       is_master_user_check: {
         Args: { user_uuid?: string }
+        Returns: boolean
+      }
+      user_has_company_access: {
+        Args: { company_uuid: string; user_uuid?: string }
         Returns: boolean
       }
       validate_user_password: {
