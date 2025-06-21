@@ -6,19 +6,15 @@ import { Textarea } from "@/components/ui/textarea";
 interface SystemInfoFormProps {
   systemName: string;
   systemDescription: string;
-  primaryColor: string;
   onSystemNameChange: (value: string) => void;
   onSystemDescriptionChange: (value: string) => void;
-  onPrimaryColorChange: (value: string) => void;
 }
 
 export function SystemInfoForm({
   systemName,
   systemDescription,
-  primaryColor,
   onSystemNameChange,
-  onSystemDescriptionChange,
-  onPrimaryColorChange
+  onSystemDescriptionChange
 }: SystemInfoFormProps) {
   return (
     <div className="space-y-4">
@@ -42,25 +38,6 @@ export function SystemInfoForm({
           placeholder="Soluções de Análise dados para seu negócio"
           rows={3}
         />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="primary_color">Cor Primária</Label>
-        <div className="flex space-x-2">
-          <Input
-            id="primary_color"
-            type="color"
-            value={primaryColor}
-            onChange={(e) => onPrimaryColorChange(e.target.value)}
-            className="w-20 h-10"
-          />
-          <Input
-            value={primaryColor}
-            onChange={(e) => onPrimaryColorChange(e.target.value)}
-            placeholder="#1e293b"
-            className="flex-1"
-          />
-        </div>
       </div>
     </div>
   );
