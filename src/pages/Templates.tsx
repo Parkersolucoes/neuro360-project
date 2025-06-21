@@ -11,16 +11,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, MessageSquare, Edit, Trash2, FileText, Download } from "lucide-react";
+import { Plus, MessageSquare, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTemplates } from "@/hooks/useTemplates";
-import { useMessageTemplates } from "@/hooks/useMessageTemplates";
 import { usePlans } from "@/hooks/usePlans";
 
 export default function Templates() {
   const { toast } = useToast();
   const { templates, planTemplates, loading, createTemplate, updateTemplate, deleteTemplate, linkTemplateToPlan, unlinkTemplateFromPlan } = useTemplates();
-  const { createDefaultTemplates } = useMessageTemplates();
   const { plans } = usePlans();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -148,12 +146,6 @@ export default function Templates() {
     }
   };
 
-  const handleCreateDefaultTemplates = async () => {
-    if (confirm("Deseja criar 10 templates padrão? Isso pode sobrescrever templates existentes com os mesmos nomes.")) {
-      await createDefaultTemplates();
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-96">
@@ -172,150 +164,140 @@ export default function Templates() {
           <h1 className="text-3xl font-bold text-gray-900">Templates</h1>
           <p className="text-gray-600 mt-2">Gerencie os templates de mensagens</p>
         </div>
-        <div className="flex space-x-2">
-          <Button 
-            variant="outline" 
-            onClick={handleCreateDefaultTemplates}
-            className="bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Criar Templates Padrão
-          </Button>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-blue-600 hover:bg-blue-700">
-                <Plus className="w-4 h-4 mr-2" />
-                Novo Template
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingTemplate ? "Editar Template" : "Novo Template"}
-                </DialogTitle>
-              </DialogHeader>
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Nome do Template</Label>
-                    <Input
-                      id="name"
-                      placeholder="Nome do template"
-                      value={newTemplate.name}
-                      onChange={(e) => setNewTemplate({...newTemplate, name: e.target.value})}
-                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Descrição (Opcional)</Label>
-                    <Input
-                      id="description"
-                      placeholder="Descrição do template"
-                      value={newTemplate.description}
-                      onChange={(e) => setNewTemplate({...newTemplate, description: e.target.value})}
-                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="type">Tipo</Label>
-                    <Select value={newTemplate.type} onValueChange={(value) => setNewTemplate({...newTemplate, type: value})}>
-                      <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
-                        <SelectValue placeholder="Selecione o tipo" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {templateTypes.map((type) => (
-                          <SelectItem key={type.value} value={type.value}>
-                            {type.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="content">Conteúdo</Label>
-                    <Textarea
-                      id="content"
-                      placeholder="Digite o conteúdo do template..."
-                      value={newTemplate.content}
-                      onChange={(e) => setNewTemplate({...newTemplate, content: e.target.value})}
-                      className="min-h-32 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="is_active"
-                      checked={newTemplate.is_active}
-                      onCheckedChange={(checked) => setNewTemplate({...newTemplate, is_active: checked})}
-                    />
-                    <Label htmlFor="is_active">Template Ativo</Label>
-                  </div>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-blue-600 hover:bg-blue-700">
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Template
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {editingTemplate ? "Editar Template" : "Novo Template"}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Nome do Template</Label>
+                  <Input
+                    id="name"
+                    placeholder="Nome do template"
+                    value={newTemplate.name}
+                    onChange={(e) => setNewTemplate({...newTemplate, name: e.target.value})}
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="description">Descrição (Opcional)</Label>
+                  <Input
+                    id="description"
+                    placeholder="Descrição do template"
+                    value={newTemplate.description}
+                    onChange={(e) => setNewTemplate({...newTemplate, description: e.target.value})}
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
                 </div>
 
-                <div className="space-y-4">
-                  <div>
-                    <Label className="text-base font-medium mb-3 block">Planos Associados</Label>
-                    <p className="text-sm text-gray-600 mb-4">Selecione os planos que terão acesso a este template:</p>
-                    <div className="space-y-3 border border-gray-200 rounded-lg p-4 max-h-64 overflow-y-auto">
-                      {plans.map((plan) => (
-                        <div key={plan.id} className="flex items-center space-x-3">
-                          <Checkbox
-                            id={`plan-${plan.id}`}
-                            checked={selectedPlans.includes(plan.id)}
-                            onCheckedChange={(checked) => handlePlanSelection(plan.id, checked as boolean)}
-                          />
-                          <Label htmlFor={`plan-${plan.id}`} className="flex-1 cursor-pointer">
-                            <div className="flex items-center justify-between">
-                              <span className="font-medium">{plan.name}</span>
-                              <Badge variant="outline" className="text-xs">
-                                R$ {plan.price.toFixed(2)}
-                              </Badge>
-                            </div>
-                            {plan.description && (
-                              <p className="text-sm text-gray-500 mt-1">{plan.description}</p>
-                            )}
-                          </Label>
-                        </div>
+                <div className="space-y-2">
+                  <Label htmlFor="type">Tipo</Label>
+                  <Select value={newTemplate.type} onValueChange={(value) => setNewTemplate({...newTemplate, type: value})}>
+                    <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                      <SelectValue placeholder="Selecione o tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {templateTypes.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
                       ))}
-                    </div>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="content">Conteúdo</Label>
+                  <Textarea
+                    id="content"
+                    placeholder="Digite o conteúdo do template..."
+                    value={newTemplate.content}
+                    onChange={(e) => setNewTemplate({...newTemplate, content: e.target.value})}
+                    className="min-h-32 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="is_active"
+                    checked={newTemplate.is_active}
+                    onCheckedChange={(checked) => setNewTemplate({...newTemplate, is_active: checked})}
+                  />
+                  <Label htmlFor="is_active">Template Ativo</Label>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-base font-medium mb-3 block">Planos Associados</Label>
+                  <p className="text-sm text-gray-600 mb-4">Selecione os planos que terão acesso a este template:</p>
+                  <div className="space-y-3 border border-gray-200 rounded-lg p-4 max-h-64 overflow-y-auto">
+                    {plans.map((plan) => (
+                      <div key={plan.id} className="flex items-center space-x-3">
+                        <Checkbox
+                          id={`plan-${plan.id}`}
+                          checked={selectedPlans.includes(plan.id)}
+                          onCheckedChange={(checked) => handlePlanSelection(plan.id, checked as boolean)}
+                        />
+                        <Label htmlFor={`plan-${plan.id}`} className="flex-1 cursor-pointer">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium">{plan.name}</span>
+                            <Badge variant="outline" className="text-xs">
+                              R$ {plan.price.toFixed(2)}
+                            </Badge>
+                          </div>
+                          {plan.description && (
+                            <p className="text-sm text-gray-500 mt-1">{plan.description}</p>
+                          )}
+                        </Label>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
-              
-              <div className="flex justify-end space-x-2 mt-6">
-                <Button variant="outline" onClick={() => {
-                  setIsDialogOpen(false);
-                  setEditingTemplate(null);
-                  setSelectedPlans([]);
-                  setNewTemplate({ 
-                    name: "", 
-                    description: "", 
-                    content: "", 
-                    type: "message",
-                    category: "general", 
-                    is_active: true,
-                    status: "active",
-                    variables: [],
-                    company_id: null,
-                    user_id: null
-                  });
-                }}>
-                  Cancelar
-                </Button>
-                <Button 
-                  onClick={saveTemplate} 
-                  disabled={!newTemplate.name || !newTemplate.content}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  {editingTemplate ? "Atualizar" : "Criar"} Template
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
+            </div>
+            
+            <div className="flex justify-end space-x-2 mt-6">
+              <Button variant="outline" onClick={() => {
+                setIsDialogOpen(false);
+                setEditingTemplate(null);
+                setSelectedPlans([]);
+                setNewTemplate({ 
+                  name: "", 
+                  description: "", 
+                  content: "", 
+                  type: "message",
+                  category: "general", 
+                  is_active: true,
+                  status: "active",
+                  variables: [],
+                  company_id: null,
+                  user_id: null
+                });
+              }}>
+                Cancelar
+              </Button>
+              <Button 
+                onClick={saveTemplate} 
+                disabled={!newTemplate.name || !newTemplate.content}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {editingTemplate ? "Atualizar" : "Criar"} Template
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Card>

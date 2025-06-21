@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -15,6 +15,15 @@ export function CompanySelector() {
   const { companies = [], currentCompany, setCurrentCompany, loading, refetch } = useCompanies();
   const { isMasterUser } = useAdminAuth();
   const { toast } = useToast();
+
+  // Sincronizar estado local com a empresa atual
+  useEffect(() => {
+    if (currentCompany) {
+      setSelectedCompany(currentCompany.id);
+    } else {
+      setSelectedCompany("");
+    }
+  }, [currentCompany]);
 
   // Só mostrar o seletor para usuários master
   if (!isMasterUser) {
@@ -49,6 +58,11 @@ export function CompanySelector() {
       // Recarregar a página para garantir que todos os dados sejam atualizados
       window.location.reload();
     }
+  };
+
+  const handleCompanySelect = (companyId: string) => {
+    setSelectedCompany(companyId === selectedCompany ? "" : companyId);
+    setOpen(false);
   };
 
   if (loading) {
@@ -113,10 +127,7 @@ export function CompanySelector() {
                     <CommandItem
                       key={company.id}
                       value={company.name}
-                      onSelect={() => {
-                        setSelectedCompany(company.id === selectedCompany ? "" : company.id);
-                        setOpen(false);
-                      }}
+                      onSelect={() => handleCompanySelect(company.id)}
                       className="text-yellow-100 hover:bg-slate-700 hover:text-yellow-300"
                     >
                       <Check
