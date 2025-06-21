@@ -41,7 +41,11 @@ export function useCompanies() {
         return;
       }
 
-      const companiesData = data || [];
+      const companiesData: Company[] = (data || []).map(company => ({
+        ...company,
+        status: company.status as "active" | "inactive" | "suspended"
+      }));
+      
       setCompanies(companiesData);
       
       // Se não há empresa selecionada e há empresas disponíveis, selecionar a primeira
@@ -79,13 +83,18 @@ export function useCompanies() {
         throw error;
       }
       
-      setCompanies(prev => [data, ...prev]);
+      const newCompany: Company = {
+        ...data,
+        status: data.status as "active" | "inactive" | "suspended"
+      };
+      
+      setCompanies(prev => [newCompany, ...prev]);
       toast({
         title: "Sucesso",
         description: "Empresa criada com sucesso!"
       });
       
-      return data;
+      return newCompany;
     } catch (error) {
       console.error('Error creating company:', error);
       throw error;
@@ -111,12 +120,17 @@ export function useCompanies() {
         throw error;
       }
       
+      const updatedCompany: Company = {
+        ...data,
+        status: data.status as "active" | "inactive" | "suspended"
+      };
+      
       setCompanies(prev => prev.map(company => 
-        company.id === id ? data : company
+        company.id === id ? updatedCompany : company
       ));
       
       if (currentCompany?.id === id) {
-        setCurrentCompany(data);
+        setCurrentCompany(updatedCompany);
       }
       
       toast({
@@ -124,7 +138,7 @@ export function useCompanies() {
         description: "Empresa atualizada com sucesso!"
       });
       
-      return data;
+      return updatedCompany;
     } catch (error) {
       console.error('Error updating company:', error);
       throw error;
