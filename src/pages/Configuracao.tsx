@@ -1,44 +1,37 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Switch } from "@/components/ui/switch";
-import { Database, MessageSquare, CheckCircle, AlertCircle, Plus, Edit, Trash2, CreditCard } from "lucide-react";
+import { 
+  Database, 
+  MessageSquare, 
+  CreditCard, 
+  Shield,
+  Settings,
+  CheckCircle,
+  AlertTriangle,
+  Save
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { useSQLConnections } from "@/hooks/useSQLConnections";
 import { useEvolutionConfig } from "@/hooks/useEvolutionConfig";
 import { useAssasConfig } from "@/hooks/useAssasConfig";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
 
 export default function Configuracao() {
-  const { 
-    connections, 
-    loading: connectionsLoading, 
-    createConnection, 
-    updateConnection, 
-    deleteConnection 
-  } = useSQLConnections();
+  const { toast } = useToast();
+  const { connections, createConnection } = useSQLConnections();
+  const { config: evolutionConfig, createConfig: createEvolutionConfig } = useEvolutionConfig();
+  const { config: assasConfig, createConfig: createAssasConfig } = useAssasConfig();
+  const { isAdmin } = useAdminAuth();
 
-  const {
-    config: evolutionConfig,
-    loading: evolutionLoading,
-    saveConfig: saveEvolutionConfig,
-    testConnection: testEvolutionConnection
-  } = useEvolutionConfig();
-
-  const {
-    config: assasConfig,
-    loading: assasLoading,
-    saveConfig: saveAssasConfig,
-    testConnection: testAssasConnection
-  } = useAssasConfig();
-
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingConnection, setEditingConnection] = useState<any>(null);
-  const [newConnection, setNewConnection] = useState({
+  // Estados para formulários
+  const [sqlForm, setSqlForm] = useState({
     name: "",
     server: "",
     database_name: "",
@@ -48,133 +41,102 @@ export default function Configuracao() {
   });
 
   const [evolutionForm, setEvolutionForm] = useState({
+    instance_name: "",
     api_url: "",
-    api_key: "",
-    instance_name: ""
+    api_key: ""
   });
 
   const [assasForm, setAssasForm] = useState({
-    api_url: "https://www.asaas.com/api/v3",
     api_key: "",
+    api_url: "https://www.asaas.com/api/v3",
+    is_sandbox: true,
     wallet_id: "",
-    webhook_url: "",
-    is_sandbox: true
+    webhook_url: ""
   });
 
-  useEffect(() => {
-    if (evolutionConfig) {
+  const handleSQLSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await createConnection(sqlForm);
+      setSqlForm({
+        name: "",
+        server: "",
+        database_name: "",
+        username: "",
+        password: "",
+        port: "1433"
+      });
+      toast({
+        title: "Sucesso",
+        description: "Conexão SQL criada com sucesso!"
+      });
+    } catch (error) {
+      console.error('Error creating SQL connection:', error);
+    }
+  };
+
+  const handleEvolutionSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await createEvolutionConfig(evolutionForm);
       setEvolutionForm({
-        api_url: evolutionConfig.api_url,
-        api_key: evolutionConfig.api_key,
-        instance_name: evolutionConfig.instance_name
+        instance_name: "",
+        api_url: "",
+        api_key: ""
       });
+      toast({
+        title: "Sucesso",
+        description: "Configuração Evolution criada com sucesso!"
+      });
+    } catch (error) {
+      console.error('Error creating Evolution config:', error);
     }
-  }, [evolutionConfig]);
+  };
 
-  useEffect(() => {
-    if (assasConfig) {
+  const handleAssasSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isAdmin) {
+      toast({
+        title: "Erro",
+        description: "Acesso restrito para administradores",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      await createAssasConfig(assasForm);
       setAssasForm({
-        api_url: assasConfig.api_url,
-        api_key: assasConfig.api_key,
-        wallet_id: assasConfig.wallet_id || "",
-        webhook_url: assasConfig.webhook_url || "",
-        is_sandbox: assasConfig.is_sandbox
+        api_key: "",
+        api_url: "https://www.asaas.com/api/v3",
+        is_sandbox: true,
+        wallet_id: "",
+        webhook_url: ""
       });
-    }
-  }, [assasConfig]);
-
-  const testSqlConnection = async (connectionId: string) => {
-    try {
-      await updateConnection(connectionId, { status: "testing" });
-      
-      setTimeout(async () => {
-        await updateConnection(connectionId, { status: "connected" });
-      }, 2000);
-    } catch (error) {
-      console.error('Error testing connection:', error);
-    }
-  };
-
-  const handleSaveConnection = async () => {
-    try {
-      if (editingConnection) {
-        await updateConnection(editingConnection.id, newConnection);
-      } else {
-        await createConnection({ ...newConnection, status: "disconnected" });
-      }
-      
-      setNewConnection({ name: "", server: "", database_name: "", username: "", password: "", port: "1433" });
-      setEditingConnection(null);
-      setIsDialogOpen(false);
-    } catch (error) {
-      console.error('Error saving connection:', error);
-    }
-  };
-
-  const handleEditConnection = (connection: any) => {
-    setEditingConnection(connection);
-    setNewConnection({
-      name: connection.name,
-      server: connection.server,
-      database_name: connection.database_name,
-      username: connection.username,
-      password: "",
-      port: connection.port
-    });
-    setIsDialogOpen(true);
-  };
-
-  const handleDeleteConnection = async (connectionId: string) => {
-    try {
-      await deleteConnection(connectionId);
-    } catch (error) {
-      console.error('Error deleting connection:', error);
-    }
-  };
-
-  const handleSaveEvolution = async () => {
-    try {
-      await saveEvolutionConfig({
-        ...evolutionForm,
-        status: "disconnected"
+      toast({
+        title: "Sucesso",
+        description: "Configuração ASSAS criada com sucesso!"
       });
     } catch (error) {
-      console.error('Error saving Evolution config:', error);
+      console.error('Error creating ASSAS config:', error);
     }
   };
-
-  const handleSaveAssas = async () => {
-    try {
-      await saveAssasConfig({
-        ...assasForm,
-        status: "disconnected"
-      });
-    } catch (error) {
-      console.error('Error saving ASSAS config:', error);
-    }
-  };
-
-  if (connectionsLoading || evolutionLoading || assasLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-        <span className="ml-2">Carregando configurações...</span>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Configuração</h1>
-        <p className="text-gray-600 mt-2">Configure as conexões e integrações do sistema</p>
+        <h1 className="text-3xl font-bold text-gray-900 flex items-center space-x-2">
+          <Settings className="w-8 h-8 text-blue-600" />
+          <span>Configurações</span>
+        </h1>
+        <p className="text-gray-600 mt-2">Configure as integrações do sistema</p>
       </div>
 
-      <Tabs defaultValue="database" className="space-y-6">
+      <Tabs defaultValue="sql" className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="database" className="flex items-center space-x-2">
+          <TabsTrigger value="sql" className="flex items-center space-x-2">
             <Database className="w-4 h-4" />
-            <span>Banco de Dados</span>
+            <span>SQL Server</span>
           </TabsTrigger>
           <TabsTrigger value="evolution" className="flex items-center space-x-2">
             <MessageSquare className="w-4 h-4" />
@@ -183,250 +145,192 @@ export default function Configuracao() {
           <TabsTrigger value="assas" className="flex items-center space-x-2">
             <CreditCard className="w-4 h-4" />
             <span>ASSAS</span>
+            {!isAdmin && <Shield className="w-3 h-3 text-blue-600" />}
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="database">
-          <Card className="border-black">
+        <TabsContent value="sql">
+          <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Database className="w-5 h-5 text-blue-500" />
-                    <span>Conexões SQL Server</span>
-                  </CardTitle>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Gerencie suas conexões com bancos de dados SQL Server
-                  </p>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Database className="w-5 h-5 text-blue-500" />
+                  <span>Conexões SQL Server</span>
                 </div>
-                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="bg-blue-600 hover:bg-blue-700">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Nova Conexão
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="bg-white">
-                    <DialogHeader>
-                      <DialogTitle>
-                        {editingConnection ? "Editar Conexão" : "Nova Conexão SQL"}
-                      </DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="name">Nome da Conexão</Label>
-                        <Input
-                          id="name"
-                          placeholder="Ex: Principal, Backup"
-                          value={newConnection.name}
-                          onChange={(e) => setNewConnection({...newConnection, name: e.target.value})}
-                          className="bg-white"
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="server">Servidor</Label>
-                          <Input
-                            id="server"
-                            placeholder="localhost ou IP"
-                            value={newConnection.server}
-                            onChange={(e) => setNewConnection({...newConnection, server: e.target.value})}
-                            className="bg-white"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="port">Porta</Label>
-                          <Input
-                            id="port"
-                            placeholder="1433"
-                            value={newConnection.port}
-                            onChange={(e) => setNewConnection({...newConnection, port: e.target.value})}
-                            className="bg-white"
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="database">Banco de Dados</Label>
-                        <Input
-                          id="database"
-                          placeholder="Nome do banco"
-                          value={newConnection.database_name}
-                          onChange={(e) => setNewConnection({...newConnection, database_name: e.target.value})}
-                          className="bg-white"
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="username">Usuário</Label>
-                          <Input
-                            id="username"
-                            placeholder="sa"
-                            value={newConnection.username}
-                            onChange={(e) => setNewConnection({...newConnection, username: e.target.value})}
-                            className="bg-white"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="password">Senha</Label>
-                          <Input
-                            id="password"
-                            type="password"
-                            placeholder="••••••••"
-                            value={newConnection.password}
-                            onChange={(e) => setNewConnection({...newConnection, password: e.target.value})}
-                            className="bg-white"
-                          />
-                        </div>
-                      </div>
-                      <div className="flex justify-end space-x-2 pt-4">
-                        <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                          Cancelar
-                        </Button>
-                        <Button onClick={handleSaveConnection} disabled={!newConnection.name || !newConnection.server}>
-                          {editingConnection ? "Atualizar" : "Criar"} Conexão
-                        </Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </div>
+                <Badge variant="outline" className="text-blue-600 border-blue-200">
+                  {connections.length} conexões
+                </Badge>
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Servidor</TableHead>
-                    <TableHead>Banco</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+            <CardContent className="space-y-6">
+              {/* Lista de conexões existentes */}
+              {connections.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Conexões Ativas</h3>
                   {connections.map((connection) => (
-                    <TableRow key={connection.id}>
-                      <TableCell className="font-medium">{connection.name}</TableCell>
-                      <TableCell>{connection.server}:{connection.port}</TableCell>
-                      <TableCell>{connection.database_name}</TableCell>
-                      <TableCell>
-                        <Badge className={`${
-                          connection.status === "connected" ? "bg-green-100 text-green-800" :
-                          connection.status === "testing" ? "bg-blue-100 text-blue-800" :
-                          "bg-red-100 text-red-800"
-                        }`}>
-                          {connection.status === "connected" ? "Conectado" :
-                           connection.status === "testing" ? "Testando..." : "Desconectado"}
-                          {connection.status === "connected" && <CheckCircle className="w-3 h-3 ml-1" />}
-                          {connection.status === "disconnected" && <AlertCircle className="w-3 h-3 ml-1" />}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => testSqlConnection(connection.id)}
-                            disabled={connection.status === "testing"}
-                          >
-                            {connection.status === "testing" ? "Testando..." : "Testar"}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEditConnection(connection)}
-                          >
-                            <Edit className="w-3 h-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-red-600 hover:text-red-700"
-                            onClick={() => handleDeleteConnection(connection.id)}
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
+                    <div key={connection.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-3 h-3 rounded-full ${
+                          connection.status === 'connected' ? 'bg-green-500' : 'bg-red-500'
+                        }`}></div>
+                        <div>
+                          <p className="font-medium">{connection.name}</p>
+                          <p className="text-sm text-gray-500">{connection.server}:{connection.port}</p>
                         </div>
-                      </TableCell>
-                    </TableRow>
+                      </div>
+                      <Badge className={
+                        connection.status === 'connected' 
+                          ? "bg-green-100 text-green-800" 
+                          : "bg-red-100 text-red-800"
+                      }>
+                        {connection.status === 'connected' ? 'Conectado' : 'Desconectado'}
+                      </Badge>
+                    </div>
                   ))}
-                </TableBody>
-              </Table>
+                </div>
+              )}
+
+              {/* Formulário para nova conexão */}
+              <form onSubmit={handleSQLSubmit} className="space-y-4">
+                <h3 className="text-lg font-medium">Nova Conexão</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="sql_name">Nome da Conexão</Label>
+                    <Input
+                      id="sql_name"
+                      value={sqlForm.name}
+                      onChange={(e) => setSqlForm({...sqlForm, name: e.target.value})}
+                      placeholder="Ex: Banco Principal"
+                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="sql_server">Servidor</Label>
+                    <Input
+                      id="sql_server"
+                      value={sqlForm.server}
+                      onChange={(e) => setSqlForm({...sqlForm, server: e.target.value})}
+                      placeholder="Ex: localhost"
+                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="sql_database">Database</Label>
+                    <Input
+                      id="sql_database"
+                      value={sqlForm.database_name}
+                      onChange={(e) => setSqlForm({...sqlForm, database_name: e.target.value})}
+                      placeholder="Nome do banco"
+                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="sql_port">Porta</Label>
+                    <Input
+                      id="sql_port"
+                      value={sqlForm.port}
+                      onChange={(e) => setSqlForm({...sqlForm, port: e.target.value})}
+                      placeholder="1433"
+                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="sql_username">Usuário</Label>
+                    <Input
+                      id="sql_username"
+                      value={sqlForm.username}
+                      onChange={(e) => setSqlForm({...sqlForm, username: e.target.value})}
+                      placeholder="Usuário do banco"
+                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="sql_password">Senha</Label>
+                    <Input
+                      id="sql_password"
+                      type="password"
+                      value={sqlForm.password}
+                      onChange={(e) => setSqlForm({...sqlForm, password: e.target.value})}
+                      placeholder="Senha do banco"
+                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                </div>
+                <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+                  <Save className="w-4 h-4 mr-2" />
+                  Salvar Conexão
+                </Button>
+              </form>
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="evolution">
-          <Card className="border-black">
+          <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center space-x-2">
-                    <MessageSquare className="w-5 h-5 text-green-500" />
-                    <span>Configuração Evolution API</span>
-                  </CardTitle>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Configure a conexão com a Evolution API para WhatsApp
-                  </p>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <MessageSquare className="w-5 h-5 text-green-500" />
+                  <span>Evolution API</span>
                 </div>
-                <Badge className={`${
-                  evolutionConfig?.status === "connected" ? "bg-green-100 text-green-800" :
-                  evolutionConfig?.status === "testing" ? "bg-blue-100 text-blue-800" :
-                  "bg-red-100 text-red-800"
-                }`}>
-                  {evolutionConfig?.status === "connected" ? "Conectado" :
-                   evolutionConfig?.status === "testing" ? "Testando..." : "Desconectado"}
-                  {evolutionConfig?.status === "connected" && <CheckCircle className="w-3 h-3 ml-1" />}
-                  {evolutionConfig?.status === "disconnected" && <AlertCircle className="w-3 h-3 ml-1" />}
-                </Badge>
-              </div>
+                {evolutionConfig && (
+                  <Badge className={
+                    evolutionConfig.status === 'connected' 
+                      ? "bg-green-100 text-green-800" 
+                      : "bg-red-100 text-red-800"
+                  }>
+                    {evolutionConfig.status === 'connected' ? 'Conectado' : 'Desconectado'}
+                  </Badge>
+                )}
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="apiUrl">URL da API</Label>
-                <Input
-                  id="apiUrl"
-                  placeholder="https://api.evolution.com"
-                  value={evolutionForm.api_url}
-                  onChange={(e) => setEvolutionForm({...evolutionForm, api_url: e.target.value})}
-                  className="bg-white"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="apiKey">Chave da API</Label>
-                <Input
-                  id="apiKey"
-                  type="password"
-                  placeholder="••••••••••••••••"
-                  value={evolutionForm.api_key}
-                  onChange={(e) => setEvolutionForm({...evolutionForm, api_key: e.target.value})}
-                  className="bg-white"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="instanceName">Nome da Instância</Label>
-                <Input
-                  id="instanceName"
-                  placeholder="minha-instancia"
-                  value={evolutionForm.instance_name}
-                  onChange={(e) => setEvolutionForm({...evolutionForm, instance_name: e.target.value})}
-                  className="bg-white"
-                />
-              </div>
-
-              <div className="flex space-x-2 pt-4">
-                <Button 
-                  onClick={testEvolutionConnection}
-                  disabled={evolutionConfig?.status === "testing"}
-                  variant="outline"
-                >
-                  {evolutionConfig?.status === "testing" ? "Testando..." : "Testar Conexão"}
-                </Button>
-                <Button onClick={handleSaveEvolution}>
+            <CardContent>
+              <form onSubmit={handleEvolutionSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="evolution_instance">Nome da Instância</Label>
+                  <Input
+                    id="evolution_instance"
+                    value={evolutionForm.instance_name}
+                    onChange={(e) => setEvolutionForm({...evolutionForm, instance_name: e.target.value})}
+                    placeholder="Ex: minha-instancia"
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="evolution_url">URL da API</Label>
+                  <Input
+                    id="evolution_url"
+                    value={evolutionForm.api_url}
+                    onChange={(e) => setEvolutionForm({...evolutionForm, api_url: e.target.value})}
+                    placeholder="https://api.evolution.com"
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="evolution_key">Chave da API</Label>
+                  <Input
+                    id="evolution_key"
+                    type="password"
+                    value={evolutionForm.api_key}
+                    onChange={(e) => setEvolutionForm({...evolutionForm, api_key: e.target.value})}
+                    placeholder="Sua chave da API Evolution"
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                <Button type="submit" className="bg-green-600 hover:bg-green-700">
+                  <Save className="w-4 h-4 mr-2" />
                   Salvar Configuração
                 </Button>
-              </div>
+              </form>
             </CardContent>
           </Card>
         </TabsContent>
@@ -434,95 +338,90 @@ export default function Configuracao() {
         <TabsContent value="assas">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center space-x-2">
-                    <CreditCard className="w-5 h-5 text-blue-500" />
-                    <span>Configuração ASSAS</span>
-                  </CardTitle>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Configure a integração com ASSAS para gestão financeira
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <CreditCard className="w-5 h-5 text-purple-500" />
+                  <span>ASSAS (Gateway de Pagamento)</span>
+                  {!isAdmin && <Shield className="w-4 h-4 text-blue-600" />}
+                </div>
+                {assasConfig && (
+                  <Badge className={
+                    assasConfig.status === 'connected' 
+                      ? "bg-green-100 text-green-800" 
+                      : "bg-red-100 text-red-800"
+                  }>
+                    {assasConfig.status === 'connected' ? 'Conectado' : 'Desconectado'}
+                  </Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {!isAdmin ? (
+                <div className="text-center py-8">
+                  <Shield className="w-12 h-12 text-blue-600 mx-auto mb-4" />
+                  <p className="text-gray-600">
+                    Esta configuração é restrita para administradores do sistema.
                   </p>
                 </div>
-                <Badge className={`${
-                  assasConfig?.status === "connected" ? "bg-green-100 text-green-800" :
-                  assasConfig?.status === "testing" ? "bg-blue-100 text-blue-800" :
-                  "bg-red-100 text-red-800"
-                }`}>
-                  {assasConfig?.status === "connected" ? "Conectado" :
-                   assasConfig?.status === "testing" ? "Testando..." : "Desconectado"}
-                  {assasConfig?.status === "connected" && <CheckCircle className="w-3 h-3 ml-1" />}
-                  {assasConfig?.status === "disconnected" && <AlertCircle className="w-3 h-3 ml-1" />}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="assasApiUrl">URL da API</Label>
-                <Input
-                  id="assasApiUrl"
-                  placeholder="https://www.asaas.com/api/v3"
-                  value={assasForm.api_url}
-                  onChange={(e) => setAssasForm({...assasForm, api_url: e.target.value})}
-                  className="bg-white"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="assasApiKey">Chave da API</Label>
-                <Input
-                  id="assasApiKey"
-                  type="password"
-                  placeholder="••••••••••••••••"
-                  value={assasForm.api_key}
-                  onChange={(e) => setAssasForm({...assasForm, api_key: e.target.value})}
-                  className="bg-white"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="walletId">ID da Carteira (opcional)</Label>
-                <Input
-                  id="walletId"
-                  placeholder="wallet_12345"
-                  value={assasForm.wallet_id}
-                  onChange={(e) => setAssasForm({...assasForm, wallet_id: e.target.value})}
-                  className="bg-white"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="webhookUrl">URL do Webhook (opcional)</Label>
-                <Input
-                  id="webhookUrl"
-                  placeholder="https://seusite.com/webhook"
-                  value={assasForm.webhook_url}
-                  onChange={(e) => setAssasForm({...assasForm, webhook_url: e.target.value})}
-                  className="bg-white"
-                />
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="sandbox"
-                  checked={assasForm.is_sandbox}
-                  onCheckedChange={(checked) => setAssasForm({...assasForm, is_sandbox: checked})}
-                />
-                <Label htmlFor="sandbox">Modo Sandbox (Teste)</Label>
-              </div>
-
-              <div className="flex space-x-2 pt-4">
-                <Button 
-                  onClick={testAssasConnection}
-                  disabled={assasConfig?.status === "testing"}
-                  variant="outline"
-                >
-                  {assasConfig?.status === "testing" ? "Testando..." : "Testar Conexão"}
-                </Button>
-                <Button onClick={handleSaveAssas}>
-                  Salvar Configuração
-                </Button>
-              </div>
+              ) : (
+                <form onSubmit={handleAssasSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="assas_key">Chave da API</Label>
+                    <Input
+                      id="assas_key"
+                      type="password"
+                      value={assasForm.api_key}
+                      onChange={(e) => setAssasForm({...assasForm, api_key: e.target.value})}
+                      placeholder="Sua chave da API ASSAS"
+                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="assas_url">URL da API</Label>
+                    <Input
+                      id="assas_url"
+                      value={assasForm.api_url}
+                      onChange={(e) => setAssasForm({...assasForm, api_url: e.target.value})}
+                      placeholder="https://www.asaas.com/api/v3"
+                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="assas_wallet">Wallet ID (Opcional)</Label>
+                    <Input
+                      id="assas_wallet"
+                      value={assasForm.wallet_id}
+                      onChange={(e) => setAssasForm({...assasForm, wallet_id: e.target.value})}
+                      placeholder="ID da carteira"
+                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="assas_webhook">Webhook URL (Opcional)</Label>
+                    <Input
+                      id="assas_webhook"
+                      value={assasForm.webhook_url}
+                      onChange={(e) => setAssasForm({...assasForm, webhook_url: e.target.value})}
+                      placeholder="https://seusite.com/webhook"
+                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="assas_sandbox"
+                      checked={assasForm.is_sandbox}
+                      onCheckedChange={(checked) => setAssasForm({...assasForm, is_sandbox: checked})}
+                    />
+                    <Label htmlFor="assas_sandbox">Modo Sandbox (Teste)</Label>
+                  </div>
+                  <Button type="submit" className="bg-purple-600 hover:bg-purple-700">
+                    <Save className="w-4 h-4 mr-2" />
+                    Salvar Configuração
+                  </Button>
+                </form>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

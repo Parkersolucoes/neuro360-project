@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,16 +7,18 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { CreditCard, Plus, FileText, DollarSign, TrendingUp } from "lucide-react";
+import { CreditCard, Plus, FileText, DollarSign, TrendingUp, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useAssasConfig } from "@/hooks/useAssasConfig";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function Financeiro() {
   const { toast } = useToast();
   const { transactions, createTransaction, loading } = useTransactions();
   const { config: assasConfig } = useAssasConfig();
+  const { isAdmin } = useAdminAuth();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newBoleto, setNewBoleto] = useState({
     customer_name: "",
@@ -27,6 +30,15 @@ export default function Financeiro() {
   });
 
   const handleCreateBoleto = async () => {
+    if (!isAdmin) {
+      toast({
+        title: "Erro",
+        description: "Acesso restrito para administradores",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!assasConfig || assasConfig.status !== 'connected') {
       toast({
         title: "Erro",
@@ -118,85 +130,112 @@ export default function Financeiro() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Financeiro</h1>
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center space-x-2">
+            <Shield className="w-8 h-8 text-blue-600" />
+            <span>Financeiro</span>
+          </h1>
           <p className="text-gray-600 mt-2">Gerencie planos e emita boletos</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="w-4 h-4 mr-2" />
-              Novo Boleto
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Gerar Boleto</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="customer_name">Nome do Cliente</Label>
-                <Input
-                  id="customer_name"
-                  value={newBoleto.customer_name}
-                  onChange={(e) => setNewBoleto({...newBoleto, customer_name: e.target.value})}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="customer_email">E-mail</Label>
-                <Input
-                  id="customer_email"
-                  type="email"
-                  value={newBoleto.customer_email}
-                  onChange={(e) => setNewBoleto({...newBoleto, customer_email: e.target.value})}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="customer_document">CPF/CNPJ</Label>
-                <Input
-                  id="customer_document"
-                  value={newBoleto.customer_document}
-                  onChange={(e) => setNewBoleto({...newBoleto, customer_document: e.target.value})}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="amount">Valor</Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  step="0.01"
-                  value={newBoleto.amount}
-                  onChange={(e) => setNewBoleto({...newBoleto, amount: e.target.value})}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="due_date">Data de Vencimento</Label>
-                <Input
-                  id="due_date"
-                  type="date"
-                  value={newBoleto.due_date}
-                  onChange={(e) => setNewBoleto({...newBoleto, due_date: e.target.value})}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Descrição</Label>
-                <Input
-                  id="description"
-                  value={newBoleto.description}
-                  onChange={(e) => setNewBoleto({...newBoleto, description: e.target.value})}
-                />
-              </div>
-            </div>
-            <div className="flex justify-end space-x-2 mt-6">
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Cancelar
+        {isAdmin && (
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-blue-600 hover:bg-blue-700">
+                <Plus className="w-4 h-4 mr-2" />
+                Novo Boleto
               </Button>
-              <Button onClick={handleCreateBoleto}>
-                Gerar Boleto
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Gerar Boleto</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="customer_name">Nome do Cliente</Label>
+                  <Input
+                    id="customer_name"
+                    value={newBoleto.customer_name}
+                    onChange={(e) => setNewBoleto({...newBoleto, customer_name: e.target.value})}
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="customer_email">E-mail</Label>
+                  <Input
+                    id="customer_email"
+                    type="email"
+                    value={newBoleto.customer_email}
+                    onChange={(e) => setNewBoleto({...newBoleto, customer_email: e.target.value})}
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="customer_document">CPF/CNPJ</Label>
+                  <Input
+                    id="customer_document"
+                    value={newBoleto.customer_document}
+                    onChange={(e) => setNewBoleto({...newBoleto, customer_document: e.target.value})}
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="amount">Valor</Label>
+                  <Input
+                    id="amount"
+                    type="number"
+                    step="0.01"
+                    value={newBoleto.amount}
+                    onChange={(e) => setNewBoleto({...newBoleto, amount: e.target.value})}
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="due_date">Data de Vencimento</Label>
+                  <Input
+                    id="due_date"
+                    type="date"
+                    value={newBoleto.due_date}
+                    onChange={(e) => setNewBoleto({...newBoleto, due_date: e.target.value})}
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Descrição</Label>
+                  <Input
+                    id="description"
+                    value={newBoleto.description}
+                    onChange={(e) => setNewBoleto({...newBoleto, description: e.target.value})}
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end space-x-2 mt-6">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsDialogOpen(false)}
+                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={handleCreateBoleto}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  Gerar Boleto
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
+
+      {!isAdmin && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <p className="text-sm text-blue-800">
+            <Shield className="w-4 h-4 inline mr-2" />
+            Esta seção é restrita para administradores do sistema.
+          </p>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
