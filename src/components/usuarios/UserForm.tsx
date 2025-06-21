@@ -121,7 +121,6 @@ export function UserForm({
             placeholder="Nome do usuário"
             value={formData.name}
             onChange={(e) => setFormData({...formData, name: e.target.value})}
-            className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
           />
         </div>
         <div className="space-y-2">
@@ -132,7 +131,6 @@ export function UserForm({
             placeholder="email@empresa.com"
             value={formData.email}
             onChange={(e) => setFormData({...formData, email: e.target.value})}
-            className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
           />
         </div>
         <div className="space-y-2">
@@ -142,7 +140,6 @@ export function UserForm({
             placeholder="(11) 99999-9999"
             value={formData.phone}
             onChange={(e) => setFormData({...formData, phone: e.target.value})}
-            className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
           />
         </div>
         <div className="space-y-2">
@@ -152,13 +149,12 @@ export function UserForm({
             placeholder="(11) 99999-9999"
             value={formData.whatsapp}
             onChange={(e) => setFormData({...formData, whatsapp: e.target.value})}
-            className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
           />
         </div>
         <div className="space-y-2">
           <Label htmlFor="role">Função</Label>
           <Select value={formData.role} onValueChange={(value) => setFormData({...formData, role: value})}>
-            <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+            <SelectTrigger>
               <SelectValue placeholder="Selecione a função" />
             </SelectTrigger>
             <SelectContent>
@@ -173,7 +169,7 @@ export function UserForm({
         <div className="space-y-2">
           <Label htmlFor="department">Departamento</Label>
           <Select value={formData.department} onValueChange={(value) => setFormData({...formData, department: value})}>
-            <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+            <SelectTrigger>
               <SelectValue placeholder="Selecione o departamento" />
             </SelectTrigger>
             <SelectContent>
@@ -191,7 +187,7 @@ export function UserForm({
             value={formData.status} 
             onValueChange={(value: 'active' | 'inactive') => setFormData({...formData, status: value})}
           >
-            <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+            <SelectTrigger>
               <SelectValue placeholder="Selecione o status" />
             </SelectTrigger>
             <SelectContent>
@@ -263,7 +259,6 @@ export function UserForm({
         <Button 
           onClick={handleSave} 
           disabled={!isFormValid}
-          className="bg-blue-600 hover:bg-blue-700"
         >
           {editingUser ? "Atualizar" : "Criar"} Usuário
         </Button>

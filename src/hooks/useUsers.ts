@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -32,36 +33,19 @@ export function useUsers() {
         .select('*');
 
       // Se não for admin, filtrar apenas usuários das empresas do usuário logado
-      if (!isAdmin) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          // Buscar empresas do usuário logado
-          const { data: userCompanies } = await supabase
-            .from('user_companies')
-            .select('company_id')
-            .eq('user_id', user.id);
-          
-          if (userCompanies && userCompanies.length > 0) {
-            const companyIds = userCompanies.map(uc => uc.company_id);
-            
-            // Buscar usuários que fazem parte das mesmas empresas
-            const { data: sameCompanyUsers } = await supabase
-              .from('user_companies')
-              .select('user_id')
-              .in('company_id', companyIds);
-            
-            if (sameCompanyUsers && sameCompanyUsers.length > 0) {
-              const userIds = sameCompanyUsers.map(uc => uc.user_id);
-              query = query.in('id', userIds);
-            } else {
-              // Se não há usuários da mesma empresa, retornar lista vazia
-              setUsers([]);
-              return;
-            }
-          } else {
-            // Se o usuário não está associado a nenhuma empresa, mostrar apenas ele mesmo
-            query = query.eq('id', user.id);
-          }
+      if (!isAdmin && currentCompany) {
+        const { data: companyUsers } = await supabase
+          .from('user_companies')
+          .select('user_id')
+          .eq('company_id', currentCompany.id);
+        
+        if (companyUsers && companyUsers.length > 0) {
+          const userIds = companyUsers.map(uc => uc.user_id);
+          query = query.in('id', userIds);
+        } else {
+          setUsers([]);
+          setLoading(false);
+          return;
         }
       }
 
@@ -77,6 +61,7 @@ export function useUsers() {
           query = query.in('id', userIds);
         } else {
           setUsers([]);
+          setLoading(false);
           return;
         }
       }
@@ -85,12 +70,7 @@ export function useUsers() {
 
       if (error) throw error;
       
-      const typedUsers = (data || []).map(user => ({
-        ...user,
-        status: user.status as 'active' | 'inactive'
-      }));
-      
-      setUsers(typedUsers);
+      setUsers(data || []);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast({
@@ -113,18 +93,13 @@ export function useUsers() {
 
       if (error) throw error;
       
-      const typedUser = {
-        ...data,
-        status: data.status as 'active' | 'inactive'
-      };
-      
-      setUsers(prev => [typedUser, ...prev]);
+      setUsers(prev => [data, ...prev]);
       toast({
         title: "Sucesso",
         description: "Usuário criado com sucesso!"
       });
       
-      return typedUser;
+      return data;
     } catch (error) {
       console.error('Error creating user:', error);
       toast({
@@ -147,13 +122,8 @@ export function useUsers() {
 
       if (error) throw error;
       
-      const typedUser = {
-        ...data,
-        status: data.status as 'active' | 'inactive'
-      };
-      
       setUsers(prev => prev.map(user => 
-        user.id === id ? typedUser : user
+        user.id === id ? data : user
       ));
       
       toast({
@@ -161,7 +131,7 @@ export function useUsers() {
         description: "Usuário atualizado com sucesso!"
       });
       
-      return typedUser;
+      return data;
     } catch (error) {
       console.error('Error updating user:', error);
       toast({

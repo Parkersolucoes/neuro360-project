@@ -76,7 +76,7 @@ export default function Usuarios() {
     return (
       <div className="flex items-center justify-center min-h-96">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
           <p className="text-gray-600 mt-2">Carregando usuários...</p>
         </div>
       </div>
@@ -93,7 +93,6 @@ export default function Usuarios() {
         <Dialog>
           <DialogTrigger asChild>
             <Button 
-              className="bg-blue-600 hover:bg-blue-700"
               onClick={openNewUserDialog}
             >
               <Plus className="w-4 h-4 mr-2" />
@@ -119,7 +118,7 @@ export default function Usuarios() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            <Users className="w-5 h-5 text-blue-500" />
+            <Users className="w-5 h-5 text-primary" />
             <span>Lista de Usuários</span>
           </CardTitle>
         </CardHeader>
