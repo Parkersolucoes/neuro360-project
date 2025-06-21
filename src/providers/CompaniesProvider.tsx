@@ -33,7 +33,7 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
           
           setCompanies(typedCompanies);
           
-          // Se ainda não há empresa selecionada, selecionar a primeira ou a empresa padrão
+          // Se ainda não há empresa selecionada, selecionar a empresa Visão 360 ou a primeira
           if (!currentCompany && typedCompanies.length > 0) {
             const defaultCompany = typedCompanies.find(c => c.id === '0a988013-fa43-4d9d-9bfa-22c245c0c1ea') || typedCompanies[0];
             console.log('Setting default company for master:', defaultCompany);
@@ -166,8 +166,10 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
 
   // Effect para buscar empresas quando o usuário muda
   useEffect(() => {
-    console.log('User login changed, fetching companies...');
-    fetchCompanies();
+    if (userLogin) {
+      console.log('User login changed, fetching companies...');
+      fetchCompanies();
+    }
   }, [userLogin?.id, userLogin?.is_master]);
 
   // Effect adicional para debug

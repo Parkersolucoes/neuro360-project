@@ -41,25 +41,18 @@ export function useSystemConfig() {
         const systemConfig: SystemConfig = {
           id: data.id,
           system_name: configValue.system_name || 'Visão 360 - Soluções em Dados',
-          system_description: configValue.system_description || 'Soluções de Análise dados para seu negócio',
+          system_description: configValue.system_description || 'Plataforma completa para análise e gestão de dados empresariais',
           primary_color: configValue.primary_color || '#1e293b',
           login_background_image: configValue.login_background_image || '',
           created_at: data.created_at,
           updated_at: data.updated_at
         };
         setConfig(systemConfig);
+        console.log('System config loaded:', systemConfig);
       } else {
         // Se não existe configuração, criar uma padrão
-        const defaultConfig: SystemConfig = {
-          id: 'default',
-          system_name: 'Visão 360 - Soluções em Dados',
-          system_description: 'Soluções de Análise dados para seu negócio',
-          primary_color: '#1e293b',
-          login_background_image: '',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-        setConfig(defaultConfig);
+        console.log('No system config found, creating default...');
+        await createDefaultConfig();
       }
     } catch (error) {
       console.error('Error fetching system config:', error);
@@ -68,7 +61,7 @@ export function useSystemConfig() {
       const defaultConfig: SystemConfig = {
         id: 'default',
         system_name: 'Visão 360 - Soluções em Dados',
-        system_description: 'Soluções de Análise dados para seu negócio',
+        system_description: 'Plataforma completa para análise e gestão de dados empresariais',
         primary_color: '#1e293b',
         login_background_image: '',
         created_at: new Date().toISOString(),
@@ -77,6 +70,45 @@ export function useSystemConfig() {
       setConfig(defaultConfig);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const createDefaultConfig = async () => {
+    try {
+      const configData = {
+        config_key: 'system_appearance',
+        config_value: {
+          system_name: 'Visão 360 - Soluções em Dados',
+          system_description: 'Plataforma completa para análise e gestão de dados empresariais',
+          primary_color: '#1e293b',
+          login_background_image: ''
+        },
+        description: 'Configurações de aparência do sistema',
+        is_public: true
+      };
+
+      const { data, error } = await supabase
+        .from('system_configs')
+        .insert([configData])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const systemConfig: SystemConfig = {
+        id: data.id,
+        system_name: data.config_value.system_name,
+        system_description: data.config_value.system_description,
+        primary_color: data.config_value.primary_color,
+        login_background_image: data.config_value.login_background_image,
+        created_at: data.created_at,
+        updated_at: data.updated_at
+      };
+
+      setConfig(systemConfig);
+      console.log('Default system config created:', systemConfig);
+    } catch (error) {
+      console.error('Error creating default config:', error);
     }
   };
 
@@ -136,6 +168,8 @@ export function useSystemConfig() {
         };
         setConfig(updatedConfig);
       }
+
+      console.log('System config updated successfully:', result);
 
       toast({
         title: "Sucesso",

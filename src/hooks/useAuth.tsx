@@ -1,120 +1,105 @@
 
-import { useState, useEffect, createContext, useContext } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { UserAuthService, UserLoginData } from '@/services/userAuthService';
+
+interface UserLogin {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  is_admin: string;
+  is_master: boolean;
+  status: string;
+}
 
 interface AuthContextType {
-  userLogin: UserLoginData | null;
+  userLogin: UserLogin | null;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signOut: () => Promise<void>;
-  hasPermission: (action: 'create' | 'edit' | 'delete') => boolean;
-  isMasterUser: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [userLogin, setUserLogin] = useState<UserLoginData | null>(null);
+  const [userLogin, setUserLogin] = useState<UserLogin | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
+  const login = async (email: string, password: string) => {
+    try {
+      console.log('Attempting login for:', email);
+      
+      const { data, error } = await supabase.rpc('validate_user_password', {
+        user_email: email,
+        user_password: password
+      });
+
+      if (error) {
+        console.error('Login error:', error);
+        return { success: false, error: 'Erro de autenticação' };
+      }
+
+      if (!data || data.length === 0) {
+        console.log('No user found or invalid credentials');
+        return { success: false, error: 'Email ou senha incorretos' };
+      }
+
+      const user = data[0];
+      console.log('Login successful for user:', user);
+      
+      setUserLogin(user);
+      
+      toast({
+        title: "Login realizado com sucesso!",
+        description: `Bem-vindo, ${user.name}!`
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error('Login error:', error);
+      return { success: false, error: 'Erro interno do servidor' };
+    }
+  };
+
+  const logout = async () => {
+    setUserLogin(null);
+    toast({
+      title: "Logout realizado",
+      description: "Você foi desconectado com sucesso"
+    });
+  };
+
+  // Verificar se há usuário logado no localStorage
   useEffect(() => {
-    // Verificar se há uma sessão salva no localStorage
-    const savedUser = localStorage.getItem('userSession');
+    const savedUser = localStorage.getItem('userLogin');
     if (savedUser) {
       try {
-        const userData = JSON.parse(savedUser);
-        setUserLogin(userData);
+        setUserLogin(JSON.parse(savedUser));
       } catch (error) {
-        console.error('Erro ao recuperar sessão salva:', error);
-        localStorage.removeItem('userSession');
+        console.error('Error parsing saved user:', error);
+        localStorage.removeItem('userLogin');
       }
     }
     setLoading(false);
   }, []);
 
-  const signIn = async (email: string, password: string) => {
-    console.log('=== INÍCIO DO PROCESSO DE LOGIN ===');
-    console.log('Email:', email);
-    console.log('Timestamp:', new Date().toISOString());
-    
-    try {
-      // Validar as credenciais na tabela users
-      console.log('Validando credenciais na tabela users...');
-      const userData = await UserAuthService.validateUserCredentials(email, password);
-      
-      if (userData) {
-        console.log('Credenciais válidas na tabela users:', userData);
-        setUserLogin(userData);
-        
-        // Salvar sessão no localStorage
-        localStorage.setItem('userSession', JSON.stringify(userData));
-        
-        console.log('Login realizado com sucesso usando tabela users!');
-        return { error: null };
-      }
-      
-      // Se não encontrou credenciais válidas
-      console.log('Credenciais inválidas');
-      return { 
-        error: { 
-          message: 'Email ou senha incorretos',
-          code: 'invalid_credentials',
-          userMessage: 'Email ou senha incorretos. Verifique suas credenciais e tente novamente.'
-        } 
-      };
-      
-    } catch (error: any) {
-      console.error('=== ERRO INESPERADO ===');
-      console.error('Tipo do erro:', typeof error);
-      console.error('Erro completo:', error);
-      console.error('Stack trace:', error.stack);
-      
-      return { 
-        error: { 
-          message: `Erro inesperado: ${error.message || 'Erro desconhecido'}`,
-          code: 'unexpected_error'
-        } 
-      };
+  // Salvar usuário no localStorage quando mudar
+  useEffect(() => {
+    if (userLogin) {
+      localStorage.setItem('userLogin', JSON.stringify(userLogin));
+    } else {
+      localStorage.removeItem('userLogin');
     }
-  };
-
-  const signOut = async () => {
-    setUserLogin(null);
-    localStorage.removeItem('userSession');
-    toast({
-      title: "Sucesso",
-      description: "Logout realizado com sucesso!"
-    });
-  };
-
-  const isMasterUser = () => {
-    return userLogin?.is_master || false;
-  };
-
-  const hasPermission = (action: 'create' | 'edit' | 'delete') => {
-    if (!userLogin) return false;
-    
-    const isAdmin = userLogin?.is_admin || false;
-    const isMaster = userLogin?.is_master || false;
-    
-    if (isMaster) return true;
-    if (isAdmin) return true;
-    
-    if (action === 'delete') return false;
-    
-    return true;
-  };
+  }, [userLogin]);
 
   return (
     <AuthContext.Provider value={{
       userLogin,
-      loading,
-      signIn,
-      signOut,
-      hasPermission,
-      isMasterUser
+      login,
+      logout,
+      loading
     }}>
       {children}
     </AuthContext.Provider>

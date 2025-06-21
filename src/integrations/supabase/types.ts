@@ -154,45 +154,6 @@ export type Database = {
           },
         ]
       }
-      plan_templates: {
-        Row: {
-          created_at: string
-          id: string
-          plan_id: string
-          template_id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          plan_id: string
-          template_id: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          plan_id?: string
-          template_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "plan_templates_plan_id_fkey"
-            columns: ["plan_id"]
-            isOneToOne: false
-            referencedRelation: "plans"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "plan_templates_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "message_templates"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       plans: {
         Row: {
           created_at: string
@@ -225,42 +186,6 @@ export type Database = {
           max_sql_queries?: number
           name?: string
           price?: number
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      profiles: {
-        Row: {
-          created_at: string
-          email: string | null
-          id: string
-          is_admin: boolean
-          is_master_user: boolean
-          is_test_user: boolean
-          name: string | null
-          role: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          email?: string | null
-          id: string
-          is_admin?: boolean
-          is_master_user?: boolean
-          is_test_user?: boolean
-          name?: string | null
-          role?: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          email?: string | null
-          id?: string
-          is_admin?: boolean
-          is_master_user?: boolean
-          is_test_user?: boolean
-          name?: string | null
-          role?: string
           updated_at?: string
         }
         Relationships: []
@@ -553,7 +478,7 @@ export type Database = {
         }
         Insert: {
           config_key: string
-          config_value: Json
+          config_value?: Json
           created_at?: string
           description?: string | null
           id?: string
@@ -686,67 +611,6 @@ export type Database = {
           },
         ]
       }
-      user_subscriptions: {
-        Row: {
-          auto_renew: boolean
-          company_id: string | null
-          created_at: string
-          expires_at: string
-          id: string
-          plan_id: string | null
-          starts_at: string
-          status: string
-          updated_at: string
-          user_id: string | null
-        }
-        Insert: {
-          auto_renew?: boolean
-          company_id?: string | null
-          created_at?: string
-          expires_at: string
-          id?: string
-          plan_id?: string | null
-          starts_at?: string
-          status?: string
-          updated_at?: string
-          user_id?: string | null
-        }
-        Update: {
-          auto_renew?: boolean
-          company_id?: string | null
-          created_at?: string
-          expires_at?: string
-          id?: string
-          plan_id?: string | null
-          starts_at?: string
-          status?: string
-          updated_at?: string
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_subscriptions_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_subscriptions_plan_id_fkey"
-            columns: ["plan_id"]
-            isOneToOne: false
-            referencedRelation: "plans"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_subscriptions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       users: {
         Row: {
           created_at: string
@@ -797,10 +661,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      is_master_user: {
-        Args: { user_uuid?: string }
-        Returns: boolean
-      }
       is_master_user_check: {
         Args: { user_uuid?: string }
         Returns: boolean

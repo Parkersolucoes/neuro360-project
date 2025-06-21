@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Company } from '@/types/company';
 
@@ -8,7 +9,14 @@ export class CompanyService {
       
       const { data, error } = await supabase
         .from('companies')
-        .select('*')
+        .select(`
+          *,
+          plans (
+            id,
+            name,
+            price
+          )
+        `)
         .order('name', { ascending: true });
 
       if (error) {
@@ -41,7 +49,12 @@ export class CompanyService {
             status,
             plan_id,
             created_at,
-            updated_at
+            updated_at,
+            plans (
+              id,
+              name,
+              price
+            )
           )
         `)
         .eq('user_id', userId);
@@ -114,7 +127,14 @@ export class CompanyService {
     const { data, error } = await supabase
       .from('companies')
       .insert([companyToInsert])
-      .select()
+      .select(`
+        *,
+        plans (
+          id,
+          name,
+          price
+        )
+      `)
       .single();
 
     if (error) {
@@ -189,7 +209,14 @@ export class CompanyService {
       .from('companies')
       .update(updateData)
       .eq('id', id)
-      .select()
+      .select(`
+        *,
+        plans (
+          id,
+          name,
+          price
+        )
+      `)
       .single();
 
     if (error) {
