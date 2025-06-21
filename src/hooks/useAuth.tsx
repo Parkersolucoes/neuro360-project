@@ -10,6 +10,7 @@ interface Profile {
   email: string | null;
   role: string;
   is_admin: boolean;
+  is_master_user: boolean;
   is_test_user: boolean;
   created_at: string;
   updated_at: string;
@@ -24,6 +25,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   hasPermission: (action: 'create' | 'edit' | 'delete') => boolean;
+  isMasterUser: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -133,8 +135,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const isMasterUser = () => {
+    return profile?.is_master_user || false;
+  };
+
   const hasPermission = (action: 'create' | 'edit' | 'delete') => {
     if (!profile) return false;
+    
+    // Usuários master têm todas as permissões
+    if (profile.is_master_user) return true;
     
     // Administradores têm todas as permissões
     if (profile.is_admin) return true;
@@ -154,7 +163,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signUp,
       signIn,
       signOut,
-      hasPermission
+      hasPermission,
+      isMasterUser
     }}>
       {children}
     </AuthContext.Provider>
