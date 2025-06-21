@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Database, Save, AlertCircle } from "lucide-react";
+import { Database, Save, AlertCircle, Loader2 } from "lucide-react";
 import { useSQLConnections, SQLConnection } from "@/hooks/useSQLConnections";
 import { useCompanies } from "@/hooks/useCompanies";
 import { usePlans } from "@/hooks/usePlans";
@@ -17,7 +17,7 @@ interface SQLConnectionFormProps {
 }
 
 export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormProps) {
-  const { createConnection } = useSQLConnections();
+  const { createConnection, testing } = useSQLConnections();
   const { currentCompany } = useCompanies();
   const { plans } = usePlans();
 
@@ -133,7 +133,7 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
                 onChange={(e) => setSqlForm({...sqlForm, name: e.target.value})}
                 placeholder="Ex: Banco Principal"
                 className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                disabled={isLimitReached}
+                disabled={isLimitReached || testing}
                 required
               />
             </div>
@@ -145,7 +145,7 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
                 onChange={(e) => setSqlForm({...sqlForm, host: e.target.value})}
                 placeholder="Ex: localhost"
                 className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                disabled={isLimitReached}
+                disabled={isLimitReached || testing}
                 required
               />
             </div>
@@ -157,7 +157,7 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
                 onChange={(e) => setSqlForm({...sqlForm, database_name: e.target.value})}
                 placeholder="Nome do banco"
                 className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                disabled={isLimitReached}
+                disabled={isLimitReached || testing}
                 required
               />
             </div>
@@ -170,7 +170,7 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
                 onChange={(e) => setSqlForm({...sqlForm, port: parseInt(e.target.value) || 5432})}
                 placeholder="5432"
                 className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                disabled={isLimitReached}
+                disabled={isLimitReached || testing}
                 required
               />
             </div>
@@ -182,7 +182,7 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
                 onChange={(e) => setSqlForm({...sqlForm, username: e.target.value})}
                 placeholder="Usuário do banco"
                 className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                disabled={isLimitReached}
+                disabled={isLimitReached || testing}
                 required
               />
             </div>
@@ -195,7 +195,7 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
                 onChange={(e) => setSqlForm({...sqlForm, password: e.target.value})}
                 placeholder="Senha do banco"
                 className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                disabled={isLimitReached}
+                disabled={isLimitReached || testing}
                 required
               />
             </div>
@@ -203,10 +203,19 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
           <Button 
             type="submit" 
             className="bg-blue-600 hover:bg-blue-700"
-            disabled={isLimitReached}
+            disabled={isLimitReached || testing}
           >
-            <Save className="w-4 h-4 mr-2" />
-            Salvar Conexão
+            {testing ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Testando Conexão...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4 mr-2" />
+                Testar e Salvar Conexão
+              </>
+            )}
           </Button>
         </form>
       </CardContent>

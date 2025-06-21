@@ -4,6 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useCompanies } from '@/hooks/useCompanies';
 import { usePlans } from '@/hooks/usePlans';
+import { testSQLConnection } from '@/services/sqlConnectionService';
 
 export interface SQLConnection {
   id: string;
@@ -23,6 +24,7 @@ export interface SQLConnection {
 export function useSQLConnections() {
   const [connections, setConnections] = useState<SQLConnection[]>([]);
   const [loading, setLoading] = useState(true);
+  const [testing, setTesting] = useState(false);
   const { toast } = useToast();
   const { currentCompany } = useCompanies();
   const { plans } = usePlans();
@@ -96,6 +98,26 @@ export function useSQLConnections() {
         return;
       }
 
+      // Testar conexão antes de salvar
+      setTesting(true);
+      const testResult = await testSQLConnection({
+        host: connectionData.host,
+        port: connectionData.port,
+        database_name: connectionData.database_name,
+        username: connectionData.username,
+        password: connectionData.password,
+        connection_type: connectionData.connection_type
+      });
+
+      if (!testResult.success) {
+        toast({
+          title: "Erro de Conexão",
+          description: testResult.message,
+          variant: "destructive"
+        });
+        return;
+      }
+
       // Garantir que a conexão seja associada à empresa atual
       const dataWithCompany = {
         ...connectionData,
@@ -121,13 +143,15 @@ export function useSQLConnections() {
       setConnections(prev => [data, ...prev]);
       toast({
         title: "Sucesso",
-        description: "Conexão SQL criada com sucesso!"
+        description: "Conexão SQL criada e testada com sucesso!"
       });
       
       return data;
     } catch (error) {
       console.error('Error creating SQL connection:', error);
       throw error;
+    } finally {
+      setTesting(false);
     }
   };
 
@@ -201,6 +225,7 @@ export function useSQLConnections() {
   return {
     connections,
     loading,
+    testing,
     createConnection,
     updateConnection,
     deleteConnection,

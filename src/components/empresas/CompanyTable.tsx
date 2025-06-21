@@ -2,7 +2,8 @@
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2, Users, Calendar, Settings } from "lucide-react";
+import { Edit, Trash2, Users, Calendar, Settings, Database, FileText } from "lucide-react";
+import { useCompanyStats } from "@/hooks/useCompanyStats";
 
 interface Company {
   id: string;
@@ -32,6 +33,8 @@ const plans = [
 ];
 
 export function CompanyTable({ companies, onEdit, onDelete, onConfigure }: CompanyTableProps) {
+  const { stats } = useCompanyStats();
+
   const getPlanLabel = (plan: string) => {
     const planObj = plans.find(p => p.value === plan);
     return planObj ? planObj.label : plan;
@@ -42,6 +45,14 @@ export function CompanyTable({ companies, onEdit, onDelete, onConfigure }: Compa
     return planObj ? planObj.color : "bg-gray-100 text-gray-800";
   };
 
+  const getCompanyStats = (companyId: string) => {
+    return stats.find(stat => stat.company_id === companyId) || {
+      sql_connections_count: 0,
+      active_sql_connections_count: 0,
+      sql_queries_count: 0
+    };
+  };
+
   return (
     <Table>
       <TableHeader>
@@ -49,86 +60,101 @@ export function CompanyTable({ companies, onEdit, onDelete, onConfigure }: Compa
           <TableHead>Empresa</TableHead>
           <TableHead>Contato</TableHead>
           <TableHead>Plano</TableHead>
-          <TableHead>Usuários</TableHead>
+          <TableHead>Conexões SQL</TableHead>
+          <TableHead>Consultas SQL</TableHead>
           <TableHead>Status</TableHead>
           <TableHead>Última Atividade</TableHead>
           <TableHead>Ações</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {companies.map((company) => (
-          <TableRow key={company.id}>
-            <TableCell>
-              <div>
-                <div className="font-medium">{company.name}</div>
-                <div className="text-sm text-gray-500">{company.document}</div>
-              </div>
-            </TableCell>
-            <TableCell>
-              <div className="space-y-1">
-                <div className="text-sm">{company.email}</div>
-                <div className="text-sm text-gray-500">{company.phone}</div>
-              </div>
-            </TableCell>
-            <TableCell>
-              <Badge className={getPlanColor(company.plan)}>
-                {getPlanLabel(company.plan)}
-              </Badge>
-            </TableCell>
-            <TableCell>
-              <div className="flex items-center space-x-2">
-                <Users className="w-4 h-4 text-gray-400" />
-                <span>{company.usersCount}</span>
-              </div>
-            </TableCell>
-            <TableCell>
-              <Badge className={
-                company.status === "active" 
-                  ? "bg-green-100 text-green-800" 
-                  : company.status === "suspended"
-                  ? "bg-red-100 text-red-800"
-                  : "bg-gray-100 text-gray-800"
-              }>
-                {company.status === "active" ? "Ativa" : 
-                 company.status === "suspended" ? "Suspensa" : "Inativa"}
-              </Badge>
-            </TableCell>
-            <TableCell>
-              <div className="flex items-center space-x-2">
-                <Calendar className="w-4 h-4 text-gray-400" />
-                <span className="text-sm">{company.lastActivity}</span>
-              </div>
-            </TableCell>
-            <TableCell>
-              <div className="flex space-x-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => onEdit(company)}
-                >
-                  <Edit className="w-3 h-3" />
-                </Button>
-                {onConfigure && (
+        {companies.map((company) => {
+          const companyStats = getCompanyStats(company.id);
+          return (
+            <TableRow key={company.id}>
+              <TableCell>
+                <div>
+                  <div className="font-medium">{company.name}</div>
+                  <div className="text-sm text-gray-500">{company.document}</div>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="space-y-1">
+                  <div className="text-sm">{company.email}</div>
+                  <div className="text-sm text-gray-500">{company.phone}</div>
+                </div>
+              </TableCell>
+              <TableCell>
+                <Badge className={getPlanColor(company.plan)}>
+                  {getPlanLabel(company.plan)}
+                </Badge>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center space-x-2">
+                  <Database className="w-4 h-4 text-gray-400" />
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium">
+                      {companyStats.active_sql_connections_count}/{companyStats.sql_connections_count}
+                    </span>
+                    <span className="text-xs text-gray-500">Ativas/Total</span>
+                  </div>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center space-x-2">
+                  <FileText className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm">{companyStats.sql_queries_count}</span>
+                </div>
+              </TableCell>
+              <TableCell>
+                <Badge className={
+                  company.status === "active" 
+                    ? "bg-green-100 text-green-800" 
+                    : company.status === "suspended"
+                    ? "bg-red-100 text-red-800"
+                    : "bg-gray-100 text-gray-800"
+                }>
+                  {company.status === "active" ? "Ativa" : 
+                   company.status === "suspended" ? "Suspensa" : "Inativa"}
+                </Badge>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center space-x-2">
+                  <Calendar className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm">{company.lastActivity}</span>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex space-x-2">
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => onConfigure(company)}
+                    onClick={() => onEdit(company)}
                   >
-                    <Settings className="w-3 h-3" />
+                    <Edit className="w-3 h-3" />
                   </Button>
-                )}
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                  onClick={() => onDelete(company.id)}
-                >
-                  <Trash2 className="w-3 h-3" />
-                </Button>
-              </div>
-            </TableCell>
-          </TableRow>
-        ))}
+                  {onConfigure && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onConfigure(company)}
+                    >
+                      <Settings className="w-3 h-3" />
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    onClick={() => onDelete(company.id)}
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          );
+        })}
       </TableBody>
     </Table>
   );
