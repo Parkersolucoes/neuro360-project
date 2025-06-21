@@ -17,7 +17,8 @@ import {
   Package,
   Shield,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  SettingsIcon
 } from "lucide-react";
 import {
   Sidebar,
@@ -91,6 +92,11 @@ const adminMenuItems = [
     title: "Financeiro",
     url: "/financeiro",
     icon: CreditCard,
+  },
+  {
+    title: "Config. do Sistema",
+    url: "/configuracao-sistema",
+    icon: SettingsIcon,
   },
 ];
 

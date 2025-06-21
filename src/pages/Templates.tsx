@@ -85,7 +85,10 @@ export default function Templates() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Templates de Mensagem</h1>
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center space-x-2">
+            <MessageSquare className="w-8 h-8 text-blue-600" />
+            <span>Templates de Mensagem</span>
+          </h1>
           <p className="text-gray-600 mt-2">Gerencie templates para envio automático via WhatsApp</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -108,12 +111,13 @@ export default function Templates() {
                     placeholder="Nome do template"
                     value={newTemplate.name}
                     onChange={(e) => setNewTemplate({...newTemplate, name: e.target.value})}
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="category">Categoria</Label>
                   <Select value={newTemplate.category} onValueChange={(value) => setNewTemplate({...newTemplate, category: value})}>
-                    <SelectTrigger>
+                    <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                       <SelectValue placeholder="Selecione a categoria" />
                     </SelectTrigger>
                     <SelectContent>
@@ -132,6 +136,7 @@ export default function Templates() {
                   placeholder="Descrição do template"
                   value={newTemplate.description}
                   onChange={(e) => setNewTemplate({...newTemplate, description: e.target.value})}
+                  className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
               <div className="space-y-2">
@@ -139,7 +144,7 @@ export default function Templates() {
                 <Textarea
                   id="message"
                   placeholder="Digite sua mensagem aqui. Use {variavel} para inserir dados dinâmicos..."
-                  className="min-h-32"
+                  className="min-h-32 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   value={newTemplate.message}
                   onChange={(e) => setNewTemplate({...newTemplate, message: e.target.value})}
                 />
@@ -152,7 +157,7 @@ export default function Templates() {
                   <Label>Variáveis Detectadas</Label>
                   <div className="flex flex-wrap gap-2">
                     {extractVariables(newTemplate.message).map((variable, index) => (
-                      <Badge key={index} variant="secondary">
+                      <Badge key={index} className="bg-blue-100 text-blue-800">
                         {variable}
                       </Badge>
                     ))}
@@ -163,7 +168,11 @@ export default function Templates() {
                 <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancelar
                 </Button>
-                <Button onClick={saveTemplate} disabled={!newTemplate.name || !newTemplate.message}>
+                <Button 
+                  onClick={saveTemplate} 
+                  disabled={!newTemplate.name || !newTemplate.message}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
                   Salvar Template
                 </Button>
               </div>
@@ -176,7 +185,7 @@ export default function Templates() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
-              <MessageSquare className="w-5 h-5 text-blue-500" />
+              <MessageSquare className="w-5 h-5 text-blue-600" />
               <span>Templates Salvos</span>
             </CardTitle>
             <p className="text-sm text-gray-600">Lista de todos os templates de mensagem</p>
@@ -194,7 +203,7 @@ export default function Templates() {
                   <div className="flex-1">
                     <div className="flex items-center space-x-2">
                       <h3 className="font-medium text-gray-900">{template.name}</h3>
-                      <Badge variant="secondary">{template.category}</Badge>
+                      <Badge className="bg-blue-100 text-blue-800">{template.category}</Badge>
                     </div>
                     <p className="text-sm text-gray-600 mt-1">{template.description}</p>
                     <div className="flex flex-wrap gap-1 mt-2">
@@ -219,6 +228,7 @@ export default function Templates() {
                       e.stopPropagation();
                       previewTemplate(template);
                     }}
+                    className="border-blue-200 text-blue-600 hover:bg-blue-50"
                   >
                     <Eye className="w-3 h-3 mr-1" />
                     Visualizar
@@ -229,6 +239,7 @@ export default function Templates() {
                     onClick={(e) => {
                       e.stopPropagation();
                     }}
+                    className="border-blue-200 text-blue-600 hover:bg-blue-50"
                   >
                     <Edit className="w-3 h-3 mr-1" />
                     Editar
@@ -236,7 +247,7 @@ export default function Templates() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
                     onClick={(e) => {
                       e.stopPropagation();
                       setTemplates(templates.filter(t => t.id !== template.id));
@@ -252,7 +263,10 @@ export default function Templates() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Preview do Template</CardTitle>
+            <CardTitle className="flex items-center space-x-2">
+              <Eye className="w-5 h-5 text-blue-600" />
+              <span>Preview do Template</span>
+            </CardTitle>
             <p className="text-sm text-gray-600">Visualize como ficará a mensagem</p>
           </CardHeader>
           <CardContent>
@@ -264,7 +278,7 @@ export default function Templates() {
                 </div>
                 <div className="space-y-2">
                   <Label>Categoria</Label>
-                  <Badge variant="secondary">{selectedTemplate.category}</Badge>
+                  <Badge className="bg-blue-100 text-blue-800">{selectedTemplate.category}</Badge>
                 </div>
                 <div className="space-y-2">
                   <Label>Variáveis</Label>
@@ -278,9 +292,9 @@ export default function Templates() {
                 </div>
                 <div className="space-y-2">
                   <Label>Mensagem</Label>
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                     <div className="flex items-start space-x-3">
-                      <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                      <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
                         <MessageSquare className="w-4 h-4 text-white" />
                       </div>
                       <div className="flex-1">

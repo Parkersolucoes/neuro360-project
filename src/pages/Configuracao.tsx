@@ -4,30 +4,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { 
   Database, 
   MessageSquare, 
-  CreditCard, 
-  Shield,
   Settings,
-  CheckCircle,
-  AlertTriangle,
+  Shield,
   Save
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSQLConnections } from "@/hooks/useSQLConnections";
 import { useEvolutionConfig } from "@/hooks/useEvolutionConfig";
-import { useAssasConfig } from "@/hooks/useAssasConfig";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 
 export default function Configuracao() {
   const { toast } = useToast();
   const { connections, createConnection } = useSQLConnections();
   const { config: evolutionConfig, saveConfig: saveEvolutionConfig } = useEvolutionConfig();
-  const { config: assasConfig, saveConfig: saveAssasConfig } = useAssasConfig();
   const { isAdmin } = useAdminAuth();
 
   // Estados para formulários
@@ -44,14 +38,6 @@ export default function Configuracao() {
     instance_name: "",
     api_url: "",
     api_key: ""
-  });
-
-  const [assasForm, setAssasForm] = useState({
-    api_key: "",
-    api_url: "https://www.asaas.com/api/v3",
-    is_sandbox: true,
-    wallet_id: "",
-    webhook_url: ""
   });
 
   const handleSQLSubmit = async (e: React.FormEvent) => {
@@ -99,37 +85,19 @@ export default function Configuracao() {
     }
   };
 
-  const handleAssasSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isAdmin) {
-      toast({
-        title: "Erro",
-        description: "Acesso restrito para administradores",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      await saveAssasConfig({
-        ...assasForm,
-        status: 'disconnected'
-      });
-      setAssasForm({
-        api_key: "",
-        api_url: "https://www.asaas.com/api/v3",
-        is_sandbox: true,
-        wallet_id: "",
-        webhook_url: ""
-      });
-      toast({
-        title: "Sucesso",
-        description: "Configuração ASSAS criada com sucesso!"
-      });
-    } catch (error) {
-      console.error('Error creating ASSAS config:', error);
-    }
-  };
+  if (!isAdmin) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="text-center">
+          <Shield className="w-16 h-16 text-blue-600 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Acesso Restrito</h2>
+          <p className="text-gray-600">
+            Esta página é restrita para administradores do sistema.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -142,7 +110,7 @@ export default function Configuracao() {
       </div>
 
       <Tabs defaultValue="sql" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="sql" className="flex items-center space-x-2">
             <Database className="w-4 h-4" />
             <span>SQL Server</span>
@@ -151,11 +119,6 @@ export default function Configuracao() {
             <MessageSquare className="w-4 h-4" />
             <span>Evolution API</span>
           </TabsTrigger>
-          <TabsTrigger value="assas" className="flex items-center space-x-2">
-            <CreditCard className="w-4 h-4" />
-            <span>ASSAS</span>
-            {!isAdmin && <Shield className="w-3 h-3 text-blue-600" />}
-          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="sql">
@@ -163,7 +126,7 @@ export default function Configuracao() {
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <Database className="w-5 h-5 text-blue-500" />
+                  <Database className="w-5 h-5 text-blue-600" />
                   <span>Conexões SQL Server</span>
                 </div>
                 <Badge variant="outline" className="text-blue-600 border-blue-200">
@@ -285,7 +248,7 @@ export default function Configuracao() {
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <MessageSquare className="w-5 h-5 text-green-500" />
+                  <MessageSquare className="w-5 h-5 text-blue-600" />
                   <span>Evolution API</span>
                 </div>
                 {evolutionConfig && (
@@ -335,102 +298,11 @@ export default function Configuracao() {
                     required
                   />
                 </div>
-                <Button type="submit" className="bg-green-600 hover:bg-green-700">
+                <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
                   <Save className="w-4 h-4 mr-2" />
                   Salvar Configuração
                 </Button>
               </form>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="assas">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <CreditCard className="w-5 h-5 text-purple-500" />
-                  <span>ASSAS (Gateway de Pagamento)</span>
-                  {!isAdmin && <Shield className="w-4 h-4 text-blue-600" />}
-                </div>
-                {assasConfig && (
-                  <Badge className={
-                    assasConfig.status === 'connected' 
-                      ? "bg-green-100 text-green-800" 
-                      : "bg-red-100 text-red-800"
-                  }>
-                    {assasConfig.status === 'connected' ? 'Conectado' : 'Desconectado'}
-                  </Badge>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {!isAdmin ? (
-                <div className="text-center py-8">
-                  <Shield className="w-12 h-12 text-blue-600 mx-auto mb-4" />
-                  <p className="text-gray-600">
-                    Esta configuração é restrita para administradores do sistema.
-                  </p>
-                </div>
-              ) : (
-                <form onSubmit={handleAssasSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="assas_key">Chave da API</Label>
-                    <Input
-                      id="assas_key"
-                      type="password"
-                      value={assasForm.api_key}
-                      onChange={(e) => setAssasForm({...assasForm, api_key: e.target.value})}
-                      placeholder="Sua chave da API ASSAS"
-                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="assas_url">URL da API</Label>
-                    <Input
-                      id="assas_url"
-                      value={assasForm.api_url}
-                      onChange={(e) => setAssasForm({...assasForm, api_url: e.target.value})}
-                      placeholder="https://www.asaas.com/api/v3"
-                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="assas_wallet">Wallet ID (Opcional)</Label>
-                    <Input
-                      id="assas_wallet"
-                      value={assasForm.wallet_id}
-                      onChange={(e) => setAssasForm({...assasForm, wallet_id: e.target.value})}
-                      placeholder="ID da carteira"
-                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="assas_webhook">Webhook URL (Opcional)</Label>
-                    <Input
-                      id="assas_webhook"
-                      value={assasForm.webhook_url}
-                      onChange={(e) => setAssasForm({...assasForm, webhook_url: e.target.value})}
-                      placeholder="https://seusite.com/webhook"
-                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="assas_sandbox"
-                      checked={assasForm.is_sandbox}
-                      onCheckedChange={(checked) => setAssasForm({...assasForm, is_sandbox: checked})}
-                    />
-                    <Label htmlFor="assas_sandbox">Modo Sandbox (Teste)</Label>
-                  </div>
-                  <Button type="submit" className="bg-purple-600 hover:bg-purple-700">
-                    <Save className="w-4 h-4 mr-2" />
-                    Salvar Configuração
-                  </Button>
-                </form>
-              )}
             </CardContent>
           </Card>
         </TabsContent>

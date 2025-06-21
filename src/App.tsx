@@ -15,6 +15,7 @@ import ConsultasSQL from "./pages/ConsultasSQL";
 import Agendamento from "./pages/Agendamento";
 import QRCode from "./pages/QRCode";
 import Configuracao from "./pages/Configuracao";
+import ConfiguracaoSistema from "./pages/ConfiguracaoSistema";
 import Planos from "./pages/Planos";
 import Financeiro from "./pages/Financeiro";
 import NotFound from "./pages/NotFound";
@@ -41,6 +42,7 @@ const App = () => (
                   <Route path="/agendamento" element={<Agendamento />} />
                   <Route path="/qrcode" element={<QRCode />} />
                   <Route path="/configuracao" element={<Configuracao />} />
+                  <Route path="/configuracao-sistema" element={<ConfiguracaoSistema />} />
                   <Route path="/planos" element={<Planos />} />
                   <Route path="/financeiro" element={<Financeiro />} />
                   <Route path="*" element={<NotFound />} />
