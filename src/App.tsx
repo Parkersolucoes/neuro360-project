@@ -5,8 +5,11 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { AuthProvider } from "@/hooks/useAuth";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import Index from "./pages/Index";
+import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Empresas from "./pages/Empresas";
 import Usuarios from "./pages/Usuarios";
@@ -28,29 +31,46 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <SidebarProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/*" element={
-              <DashboardLayout>
-                <Routes>
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/empresas" element={<Empresas />} />
-                  <Route path="/usuarios" element={<Usuarios />} />
-                  <Route path="/templates" element={<Templates />} />
-                  <Route path="/consultas" element={<ConsultasSQL />} />
-                  <Route path="/agendamento" element={<Agendamento />} />
-                  <Route path="/qrcode" element={<QRCode />} />
-                  <Route path="/configuracao" element={<Configuracao />} />
-                  <Route path="/configuracao-sistema" element={<ConfiguracaoSistema />} />
-                  <Route path="/planos" element={<Planos />} />
-                  <Route path="/financeiro" element={<Financeiro />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </DashboardLayout>
-            } />
-          </Routes>
-        </SidebarProvider>
+        <AuthProvider>
+          <SidebarProvider>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/*" element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <Routes>
+                      <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/empresas" element={<Empresas />} />
+                      <Route path="/usuarios" element={<Usuarios />} />
+                      <Route path="/templates" element={<Templates />} />
+                      <Route path="/consultas" element={<ConsultasSQL />} />
+                      <Route path="/agendamento" element={<Agendamento />} />
+                      <Route path="/qrcode" element={<QRCode />} />
+                      <Route path="/configuracao" element={<Configuracao />} />
+                      <Route path="/configuracao-sistema" element={
+                        <ProtectedRoute requireAdmin={true}>
+                          <ConfiguracaoSistema />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/planos" element={
+                        <ProtectedRoute requireAdmin={true}>
+                          <Planos />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/financeiro" element={
+                        <ProtectedRoute requireAdmin={true}>
+                          <Financeiro />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } />
+            </Routes>
+          </SidebarProvider>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

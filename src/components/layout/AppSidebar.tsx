@@ -35,7 +35,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { CompanySelector } from "./CompanySelector";
 import { useCompanies } from "@/hooks/useCompanies";
-import { useAdminAuth } from "@/hooks/useAdminAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { AdminLoginModal } from "@/components/admin/AdminLoginModal";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
@@ -103,9 +103,11 @@ const adminMenuItems = [
 export function AppSidebar() {
   const location = useLocation();
   const { currentCompany } = useCompanies();
-  const { isAdmin, loginAsAdmin } = useAdminAuth();
+  const { profile, signOut } = useAuth();
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
+
+  const isAdmin = profile?.is_admin || false;
 
   const handleAdminAccess = () => {
     if (isAdmin) {
@@ -113,6 +115,10 @@ export function AppSidebar() {
     } else {
       setShowAdminLogin(true);
     }
+  };
+
+  const handleSignOut = () => {
+    signOut();
   };
 
   return (
@@ -206,9 +212,16 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="p-4 bg-slate-900">
+        {profile && (
+          <div className="mb-3 p-2 bg-slate-800 rounded-lg">
+            <p className="text-sm text-white font-medium">{profile.name}</p>
+            <p className="text-xs text-gray-400">{profile.email}</p>
+          </div>
+        )}
         <Button 
           variant="ghost" 
           className="w-full justify-start text-gray-300 hover:text-red-400 hover:bg-slate-800"
+          onClick={handleSignOut}
         >
           <LogOut className="w-4 h-4 mr-2" />
           Sair
@@ -218,7 +231,7 @@ export function AppSidebar() {
       <AdminLoginModal
         open={showAdminLogin}
         onOpenChange={setShowAdminLogin}
-        onLogin={loginAsAdmin}
+        onLogin={async () => true}
       />
     </Sidebar>
   );
