@@ -3,10 +3,12 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Building2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, Building2, Settings } from "lucide-react";
 import { CompanyForm } from "@/components/empresas/CompanyForm";
 import { CompanyTable } from "@/components/empresas/CompanyTable";
 import { CompanyStats } from "@/components/empresas/CompanyStats";
+import { CompanyConfigurations } from "@/components/empresas/CompanyConfigurations";
 import { useCompanies } from "@/hooks/useCompanies";
 import { usePlans } from "@/hooks/usePlans";
 import type { Company as ComponentCompany } from "@/components/empresas/types";
@@ -16,6 +18,7 @@ export default function Empresas() {
   const { plans, loading: plansLoading } = usePlans();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<ComponentCompany | null>(null);
+  const [selectedCompanyForConfig, setSelectedCompanyForConfig] = useState<any>(null);
 
   // Convert hook companies to component companies
   const componentCompanies: ComponentCompany[] = companies.map(company => {
@@ -26,7 +29,7 @@ export default function Empresas() {
       email: company.email,
       phone: company.phone || '',
       address: company.address || '',
-      plan: 'basic' as const, // Default plan mapping
+      plan: 'basic' as const,
       status: company.status === 'active' ? 'active' as const : 
               company.status === 'suspended' ? 'suspended' as const : 'inactive' as const,
       createdAt: company.created_at,
@@ -97,6 +100,11 @@ export default function Empresas() {
     }
   };
 
+  const handleConfigureCompany = (company: ComponentCompany) => {
+    const fullCompany = companies.find(c => c.id === company.id);
+    setSelectedCompanyForConfig(fullCompany);
+  };
+
   if (loading || plansLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -110,7 +118,7 @@ export default function Empresas() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Empresas</h1>
-          <p className="text-gray-600 mt-2">Gerencie as empresas do sistema</p>
+          <p className="text-gray-600 mt-2">Gerencie as empresas e suas configurações</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -150,21 +158,58 @@ export default function Empresas() {
 
       <CompanyStats companies={componentCompanies} />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Building2 className="w-5 h-5 text-blue-500" />
+      <Tabs defaultValue="empresas" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="empresas" className="flex items-center space-x-2">
+            <Building2 className="w-4 h-4" />
             <span>Lista de Empresas</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <CompanyTable
-            companies={componentCompanies}
-            onEdit={handleEditCompany}
-            onDelete={handleDeleteCompany}
-          />
-        </CardContent>
-      </Card>
+          </TabsTrigger>
+          <TabsTrigger value="configuracoes" className="flex items-center space-x-2">
+            <Settings className="w-4 h-4" />
+            <span>Configurações</span>
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="empresas">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Building2 className="w-5 h-5 text-blue-500" />
+                <span>Lista de Empresas</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CompanyTable
+                companies={componentCompanies}
+                onEdit={handleEditCompany}
+                onDelete={handleDeleteCompany}
+                onConfigure={handleConfigureCompany}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="configuracoes">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Settings className="w-5 h-5 text-blue-500" />
+                <span>Configurações da Empresa</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {selectedCompanyForConfig ? (
+                <CompanyConfigurations company={selectedCompanyForConfig} />
+              ) : (
+                <div className="text-center py-12">
+                  <Settings className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">Selecione uma empresa na lista para configurar</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

@@ -6,12 +6,16 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Plus, AlertCircle } from "lucide-react";
 import { SQLConnection } from "@/hooks/useSQLConnections";
 import { useCompanies } from "@/hooks/useCompanies";
+import { usePlans } from "@/hooks/usePlans";
+import { useToast } from "@/hooks/use-toast";
 
 interface QueryFormProps {
   connections: SQLConnection[];
+  queries: any[];
   onSaveQuery: (query: {
     name: string;
     description: string;
@@ -20,9 +24,12 @@ interface QueryFormProps {
   }) => Promise<void>;
 }
 
-export function QueryForm({ connections, onSaveQuery }: QueryFormProps) {
+export function QueryForm({ connections, queries, onSaveQuery }: QueryFormProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { currentCompany } = useCompanies();
+  const { plans } = usePlans();
+  const { toast } = useToast();
+  
   const [newQuery, setNewQuery] = useState({
     name: "",
     description: "",
@@ -35,7 +42,39 @@ export function QueryForm({ connections, onSaveQuery }: QueryFormProps) {
     connection => connection.company_id === currentCompany?.id
   );
 
+  // Verificar limite de consultas baseado no plano
+  const checkQueryLimit = () => {
+    if (!currentCompany) {
+      toast({
+        title: "Erro",
+        description: "Selecione uma empresa para criar consultas",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    // Buscar plano da empresa (assumindo plano básico como padrão)
+    const basicPlan = plans.find(plan => plan.name.toLowerCase().includes('básico') || plan.name.toLowerCase().includes('basic'));
+    const maxQueries = basicPlan?.max_sql_queries || 1;
+    
+    // Contar consultas da empresa atual
+    const companyQueries = queries.length; // As consultas já são filtradas por empresa
+
+    if (companyQueries >= maxQueries) {
+      toast({
+        title: "Limite atingido",
+        description: `Seu plano permite apenas ${maxQueries} consulta(s). Faça upgrade para criar mais consultas.`,
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSaveQuery = async () => {
+    if (!checkQueryLimit()) return;
+
     try {
       await onSaveQuery(newQuery);
       setNewQuery({ name: "", description: "", query_text: "", connection_id: "" });
@@ -45,12 +84,14 @@ export function QueryForm({ connections, onSaveQuery }: QueryFormProps) {
     }
   };
 
+  const isButtonDisabled = !currentCompany || companyConnections.length === 0;
+
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogTrigger asChild>
         <Button 
           className="bg-blue-600 hover:bg-blue-700 border-black"
-          disabled={!currentCompany || companyConnections.length === 0}
+          disabled={isButtonDisabled}
         >
           <Plus className="w-4 h-4 mr-2" />
           Nova Consulta
@@ -61,6 +102,24 @@ export function QueryForm({ connections, onSaveQuery }: QueryFormProps) {
           <DialogTitle>Nova Consulta SQL</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
+          {!currentCompany && (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Selecione uma empresa no menu lateral para criar consultas SQL.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {currentCompany && companyConnections.length === 0 && (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Configure pelo menos uma conexão SQL na empresa "{currentCompany.name}" antes de criar consultas.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Nome</Label>

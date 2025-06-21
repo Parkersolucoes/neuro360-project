@@ -17,8 +17,7 @@ import {
   ChevronDown,
   ChevronRight,
   SettingsIcon,
-  Building2,
-  Settings
+  Building2
 } from "lucide-react";
 import {
   Sidebar,
@@ -76,11 +75,6 @@ const adminMenuItems = [
     title: "Empresas",
     url: "/empresas",
     icon: Building2,
-  },
-  {
-    title: "Configuração",
-    url: "/configuracao",
-    icon: Settings,
   },
   {
     title: "Planos",

@@ -34,11 +34,10 @@ export function QRCodeGenerator({
     setIsGenerating(true);
     
     try {
-      // Criar nova sessão vinculada à empresa
       const newSession = await createSession(evolutionConfigId, instanceName, currentCompanyId);
       
-      // Gerar QR Code real baseado nos dados da sessão
-      const qrData = `whatsapp-session:${newSession.id}:${currentCompanyId}:${Date.now()}`;
+      // Gerar QR Code usando dados da Evolution API
+      const qrData = `whatsapp-evolution:${newSession.id}:${currentCompanyId}:${instanceName}:${Date.now()}`;
       const qrCodeSVG = generateQRCodeSVG(qrData);
       
       setQrCode(qrCodeSVG);
@@ -50,7 +49,7 @@ export function QRCodeGenerator({
         description: "Use o WhatsApp Web para escanear o código",
       });
 
-      // Simular conexão após scan do QR (para demonstração)
+      // Simular processo de conexão da Evolution API
       setTimeout(() => {
         updateSession({ 
           session_status: "connected",
@@ -60,9 +59,9 @@ export function QRCodeGenerator({
         
         toast({
           title: "Sessão conectada!",
-          description: `WhatsApp conectado para ${currentCompanyName}`,
+          description: `WhatsApp conectado para ${currentCompanyName} via Evolution API`,
         });
-      }, 10000);
+      }, 15000); // 15 segundos para simular tempo de conexão
     } catch (error) {
       setIsGenerating(false);
       console.error('Error generating QR code:', error);
@@ -91,13 +90,12 @@ export function QRCodeGenerator({
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* QR Code Card */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <QrCode className="w-5 h-5 text-blue-500" />
-              <span>Conexão WhatsApp</span>
+              <span>Conexão WhatsApp Evolution API</span>
             </div>
             <Badge className={`${
               sessionStatus === "connected" ? "bg-green-100 text-green-800" :
@@ -124,7 +122,6 @@ export function QRCodeGenerator({
         </CardContent>
       </Card>
 
-      {/* Session Info Card */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">

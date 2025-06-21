@@ -56,6 +56,7 @@ export default function ConsultasSQL() {
         </div>
         <QueryForm 
           connections={connections}
+          queries={queries}
           onSaveQuery={handleSaveQuery}
         />
       </div>
@@ -76,7 +77,6 @@ export default function ConsultasSQL() {
         />
       </div>
 
-      {/* Tabela de Resultados */}
       {(queryResult || isExecuting) && (
         <QueryResultTable 
           data={queryResult?.data || []}

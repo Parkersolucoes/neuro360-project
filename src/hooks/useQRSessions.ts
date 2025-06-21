@@ -7,13 +7,13 @@ export interface QRSession {
   id: string;
   company_id: string | null;
   session_name: string;
-  status: string;
-  qr_code: string | null;
+  evolution_config_id: string | null;
+  instance_name: string | null;
+  session_status: string;
+  qr_code_data: string | null;
   phone_number: string | null;
   created_at: string;
   updated_at: string;
-  session_status?: string;
-  qr_code_data?: string;
   connected_at?: string;
   last_activity?: string;
 }
@@ -42,11 +42,7 @@ export function useQRSessions() {
       }
 
       if (data && data.length > 0) {
-        setSession({
-          ...data[0],
-          session_status: data[0].status,
-          qr_code_data: data[0].qr_code
-        });
+        setSession(data[0]);
       }
     } catch (error) {
       console.error('Error fetching QR session:', error);
@@ -61,8 +57,10 @@ export function useQRSessions() {
         .from('qr_sessions')
         .insert([{
           company_id: companyId || null,
+          evolution_config_id: evolutionConfigId,
           session_name: instanceName,
-          status: 'waiting'
+          instance_name: instanceName,
+          session_status: 'waiting'
         }])
         .select()
         .single();
@@ -77,12 +75,7 @@ export function useQRSessions() {
         throw error;
       }
 
-      setSession({
-        ...data,
-        session_status: data.status,
-        qr_code_data: data.qr_code
-      });
-
+      setSession(data);
       return data;
     } catch (error) {
       console.error('Error creating QR session:', error);
@@ -94,21 +87,9 @@ export function useQRSessions() {
     if (!session) return;
 
     try {
-      const updateData: any = { ...updates, updated_at: new Date().toISOString() };
-      
-      // Map frontend properties to backend properties
-      if (updates.session_status) {
-        updateData.status = updates.session_status;
-        delete updateData.session_status;
-      }
-      if (updates.qr_code_data) {
-        updateData.qr_code = updates.qr_code_data;
-        delete updateData.qr_code_data;
-      }
-
       const { data, error } = await supabase
         .from('qr_sessions')
-        .update(updateData)
+        .update({ ...updates, updated_at: new Date().toISOString() })
         .eq('id', session.id)
         .select()
         .single();
@@ -118,13 +99,7 @@ export function useQRSessions() {
         return;
       }
 
-      setSession(prev => prev ? {
-        ...prev,
-        ...updates,
-        ...data,
-        session_status: data.status,
-        qr_code_data: data.qr_code
-      } : null);
+      setSession(prev => prev ? { ...prev, ...data } : null);
     } catch (error) {
       console.error('Error updating QR session:', error);
     }

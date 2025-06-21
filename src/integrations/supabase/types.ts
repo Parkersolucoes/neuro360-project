@@ -249,32 +249,44 @@ export type Database = {
       qr_sessions: {
         Row: {
           company_id: string | null
+          connected_at: string | null
           created_at: string
+          evolution_config_id: string | null
           id: string
+          instance_name: string | null
+          last_activity: string | null
           phone_number: string | null
-          qr_code: string | null
+          qr_code_data: string | null
           session_name: string
-          status: string
+          session_status: string | null
           updated_at: string
         }
         Insert: {
           company_id?: string | null
+          connected_at?: string | null
           created_at?: string
+          evolution_config_id?: string | null
           id?: string
+          instance_name?: string | null
+          last_activity?: string | null
           phone_number?: string | null
-          qr_code?: string | null
+          qr_code_data?: string | null
           session_name: string
-          status?: string
+          session_status?: string | null
           updated_at?: string
         }
         Update: {
           company_id?: string | null
+          connected_at?: string | null
           created_at?: string
+          evolution_config_id?: string | null
           id?: string
+          instance_name?: string | null
+          last_activity?: string | null
           phone_number?: string | null
-          qr_code?: string | null
+          qr_code_data?: string | null
           session_name?: string
-          status?: string
+          session_status?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -283,6 +295,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_sessions_evolution_config_id_fkey"
+            columns: ["evolution_config_id"]
+            isOneToOne: false
+            referencedRelation: "evolution_configs"
             referencedColumns: ["id"]
           },
         ]
