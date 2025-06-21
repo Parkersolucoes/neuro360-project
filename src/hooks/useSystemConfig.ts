@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface SystemConfig {
   id: string;
@@ -19,9 +20,51 @@ export function useSystemConfig() {
 
   const fetchConfig = async () => {
     try {
-      console.log('SystemConfig: Table system_configs does not exist in current database schema');
+      setLoading(true);
+      console.log('Fetching system config from database...');
       
-      // Como a tabela system_configs não existe mais, retornar configuração padrão
+      // Buscar configuração do sistema na tabela system_configs
+      const { data, error } = await supabase
+        .from('system_configs')
+        .select('*')
+        .eq('config_key', 'system_appearance')
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching system config:', error);
+        throw error;
+      }
+
+      if (data) {
+        // Converter os dados do banco para o formato esperado
+        const configValue = data.config_value as any;
+        const systemConfig: SystemConfig = {
+          id: data.id,
+          system_name: configValue.system_name || 'Visão 360 - Soluções em Dados',
+          system_description: configValue.system_description || 'Soluções de Análise dados para seu negócio',
+          primary_color: configValue.primary_color || '#1e293b',
+          login_background_image: configValue.login_background_image || '',
+          created_at: data.created_at,
+          updated_at: data.updated_at
+        };
+        setConfig(systemConfig);
+      } else {
+        // Se não existe configuração, criar uma padrão
+        const defaultConfig: SystemConfig = {
+          id: 'default',
+          system_name: 'Visão 360 - Soluções em Dados',
+          system_description: 'Soluções de Análise dados para seu negócio',
+          primary_color: '#1e293b',
+          login_background_image: '',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        setConfig(defaultConfig);
+      }
+    } catch (error) {
+      console.error('Error fetching system config:', error);
+      
+      // Fallback para configuração padrão em caso de erro
       const defaultConfig: SystemConfig = {
         id: 'default',
         system_name: 'Visão 360 - Soluções em Dados',
@@ -31,10 +74,7 @@ export function useSystemConfig() {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
-      
       setConfig(defaultConfig);
-    } catch (error) {
-      console.error('Error fetching system config:', error);
     } finally {
       setLoading(false);
     }
@@ -42,17 +82,64 @@ export function useSystemConfig() {
 
   const updateConfig = async (updates: Partial<SystemConfig>) => {
     try {
-      console.log('SystemConfig: Cannot update config - table system_configs does not exist');
+      console.log('Updating system config:', updates);
       
-      // Simular atualização local
+      const configData = {
+        config_key: 'system_appearance',
+        config_value: {
+          system_name: updates.system_name || config?.system_name,
+          system_description: updates.system_description || config?.system_description,
+          primary_color: updates.primary_color || config?.primary_color,
+          login_background_image: updates.login_background_image || config?.login_background_image
+        },
+        description: 'Configurações de aparência do sistema',
+        is_public: true
+      };
+
+      // Verificar se já existe uma configuração
+      const { data: existingConfig } = await supabase
+        .from('system_configs')
+        .select('id')
+        .eq('config_key', 'system_appearance')
+        .maybeSingle();
+
+      let result;
+      if (existingConfig) {
+        // Atualizar configuração existente
+        const { data, error } = await supabase
+          .from('system_configs')
+          .update(configData)
+          .eq('id', existingConfig.id)
+          .select()
+          .single();
+        
+        if (error) throw error;
+        result = data;
+      } else {
+        // Criar nova configuração
+        const { data, error } = await supabase
+          .from('system_configs')
+          .insert([configData])
+          .select()
+          .single();
+        
+        if (error) throw error;
+        result = data;
+      }
+
+      // Atualizar o estado local
       if (config) {
-        const updatedConfig = { ...config, ...updates, updated_at: new Date().toISOString() };
+        const updatedConfig = { 
+          ...config, 
+          ...updates, 
+          updated_at: new Date().toISOString() 
+        };
         setConfig(updatedConfig);
       }
 
       toast({
-        title: "Aviso",
-        description: "Configurações salvas localmente. Funcionalidade completa está temporariamente indisponível",
+        title: "Sucesso",
+        description: "Configurações salvas com sucesso!",
         variant: "default"
       });
 
@@ -61,7 +148,7 @@ export function useSystemConfig() {
       console.error('Error updating system config:', error);
       toast({
         title: "Erro",
-        description: "Funcionalidade de configuração do sistema está temporariamente indisponível",
+        description: "Erro ao salvar configurações do sistema",
         variant: "destructive"
       });
       throw error;
@@ -73,18 +160,39 @@ export function useSystemConfig() {
 
   const uploadImage = async (file: File): Promise<string> => {
     try {
-      console.log('SystemConfig: Image upload temporarily unavailable');
+      console.log('Uploading image to storage...');
       
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `system/${fileName}`;
+
+      const { data, error } = await supabase.storage
+        .from('system-assets')
+        .upload(filePath, file);
+
+      if (error) {
+        console.error('Storage upload error:', error);
+        throw error;
+      }
+
+      // Obter URL pública da imagem
+      const { data: urlData } = supabase.storage
+        .from('system-assets')
+        .getPublicUrl(filePath);
+
       toast({
-        title: "Aviso",
-        description: "Upload de imagem está temporariamente indisponível",
-        variant: "default"
+        title: "Sucesso",
+        description: "Imagem enviada com sucesso!"
       });
 
-      // Retornar URL placeholder
-      return '';
+      return urlData.publicUrl;
     } catch (error) {
       console.error('Error uploading image:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao enviar imagem",
+        variant: "destructive"
+      });
       throw error;
     }
   };

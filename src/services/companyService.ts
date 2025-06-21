@@ -1,42 +1,68 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Company } from '@/types/company';
 
 export class CompanyService {
   static async fetchAllCompanies() {
-    const { data, error } = await supabase
-      .from('companies')
-      .select('*')
-      .order('name', { ascending: true });
+    try {
+      console.log('CompanyService: Fetching all companies from database...');
+      
+      const { data, error } = await supabase
+        .from('companies')
+        .select('*')
+        .order('name', { ascending: true });
 
-    if (error) throw error;
-    return data || [];
+      if (error) {
+        console.error('CompanyService: Error fetching companies:', error);
+        throw error;
+      }
+
+      console.log('CompanyService: Companies fetched successfully:', data);
+      return data || [];
+    } catch (error) {
+      console.error('CompanyService: fetchAllCompanies error:', error);
+      throw error;
+    }
   }
 
   static async fetchUserCompanies(userId: string) {
-    const { data, error } = await supabase
-      .from('user_companies')
-      .select(`
-        companies (
-          id,
-          name,
-          document,
-          email,
-          phone,
-          address,
-          status,
-          plan_id,
-          created_at,
-          updated_at
-        )
-      `)
-      .eq('user_id', userId);
+    try {
+      console.log('CompanyService: Fetching companies for user:', userId);
+      
+      const { data, error } = await supabase
+        .from('user_companies')
+        .select(`
+          companies (
+            id,
+            name,
+            document,
+            email,
+            phone,
+            address,
+            status,
+            plan_id,
+            created_at,
+            updated_at
+          )
+        `)
+        .eq('user_id', userId);
 
-    if (error) throw error;
+      if (error) {
+        console.error('CompanyService: Error fetching user companies:', error);
+        throw error;
+      }
 
-    return (data || [])
-      .map(item => item.companies)
-      .filter(Boolean) as Company[];
+      console.log('CompanyService: User companies data:', data);
+
+      const companies = (data || [])
+        .map(item => item.companies)
+        .filter(Boolean) as Company[];
+        
+      console.log('CompanyService: Processed user companies:', companies);
+      return companies;
+    } catch (error) {
+      console.error('CompanyService: fetchUserCompanies error:', error);
+      throw error;
+    }
   }
 
   static async createCompany(companyData: Omit<Company, 'id' | 'created_at' | 'updated_at'>) {

@@ -17,34 +17,63 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true);
       console.log('Fetching companies...');
+      console.log('User login:', userLogin);
       
       // Se for usuário master, buscar todas as empresas
       if (userLogin?.is_master) {
+        console.log('Fetching all companies for master user...');
         const data = await CompanyService.fetchAllCompanies();
         console.log('All companies fetched for master user:', data);
-        setCompanies(data as Company[]);
         
-        // Se ainda não há empresa selecionada, selecionar a primeira ou a empresa padrão
-        if (!currentCompany && data && data.length > 0) {
-          const defaultCompany = data.find(c => c.id === '0a988013-fa43-4d9d-9bfa-22c245c0c1ea') || data[0];
-          setCurrentCompany(defaultCompany as Company);
+        if (data && Array.isArray(data)) {
+          const typedCompanies = data.map(company => ({
+            ...company,
+            status: company.status as "active" | "inactive" | "suspended"
+          })) as Company[];
+          
+          setCompanies(typedCompanies);
+          
+          // Se ainda não há empresa selecionada, selecionar a primeira ou a empresa padrão
+          if (!currentCompany && typedCompanies.length > 0) {
+            const defaultCompany = typedCompanies.find(c => c.id === '0a988013-fa43-4d9d-9bfa-22c245c0c1ea') || typedCompanies[0];
+            console.log('Setting default company for master:', defaultCompany);
+            setCurrentCompany(defaultCompany);
+          }
+        } else {
+          console.log('No companies found or invalid data format');
+          setCompanies([]);
         }
         return;
       }
 
       // Para usuários normais, buscar apenas empresas associadas
       if (!userLogin) {
+        console.log('No user login found, clearing companies');
         setCompanies([]);
+        setCurrentCompany(null);
         return;
       }
 
+      console.log('Fetching companies for user:', userLogin.id);
       const userCompanies = await CompanyService.fetchUserCompanies(userLogin.id);
       console.log('User companies fetched:', userCompanies);
-      setCompanies(userCompanies as Company[]);
+      
+      if (userCompanies && Array.isArray(userCompanies)) {
+        const typedCompanies = userCompanies.map(company => ({
+          ...company,
+          status: company.status as "active" | "inactive" | "suspended"
+        })) as Company[];
+        
+        setCompanies(typedCompanies);
 
-      // Se ainda não há empresa selecionada, selecionar a primeira
-      if (!currentCompany && userCompanies.length > 0) {
-        setCurrentCompany(userCompanies[0] as Company);
+        // Se ainda não há empresa selecionada, selecionar a primeira
+        if (!currentCompany && typedCompanies.length > 0) {
+          console.log('Setting default company for user:', typedCompanies[0]);
+          setCurrentCompany(typedCompanies[0]);
+        }
+      } else {
+        console.log('No user companies found or invalid data format');
+        setCompanies([]);
       }
 
     } catch (error) {
@@ -54,6 +83,7 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
         description: "Erro ao carregar empresas",
         variant: "destructive"
       });
+      setCompanies([]);
     } finally {
       setLoading(false);
     }
@@ -134,9 +164,17 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Effect para buscar empresas quando o usuário muda
   useEffect(() => {
+    console.log('User login changed, fetching companies...');
     fetchCompanies();
-  }, [userLogin]);
+  }, [userLogin?.id, userLogin?.is_master]);
+
+  // Effect adicional para debug
+  useEffect(() => {
+    console.log('Companies state updated:', companies);
+    console.log('Current company:', currentCompany);
+  }, [companies, currentCompany]);
 
   return (
     <CompaniesContext.Provider value={{
