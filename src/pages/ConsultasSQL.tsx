@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,19 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Play, Eye, Trash2, Database } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useSQLConnections } from "@/contexts/SQLConnectionContext";
 import { QueryResultTable } from "@/components/sql/QueryResultTable";
-
-interface SQLQuery {
-  id: string;
-  name: string;
-  description: string;
-  query: string;
-  connection: string;
-  lastExecution: string;
-  status: "success" | "error" | "pending";
-}
+import { useSQLConnections } from "@/hooks/useSQLConnections";
+import { useSQLQueries } from "@/hooks/useSQLQueries";
 
 interface QueryResult {
   columns: string[];
@@ -29,38 +19,18 @@ interface QueryResult {
 }
 
 export default function ConsultasSQL() {
-  const { toast } = useToast();
   const { connections } = useSQLConnections();
-  const [queries, setQueries] = useState<SQLQuery[]>([
-    {
-      id: "1",
-      name: "Vendas Diárias",
-      description: "Consulta vendas do dia atual",
-      query: "SELECT * FROM vendas WHERE data = CAST(GETDATE() AS DATE)",
-      connection: "Principal",
-      lastExecution: "2024-01-15 10:30:00",
-      status: "success"
-    },
-    {
-      id: "2", 
-      name: "Clientes Inadimplentes",
-      description: "Lista clientes com pagamentos em atraso",
-      query: "SELECT nome, telefone, valor_devido FROM clientes WHERE status = 'inadimplente'",
-      connection: "Principal",
-      lastExecution: "2024-01-15 09:15:00",
-      status: "success"
-    }
-  ]);
+  const { queries, createQuery, updateQuery, deleteQuery } = useSQLQueries();
 
-  const [selectedQuery, setSelectedQuery] = useState<SQLQuery | null>(null);
+  const [selectedQuery, setSelectedQuery] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [queryResult, setQueryResult] = useState<QueryResult | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
   const [newQuery, setNewQuery] = useState({
     name: "",
     description: "",
-    query: "",
-    connection: ""
+    query_text: "",
+    connection_id: ""
   });
 
   // Simular execução de consulta
@@ -103,32 +73,16 @@ export default function ConsultasSQL() {
     setQueryResult(null);
 
     try {
-      const result = await mockQueryExecution(query.query);
+      const result = await mockQueryExecution(query.query_text);
       setQueryResult(result);
       
       // Atualizar status da consulta
-      setQueries(prev => prev.map(q => 
-        q.id === queryId 
-          ? { ...q, status: "success" as const, lastExecution: new Date().toLocaleString() }
-          : q
-      ));
-
-      toast({
-        title: "Consulta executada",
-        description: `${result.data.length} registros encontrados`,
+      await updateQuery(queryId, { 
+        status: "success",
+        last_execution: new Date().toISOString()
       });
     } catch (error) {
-      setQueries(prev => prev.map(q => 
-        q.id === queryId 
-          ? { ...q, status: "error" as const }
-          : q
-      ));
-      
-      toast({
-        title: "Erro na consulta",
-        description: "Erro ao executar a consulta SQL",
-        variant: "destructive"
-      });
+      await updateQuery(queryId, { status: "error" });
     } finally {
       setIsExecuting(false);
     }
@@ -143,22 +97,26 @@ export default function ConsultasSQL() {
     await executeQuery(selectedQuery.id);
   };
 
-  const saveQuery = () => {
-    const query: SQLQuery = {
-      id: Date.now().toString(),
-      ...newQuery,
-      lastExecution: "",
-      status: "pending"
-    };
-    
-    setQueries([...queries, query]);
-    setNewQuery({ name: "", description: "", query: "", connection: "" });
-    setIsDialogOpen(false);
-    
-    toast({
-      title: "Consulta salva",
-      description: "A nova consulta foi criada com sucesso!",
-    });
+  const handleSaveQuery = async () => {
+    try {
+      await createQuery({
+        ...newQuery,
+        status: "pending"
+      });
+      
+      setNewQuery({ name: "", description: "", query_text: "", connection_id: "" });
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error('Error saving query:', error);
+    }
+  };
+
+  const handleDeleteQuery = async (queryId: string) => {
+    try {
+      await deleteQuery(queryId);
+    } catch (error) {
+      console.error('Error deleting query:', error);
+    }
   };
 
   return (
@@ -170,12 +128,12 @@ export default function ConsultasSQL() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700 border-gray-900">
+            <Button className="bg-blue-600 hover:bg-blue-700 border-black">
               <Plus className="w-4 h-4 mr-2" />
               Nova Consulta
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl bg-white border-gray-900">
+          <DialogContent className="max-w-2xl bg-white border-black">
             <DialogHeader>
               <DialogTitle>Nova Consulta SQL</DialogTitle>
             </DialogHeader>
@@ -188,18 +146,18 @@ export default function ConsultasSQL() {
                     placeholder="Nome da consulta"
                     value={newQuery.name}
                     onChange={(e) => setNewQuery({...newQuery, name: e.target.value})}
-                    className="bg-white border-gray-900"
+                    className="bg-white border-black"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="connection">Conexão</Label>
-                  <Select value={newQuery.connection} onValueChange={(value) => setNewQuery({...newQuery, connection: value})}>
-                    <SelectTrigger className="bg-white border-gray-900">
+                  <Select value={newQuery.connection_id} onValueChange={(value) => setNewQuery({...newQuery, connection_id: value})}>
+                    <SelectTrigger className="bg-white border-black">
                       <SelectValue placeholder="Selecione a conexão" />
                     </SelectTrigger>
-                    <SelectContent className="bg-white border-gray-900">
+                    <SelectContent className="bg-white border-black">
                       {connections.map((connection) => (
-                        <SelectItem key={connection.id} value={connection.name}>
+                        <SelectItem key={connection.id} value={connection.id}>
                           {connection.name} ({connection.server})
                         </SelectItem>
                       ))}
@@ -214,7 +172,7 @@ export default function ConsultasSQL() {
                   placeholder="Descrição da consulta"
                   value={newQuery.description}
                   onChange={(e) => setNewQuery({...newQuery, description: e.target.value})}
-                  className="bg-white border-gray-900"
+                  className="bg-white border-black"
                 />
               </div>
               <div className="space-y-2">
@@ -222,16 +180,16 @@ export default function ConsultasSQL() {
                 <Textarea
                   id="query"
                   placeholder="SELECT * FROM tabela WHERE..."
-                  className="min-h-32 bg-white border-gray-900"
-                  value={newQuery.query}
-                  onChange={(e) => setNewQuery({...newQuery, query: e.target.value})}
+                  className="min-h-32 bg-white border-black"
+                  value={newQuery.query_text}
+                  onChange={(e) => setNewQuery({...newQuery, query_text: e.target.value})}
                 />
               </div>
               <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="border-gray-900">
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="border-black">
                   Cancelar
                 </Button>
-                <Button onClick={saveQuery} disabled={!newQuery.name || !newQuery.query} className="border-gray-900">
+                <Button onClick={handleSaveQuery} disabled={!newQuery.name || !newQuery.query_text || !newQuery.connection_id} className="border-black">
                   Salvar Consulta
                 </Button>
               </div>
@@ -241,7 +199,7 @@ export default function ConsultasSQL() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="border-gray-900">
+        <Card className="border-black">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Database className="w-5 h-5 text-blue-500" />
@@ -253,7 +211,7 @@ export default function ConsultasSQL() {
             {queries.map((query) => (
               <div
                 key={query.id}
-                className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md border-gray-900 ${
+                className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md border-black ${
                   selectedQuery?.id === query.id ? 'border-blue-500 bg-blue-50' : ''
                 }`}
                 onClick={() => setSelectedQuery(query)}
@@ -262,9 +220,12 @@ export default function ConsultasSQL() {
                   <div className="flex-1">
                     <h3 className="font-medium text-gray-900">{query.name}</h3>
                     <p className="text-sm text-gray-600 mt-1">{query.description}</p>
-                    {query.lastExecution && (
-                      <p className="text-xs text-gray-500 mt-2">
-                        Última execução: {query.lastExecution}
+                    <p className="text-xs text-gray-500 mt-2">
+                      Conexão: {query.sql_connections?.name}
+                    </p>
+                    {query.last_execution && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Última execução: {new Date(query.last_execution).toLocaleString('pt-BR')}
                       </p>
                     )}
                   </div>
@@ -281,7 +242,7 @@ export default function ConsultasSQL() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="border-gray-900"
+                    className="border-black"
                     onClick={(e) => {
                       e.stopPropagation();
                       executeQuery(query.id);
@@ -293,7 +254,7 @@ export default function ConsultasSQL() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="bg-gray-800 text-white hover:bg-gray-900 border-gray-900"
+                    className="bg-gray-800 text-white hover:bg-gray-900 border-black"
                     onClick={(e) => {
                       e.stopPropagation();
                       testQuery(query.id);
@@ -305,10 +266,10 @@ export default function ConsultasSQL() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50 border-gray-900"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 border-black"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setQueries(queries.filter(q => q.id !== query.id));
+                      handleDeleteQuery(query.id);
                     }}
                   >
                     <Trash2 className="w-3 h-3" />
@@ -319,7 +280,7 @@ export default function ConsultasSQL() {
           </CardContent>
         </Card>
 
-        <Card className="border-gray-900">
+        <Card className="border-black">
           <CardHeader>
             <CardTitle>Selecione uma Consulta</CardTitle>
             <p className="text-sm text-gray-600">Visualize e teste a consulta selecionada</p>
@@ -334,19 +295,19 @@ export default function ConsultasSQL() {
                 <div className="space-y-2">
                   <Label>Consulta SQL</Label>
                   <Textarea
-                    value={selectedQuery.query}
+                    value={selectedQuery.query_text}
                     readOnly
-                    className="min-h-32 bg-gray-50 border-gray-900"
+                    className="min-h-32 bg-gray-50 border-black"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Conexão</Label>
-                  <Input value={selectedQuery.connection} readOnly className="bg-gray-50 border-gray-900" />
+                  <Input value={selectedQuery.sql_connections?.name} readOnly className="bg-gray-50 border-black" />
                 </div>
                 <div className="flex space-x-2">
                   <Button 
                     onClick={testSelectedQuery} 
-                    className="flex-1 border-gray-900"
+                    className="flex-1 border-black"
                     disabled={isExecuting}
                   >
                     <Play className="w-4 h-4 mr-2" />

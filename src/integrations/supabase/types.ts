@@ -9,7 +9,175 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      evolution_configs: {
+        Row: {
+          api_key: string
+          api_url: string
+          created_at: string
+          id: string
+          instance_name: string
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          api_key: string
+          api_url: string
+          created_at?: string
+          id?: string
+          instance_name: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          api_key?: string
+          api_url?: string
+          created_at?: string
+          id?: string
+          instance_name?: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      qr_sessions: {
+        Row: {
+          connected_at: string | null
+          created_at: string
+          evolution_config_id: string | null
+          id: string
+          instance_name: string
+          last_activity: string | null
+          qr_code_data: string | null
+          session_status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          connected_at?: string | null
+          created_at?: string
+          evolution_config_id?: string | null
+          id?: string
+          instance_name: string
+          last_activity?: string | null
+          qr_code_data?: string | null
+          session_status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          connected_at?: string | null
+          created_at?: string
+          evolution_config_id?: string | null
+          id?: string
+          instance_name?: string
+          last_activity?: string | null
+          qr_code_data?: string | null
+          session_status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qr_sessions_evolution_config_id_fkey"
+            columns: ["evolution_config_id"]
+            isOneToOne: false
+            referencedRelation: "evolution_configs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sql_connections: {
+        Row: {
+          created_at: string
+          database_name: string
+          id: string
+          name: string
+          password: string
+          port: string
+          server: string
+          status: string
+          updated_at: string
+          user_id: string | null
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          database_name: string
+          id?: string
+          name: string
+          password: string
+          port?: string
+          server: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          username: string
+        }
+        Update: {
+          created_at?: string
+          database_name?: string
+          id?: string
+          name?: string
+          password?: string
+          port?: string
+          server?: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          username?: string
+        }
+        Relationships: []
+      }
+      sql_queries: {
+        Row: {
+          connection_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          last_execution: string | null
+          name: string
+          query_text: string
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          connection_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          last_execution?: string | null
+          name: string
+          query_text: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          connection_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          last_execution?: string | null
+          name?: string
+          query_text?: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sql_queries_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "sql_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

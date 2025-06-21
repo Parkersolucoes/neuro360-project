@@ -1,53 +1,112 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { QrCode, RefreshCw, CheckCircle, AlertCircle, Smartphone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useEvolutionConfig } from "@/hooks/useEvolutionConfig";
+import { useQRSessions } from "@/hooks/useQRSessions";
 
 export default function QRCodePage() {
   const { toast } = useToast();
+  const { config: evolutionConfig } = useEvolutionConfig();
+  const { session, createSession, updateSession, disconnectSession } = useQRSessions();
+  
   const [qrCode, setQrCode] = useState("");
-  const [sessionStatus, setSessionStatus] = useState<"disconnected" | "waiting" | "connected">("disconnected");
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const generateQRCode = async () => {
-    setIsGenerating(true);
-    setSessionStatus("waiting");
-    
-    // Simulate QR code generation
-    setTimeout(() => {
-      setQrCode("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==");
-      setIsGenerating(false);
-      toast({
-        title: "QR Code gerado",
-        description: "Use o WhatsApp Web para escanear o código",
-      });
-    }, 2000);
+  const sessionStatus = session?.session_status || "disconnected";
 
-    // Simulate connection after QR scan
-    setTimeout(() => {
-      setSessionStatus("connected");
+  const generateQRCode = async () => {
+    if (!evolutionConfig) {
       toast({
-        title: "Sessão conectada!",
-        description: "WhatsApp conectado com sucesso",
+        title: "Configuração necessária",
+        description: "Configure a Evolution API primeiro",
+        variant: "destructive"
       });
-    }, 10000);
+      return;
+    }
+
+    setIsGenerating(true);
+    
+    try {
+      // Criar nova sessão
+      const newSession = await createSession(evolutionConfig.id, evolutionConfig.instance_name);
+      
+      // Simular geração de QR code
+      setTimeout(() => {
+        const mockQRCode = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+        setQrCode(mockQRCode);
+        updateSession({ qr_code_data: mockQRCode });
+        setIsGenerating(false);
+        
+        toast({
+          title: "QR Code gerado",
+          description: "Use o WhatsApp Web para escanear o código",
+        });
+      }, 2000);
+
+      // Simular conexão após scan do QR
+      setTimeout(() => {
+        updateSession({ 
+          session_status: "connected",
+          connected_at: new Date().toISOString(),
+          last_activity: new Date().toISOString()
+        });
+        
+        toast({
+          title: "Sessão conectada!",
+          description: "WhatsApp conectado com sucesso",
+        });
+      }, 10000);
+    } catch (error) {
+      setIsGenerating(false);
+      console.error('Error generating QR code:', error);
+    }
   };
 
-  const disconnectSession = () => {
-    setSessionStatus("disconnected");
+  const handleDisconnectSession = () => {
+    disconnectSession();
     setQrCode("");
-    toast({
-      title: "Sessão desconectada",
-      description: "WhatsApp foi desconectado",
-    });
   };
 
   const refreshQRCode = () => {
     generateQRCode();
   };
+
+  useEffect(() => {
+    if (session?.qr_code_data) {
+      setQrCode(session.qr_code_data);
+    }
+  }, [session]);
+
+  if (!evolutionConfig) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">QR Code WhatsApp</h1>
+          <p className="text-gray-600 mt-2">Conecte sua sessão do WhatsApp</p>
+        </div>
+        
+        <Card>
+          <CardContent className="text-center py-12">
+            <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Configuração Evolution API necessária</h3>
+            <p className="text-gray-600 mb-4">
+              Configure a Evolution API na página de configurações antes de gerar QR Codes
+            </p>
+            <Button 
+              onClick={() => window.location.href = '/configuracao'}
+              className="border-black"
+            >
+              Ir para Configurações
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -137,7 +196,7 @@ export default function QRCodePage() {
                   </div>
                 </div>
                 <Button 
-                  onClick={disconnectSession} 
+                  onClick={handleDisconnectSession} 
                   variant="destructive"
                   className="w-full"
                 >
@@ -170,22 +229,30 @@ export default function QRCodePage() {
                 </Badge>
               </div>
               
-              {sessionStatus === "connected" && (
+              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                <span className="text-sm font-medium text-gray-700">Instância</span>
+                <span className="text-sm text-gray-900">{evolutionConfig.instance_name}</span>
+              </div>
+              
+              {sessionStatus === "connected" && session && (
                 <>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm font-medium text-gray-700">Instância</span>
-                    <span className="text-sm text-gray-900">whatsapp-automation</span>
-                  </div>
+                  {session.connected_at && (
+                    <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                      <span className="text-sm font-medium text-gray-700">Conectado em</span>
+                      <span className="text-sm text-gray-900">
+                        {new Date(session.connected_at).toLocaleString('pt-BR')}
+                      </span>
+                    </div>
+                  )}
                   
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm font-medium text-gray-700">Conectado em</span>
-                    <span className="text-sm text-gray-900">{new Date().toLocaleString('pt-BR')}</span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm font-medium text-gray-700">Última atividade</span>
-                    <span className="text-sm text-gray-900">Agora</span>
-                  </div>
+                  {session.last_activity && (
+                    <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                      <span className="text-sm font-medium text-gray-700">Última atividade</span>
+                      <span className="text-sm text-gray-900">
+                        {new Date(session.last_activity).toLocaleString('pt-BR')}
+                      </span>
+                    </div>
+                  )}
                 </>
               )}
             </div>

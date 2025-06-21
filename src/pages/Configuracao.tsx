@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,114 +9,86 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Database, MessageSquare, CheckCircle, AlertCircle, Plus, Edit, Trash2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useSQLConnections } from "@/contexts/SQLConnectionContext";
-
-interface SQLConnection {
-  id: string;
-  name: string;
-  server: string;
-  database: string;
-  username: string;
-  password: string;
-  port: string;
-  status: "connected" | "disconnected" | "testing";
-}
+import { useSQLConnections } from "@/hooks/useSQLConnections";
+import { useEvolutionConfig } from "@/hooks/useEvolutionConfig";
 
 export default function Configuracao() {
-  const { toast } = useToast();
-  const { connections, setConnections } = useSQLConnections();
+  const { 
+    connections, 
+    loading: connectionsLoading, 
+    createConnection, 
+    updateConnection, 
+    deleteConnection 
+  } = useSQLConnections();
 
-  const [evolutionConfig, setEvolutionConfig] = useState({
-    apiUrl: "",
-    apiKey: "",
-    instanceName: ""
-  });
+  const {
+    config: evolutionConfig,
+    loading: evolutionLoading,
+    saveConfig: saveEvolutionConfig,
+    testConnection: testEvolutionConnection
+  } = useEvolutionConfig();
 
-  const [evolutionStatus, setEvolutionStatus] = useState<"connected" | "disconnected" | "testing">("disconnected");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingConnection, setEditingConnection] = useState<any>(null);
   const [newConnection, setNewConnection] = useState({
     name: "",
     server: "",
-    database: "",
+    database_name: "",
     username: "",
     password: "",
     port: "1433"
   });
 
-  const testSqlConnection = async (connectionId: string) => {
-    setConnections(connections => 
-      connections.map(conn => 
-        conn.id === connectionId 
-          ? { ...conn, status: "testing" }
-          : conn
-      )
-    );
-    
-    setTimeout(() => {
-      setConnections(connections => 
-        connections.map(conn => 
-          conn.id === connectionId 
-            ? { ...conn, status: "connected" }
-            : conn
-        )
-      );
-      toast({
-        title: "Conexão testada",
-        description: "Conexão com SQL Server estabelecida com sucesso!",
-      });
-    }, 2000);
-  };
+  const [evolutionForm, setEvolutionForm] = useState({
+    api_url: "",
+    api_key: "",
+    instance_name: ""
+  });
 
-  const testEvolutionConnection = async () => {
-    setEvolutionStatus("testing");
-    setTimeout(() => {
-      setEvolutionStatus("connected");
-      toast({
-        title: "Conexão testada",
-        description: "Conexão com Evolution API estabelecida com sucesso!",
-      });
-    }, 2000);
-  };
-
-  const saveConnection = () => {
-    if (editingConnection) {
-      setConnections(connections =>
-        connections.map(conn =>
-          conn.id === editingConnection.id
-            ? { ...editingConnection, ...newConnection }
-            : conn
-        )
-      );
-      toast({
-        title: "Conexão atualizada",
-        description: "A conexão SQL foi atualizada com sucesso!",
-      });
-    } else {
-      const connection = {
-        id: Date.now().toString(),
-        ...newConnection,
-        status: "disconnected" as const
-      };
-      setConnections([...connections, connection]);
-      toast({
-        title: "Conexão criada",
-        description: "Nova conexão SQL foi criada com sucesso!",
+  useEffect(() => {
+    if (evolutionConfig) {
+      setEvolutionForm({
+        api_url: evolutionConfig.api_url,
+        api_key: evolutionConfig.api_key,
+        instance_name: evolutionConfig.instance_name
       });
     }
-    
-    setNewConnection({ name: "", server: "", database: "", username: "", password: "", port: "1433" });
-    setEditingConnection(null);
-    setIsDialogOpen(false);
+  }, [evolutionConfig]);
+
+  const testSqlConnection = async (connectionId: string) => {
+    try {
+      await updateConnection(connectionId, { status: "testing" });
+      
+      setTimeout(async () => {
+        await updateConnection(connectionId, { status: "connected" });
+      }, 2000);
+    } catch (error) {
+      console.error('Error testing connection:', error);
+    }
   };
 
-  const editConnection = (connection: any) => {
+  const handleSaveConnection = async () => {
+    try {
+      if (editingConnection) {
+        await updateConnection(editingConnection.id, newConnection);
+      } else {
+        await createConnection({ ...newConnection, status: "disconnected" });
+      }
+      
+      setNewConnection({ name: "", server: "", database_name: "", username: "", password: "", port: "1433" });
+      setEditingConnection(null);
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error('Error saving connection:', error);
+    }
+  };
+
+  const handleEditConnection = (connection: any) => {
     setEditingConnection(connection);
     setNewConnection({
       name: connection.name,
       server: connection.server,
-      database: connection.database,
+      database_name: connection.database_name,
       username: connection.username,
       password: "",
       port: connection.port
@@ -123,20 +96,33 @@ export default function Configuracao() {
     setIsDialogOpen(true);
   };
 
-  const deleteConnection = (connectionId: string) => {
-    setConnections(connections.filter(conn => conn.id !== connectionId));
-    toast({
-      title: "Conexão removida",
-      description: "A conexão SQL foi removida com sucesso!",
-    });
+  const handleDeleteConnection = async (connectionId: string) => {
+    try {
+      await deleteConnection(connectionId);
+    } catch (error) {
+      console.error('Error deleting connection:', error);
+    }
   };
 
-  const saveConfiguration = () => {
-    toast({
-      title: "Configuração salva",
-      description: "As configurações foram salvas com sucesso!",
-    });
+  const handleSaveEvolution = async () => {
+    try {
+      await saveEvolutionConfig({
+        ...evolutionForm,
+        status: "disconnected"
+      });
+    } catch (error) {
+      console.error('Error saving Evolution config:', error);
+    }
   };
+
+  if (connectionsLoading || evolutionLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        <span className="ml-2">Carregando configurações...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -158,7 +144,7 @@ export default function Configuracao() {
         </TabsList>
 
         <TabsContent value="database">
-          <Card className="border-gray-900">
+          <Card className="border-black">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
@@ -172,12 +158,12 @@ export default function Configuracao() {
                 </div>
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button className="bg-blue-600 hover:bg-blue-700 border-gray-900">
+                    <Button className="bg-blue-600 hover:bg-blue-700 border-black">
                       <Plus className="w-4 h-4 mr-2" />
                       Nova Conexão
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="bg-white border-gray-900">
+                  <DialogContent className="bg-white border-black">
                     <DialogHeader>
                       <DialogTitle>
                         {editingConnection ? "Editar Conexão" : "Nova Conexão SQL"}
@@ -191,7 +177,7 @@ export default function Configuracao() {
                           placeholder="Ex: Principal, Backup"
                           value={newConnection.name}
                           onChange={(e) => setNewConnection({...newConnection, name: e.target.value})}
-                          className="bg-white border-gray-900"
+                          className="bg-white border-black"
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
@@ -202,7 +188,7 @@ export default function Configuracao() {
                             placeholder="localhost ou IP"
                             value={newConnection.server}
                             onChange={(e) => setNewConnection({...newConnection, server: e.target.value})}
-                            className="bg-white border-gray-900"
+                            className="bg-white border-black"
                           />
                         </div>
                         <div className="space-y-2">
@@ -212,7 +198,7 @@ export default function Configuracao() {
                             placeholder="1433"
                             value={newConnection.port}
                             onChange={(e) => setNewConnection({...newConnection, port: e.target.value})}
-                            className="bg-white border-gray-900"
+                            className="bg-white border-black"
                           />
                         </div>
                       </div>
@@ -221,9 +207,9 @@ export default function Configuracao() {
                         <Input
                           id="database"
                           placeholder="Nome do banco"
-                          value={newConnection.database}
-                          onChange={(e) => setNewConnection({...newConnection, database: e.target.value})}
-                          className="bg-white border-gray-900"
+                          value={newConnection.database_name}
+                          onChange={(e) => setNewConnection({...newConnection, database_name: e.target.value})}
+                          className="bg-white border-black"
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
@@ -234,7 +220,7 @@ export default function Configuracao() {
                             placeholder="sa"
                             value={newConnection.username}
                             onChange={(e) => setNewConnection({...newConnection, username: e.target.value})}
-                            className="bg-white border-gray-900"
+                            className="bg-white border-black"
                           />
                         </div>
                         <div className="space-y-2">
@@ -245,15 +231,15 @@ export default function Configuracao() {
                             placeholder="••••••••"
                             value={newConnection.password}
                             onChange={(e) => setNewConnection({...newConnection, password: e.target.value})}
-                            className="bg-white border-gray-900"
+                            className="bg-white border-black"
                           />
                         </div>
                       </div>
                       <div className="flex justify-end space-x-2 pt-4">
-                        <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="border-gray-900">
+                        <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="border-black">
                           Cancelar
                         </Button>
-                        <Button onClick={saveConnection} disabled={!newConnection.name || !newConnection.server} className="border-gray-900">
+                        <Button onClick={handleSaveConnection} disabled={!newConnection.name || !newConnection.server} className="border-black">
                           {editingConnection ? "Atualizar" : "Criar"} Conexão
                         </Button>
                       </div>
@@ -278,7 +264,7 @@ export default function Configuracao() {
                     <TableRow key={connection.id}>
                       <TableCell className="font-medium">{connection.name}</TableCell>
                       <TableCell>{connection.server}:{connection.port}</TableCell>
-                      <TableCell>{connection.database}</TableCell>
+                      <TableCell>{connection.database_name}</TableCell>
                       <TableCell>
                         <Badge className={`${
                           connection.status === "connected" ? "status-connected" :
@@ -298,23 +284,23 @@ export default function Configuracao() {
                             variant="outline"
                             onClick={() => testSqlConnection(connection.id)}
                             disabled={connection.status === "testing"}
-                            className="border-gray-900"
+                            className="border-black"
                           >
                             {connection.status === "testing" ? "Testando..." : "Testar"}
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => editConnection(connection)}
-                            className="border-gray-900"
+                            onClick={() => handleEditConnection(connection)}
+                            className="border-black"
                           >
                             <Edit className="w-3 h-3" />
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
-                            className="text-red-600 hover:text-red-700 border-gray-900"
-                            onClick={() => deleteConnection(connection.id)}
+                            className="text-red-600 hover:text-red-700 border-black"
+                            onClick={() => handleDeleteConnection(connection.id)}
                           >
                             <Trash2 className="w-3 h-3" />
                           </Button>
@@ -329,7 +315,7 @@ export default function Configuracao() {
         </TabsContent>
 
         <TabsContent value="evolution">
-          <Card className="border-gray-900">
+          <Card className="border-black">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
@@ -342,14 +328,14 @@ export default function Configuracao() {
                   </p>
                 </div>
                 <Badge className={`${
-                  evolutionStatus === "connected" ? "status-connected" :
-                  evolutionStatus === "testing" ? "bg-blue-100 text-blue-800" :
+                  evolutionConfig?.status === "connected" ? "status-connected" :
+                  evolutionConfig?.status === "testing" ? "bg-blue-100 text-blue-800" :
                   "bg-red-100 text-red-800"
                 }`}>
-                  {evolutionStatus === "connected" ? "Conectado" :
-                   evolutionStatus === "testing" ? "Testando..." : "Desconectado"}
-                  {evolutionStatus === "connected" && <CheckCircle className="w-3 h-3 ml-1" />}
-                  {evolutionStatus === "disconnected" && <AlertCircle className="w-3 h-3 ml-1" />}
+                  {evolutionConfig?.status === "connected" ? "Conectado" :
+                   evolutionConfig?.status === "testing" ? "Testando..." : "Desconectado"}
+                  {evolutionConfig?.status === "connected" && <CheckCircle className="w-3 h-3 ml-1" />}
+                  {evolutionConfig?.status === "disconnected" && <AlertCircle className="w-3 h-3 ml-1" />}
                 </Badge>
               </div>
             </CardHeader>
@@ -359,9 +345,9 @@ export default function Configuracao() {
                 <Input
                   id="apiUrl"
                   placeholder="https://api.evolution.com"
-                  value={evolutionConfig.apiUrl}
-                  onChange={(e) => setEvolutionConfig({...evolutionConfig, apiUrl: e.target.value})}
-                  className="bg-white border-gray-900"
+                  value={evolutionForm.api_url}
+                  onChange={(e) => setEvolutionForm({...evolutionForm, api_url: e.target.value})}
+                  className="bg-white border-black"
                 />
               </div>
               
@@ -371,9 +357,9 @@ export default function Configuracao() {
                   id="apiKey"
                   type="password"
                   placeholder="••••••••••••••••"
-                  value={evolutionConfig.apiKey}
-                  onChange={(e) => setEvolutionConfig({...evolutionConfig, apiKey: e.target.value})}
-                  className="bg-white border-gray-900"
+                  value={evolutionForm.api_key}
+                  onChange={(e) => setEvolutionForm({...evolutionForm, api_key: e.target.value})}
+                  className="bg-white border-black"
                 />
               </div>
               
@@ -382,22 +368,22 @@ export default function Configuracao() {
                 <Input
                   id="instanceName"
                   placeholder="minha-instancia"
-                  value={evolutionConfig.instanceName}
-                  onChange={(e) => setEvolutionConfig({...evolutionConfig, instanceName: e.target.value})}
-                  className="bg-white border-gray-900"
+                  value={evolutionForm.instance_name}
+                  onChange={(e) => setEvolutionForm({...evolutionForm, instance_name: e.target.value})}
+                  className="bg-white border-black"
                 />
               </div>
 
               <div className="flex space-x-2 pt-4">
                 <Button 
                   onClick={testEvolutionConnection}
-                  disabled={evolutionStatus === "testing"}
+                  disabled={evolutionConfig?.status === "testing"}
                   variant="outline"
-                  className="border-gray-900"
+                  className="border-black"
                 >
-                  {evolutionStatus === "testing" ? "Testando..." : "Testar Conexão"}
+                  {evolutionConfig?.status === "testing" ? "Testando..." : "Testar Conexão"}
                 </Button>
-                <Button onClick={saveConfiguration} className="border-gray-900">
+                <Button onClick={handleSaveEvolution} className="border-black">
                   Salvar Configuração
                 </Button>
               </div>
