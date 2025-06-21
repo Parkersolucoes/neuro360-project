@@ -22,12 +22,12 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
       if (userLogin?.is_master) {
         const data = await CompanyService.fetchAllCompanies();
         console.log('All companies fetched for master user:', data);
-        setCompanies(data);
+        setCompanies(data as Company[]);
         
         // Se ainda não há empresa selecionada, selecionar a primeira ou a empresa padrão
         if (!currentCompany && data && data.length > 0) {
           const defaultCompany = data.find(c => c.id === '0a988013-fa43-4d9d-9bfa-22c245c0c1ea') || data[0];
-          setCurrentCompany(defaultCompany);
+          setCurrentCompany(defaultCompany as Company);
         }
         return;
       }
@@ -40,11 +40,11 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
 
       const userCompanies = await CompanyService.fetchUserCompanies(userLogin.id);
       console.log('User companies fetched:', userCompanies);
-      setCompanies(userCompanies);
+      setCompanies(userCompanies as Company[]);
 
       // Se ainda não há empresa selecionada, selecionar a primeira
       if (!currentCompany && userCompanies.length > 0) {
-        setCurrentCompany(userCompanies[0]);
+        setCurrentCompany(userCompanies[0] as Company);
       }
 
     } catch (error) {
@@ -71,7 +71,7 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
       });
 
       await fetchCompanies();
-      return data;
+      return data as Company;
     } catch (error) {
       console.error('Error creating company:', error);
       const errorMessage = error instanceof Error ? error.message : "Erro ao criar empresa";
@@ -96,7 +96,7 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
       });
 
       await fetchCompanies();
-      return data;
+      return data as Company;
     } catch (error) {
       console.error('Error updating company:', error);
       const errorMessage = error instanceof Error ? error.message : "Erro ao atualizar empresa";
