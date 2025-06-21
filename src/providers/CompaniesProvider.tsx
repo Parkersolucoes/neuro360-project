@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { CompaniesContext } from '@/contexts/CompaniesContext';
 import { Company } from '@/types/company';
@@ -13,6 +12,20 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { userLogin } = useAuth();
+
+  // Carregar empresa selecionada do localStorage
+  const loadSelectedCompanyFromStorage = (availableCompanies: Company[]) => {
+    const savedCompanyId = localStorage.getItem('selectedCompanyId');
+    if (savedCompanyId && availableCompanies.length > 0) {
+      const savedCompany = availableCompanies.find(c => c.id === savedCompanyId);
+      if (savedCompany) {
+        console.log('CompaniesProvider: Loading company from localStorage:', savedCompany);
+        setCurrentCompanyInternal(savedCompany);
+        return true;
+      }
+    }
+    return false;
+  };
 
   const fetchCompanies = async () => {
     try {
@@ -34,17 +47,14 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
           
           setCompanies(typedCompanies);
           
-          // Se ainda não há empresa selecionada, selecionar a empresa Visão 360 ou a primeira
-          if (!currentCompany && typedCompanies.length > 0) {
-            const defaultCompany = typedCompanies.find(c => c.id === '0a988013-fa43-4d9d-9bfa-22c245c0c1ea') || typedCompanies[0];
-            console.log('CompaniesProvider: Setting default company for master:', defaultCompany);
-            setCurrentCompanyInternal(defaultCompany);
-          } else if (currentCompany) {
-            // Atualizar a empresa atual se ela existe na lista atualizada
-            const updatedCurrentCompany = typedCompanies.find(c => c.id === currentCompany.id);
-            if (updatedCurrentCompany) {
-              console.log('CompaniesProvider: Updating current company with new data:', updatedCurrentCompany);
-              setCurrentCompanyInternal(updatedCurrentCompany);
+          // Tentar carregar empresa do localStorage primeiro
+          if (!loadSelectedCompanyFromStorage(typedCompanies)) {
+            // Se não há empresa salva e não há empresa atual, selecionar a empresa Visão 360 ou a primeira
+            if (!currentCompany && typedCompanies.length > 0) {
+              const defaultCompany = typedCompanies.find(c => c.id === '0a988013-fa43-4d9d-9bfa-22c245c0c1ea') || typedCompanies[0];
+              console.log('CompaniesProvider: Setting default company for master:', defaultCompany);
+              setCurrentCompanyInternal(defaultCompany);
+              localStorage.setItem('selectedCompanyId', defaultCompany.id);
             }
           }
         } else {
@@ -59,6 +69,7 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
         console.log('CompaniesProvider: No user login found, clearing companies');
         setCompanies([]);
         setCurrentCompanyInternal(null);
+        localStorage.removeItem('selectedCompanyId');
         return;
       }
 
@@ -74,24 +85,21 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
         
         setCompanies(typedCompanies);
 
-        // Para usuários normais, se há apenas uma empresa, selecioná-la automaticamente
-        // Se há múltiplas empresas, não selecionar automaticamente - deixar o usuário escolher
-        if (!currentCompany && typedCompanies.length === 1) {
-          console.log('CompaniesProvider: Setting single company for user:', typedCompanies[0]);
-          setCurrentCompanyInternal(typedCompanies[0]);
-        } else if (typedCompanies.length > 1) {
-          console.log('CompaniesProvider: Multiple companies found for user - waiting for manual selection');
-        } else if (currentCompany) {
-          // Atualizar a empresa atual se ela existe na lista atualizada
-          const updatedCurrentCompany = typedCompanies.find(c => c.id === currentCompany.id);
-          if (updatedCurrentCompany) {
-            console.log('CompaniesProvider: Updating current company with new data:', updatedCurrentCompany);
-            setCurrentCompanyInternal(updatedCurrentCompany);
+        // Tentar carregar empresa do localStorage primeiro
+        if (!loadSelectedCompanyFromStorage(typedCompanies)) {
+          // Para usuários normais, se há apenas uma empresa, selecioná-la automaticamente
+          if (!currentCompany && typedCompanies.length === 1) {
+            console.log('CompaniesProvider: Setting single company for user:', typedCompanies[0]);
+            setCurrentCompanyInternal(typedCompanies[0]);
+            localStorage.setItem('selectedCompanyId', typedCompanies[0].id);
+          } else if (typedCompanies.length > 1) {
+            console.log('CompaniesProvider: Multiple companies found for user - waiting for manual selection');
           }
         }
       } else {
         console.log('CompaniesProvider: No user companies found or invalid data format');
         setCompanies([]);
+        localStorage.removeItem('selectedCompanyId');
       }
 
     } catch (error) {
@@ -117,6 +125,13 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
   const setCurrentCompanyAndNotify = (company: Company | null) => {
     console.log('CompaniesProvider: Setting current company and notifying:', company);
     setCurrentCompanyInternal(company);
+    
+    // Salvar no localStorage para persistência
+    if (company) {
+      localStorage.setItem('selectedCompanyId', company.id);
+    } else {
+      localStorage.removeItem('selectedCompanyId');
+    }
     
     // Disparar evento customizado para notificar outros componentes
     if (company) {
