@@ -83,7 +83,7 @@ export function UserRoleAndStatusForm({ formData, onChange }: UserRoleAndStatusF
         <Checkbox
           id="is_admin"
           checked={formData.is_admin}
-          onCheckedChange={(checked) => onChange('is_admin', checked as boolean)}
+          onCheckedChange={(checked) => onChange('is_admin', Boolean(checked))}
           className="border-blue-200 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
         />
         <Label htmlFor="is_admin" className="flex items-center space-x-2">
