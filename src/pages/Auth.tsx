@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useSystemConfig } from '@/hooks/useSystemConfig';
+import { Database, BarChart3, TrendingUp } from 'lucide-react';
 
 export default function Auth() {
   const { userLogin, login } = useAuth();
@@ -38,62 +39,134 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold" style={{ color: config?.primary_color || '#1e293b' }}>
-            {config?.system_name || 'Visão 360 - Soluções em Dados'}
-          </CardTitle>
-          <p className="text-gray-600 mt-2">
-            {config?.system_description || 'Plataforma completa para análise e gestão de dados empresariais'}
-          </p>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={loading}
-              />
-            </div>
-            <div>
-              <Input
-                type="password"
-                placeholder="Senha"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={loading}
-              />
-            </div>
-            {error && (
-              <div className="text-red-600 text-sm text-center">
-                {error}
-              </div>
-            )}
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={loading}
-              style={{ backgroundColor: config?.primary_color || '#1e293b' }}
-            >
-              {loading ? 'Entrando...' : 'Entrar'}
-            </Button>
-          </form>
-          
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600 font-medium mb-2">Dados para teste:</p>
-            <p className="text-sm">
-              <strong>Email:</strong> admin@visao360.com.br<br />
-              <strong>Senha:</strong> 123456
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center relative overflow-hidden">
+      {/* Background decorative elements */}
+      <div className="absolute inset-0">
+        <div className="absolute top-20 left-20 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 right-20 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-purple-500/5 rounded-full blur-3xl"></div>
+      </div>
+
+      {/* Grid pattern overlay */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:50px_50px]"></div>
+
+      <div className="relative z-10 w-full max-w-6xl mx-auto px-4 flex items-center justify-between">
+        {/* Left side - Feature showcase */}
+        <div className="hidden lg:flex flex-col space-y-8 flex-1 mr-16">
+          <div className="space-y-6">
+            <h1 className="text-5xl font-bold text-white leading-tight">
+              {config?.system_name || 'Visão 360'}
+              <span className="block text-blue-400 text-3xl font-normal mt-2">
+                Soluções em Dados
+              </span>
+            </h1>
+            <p className="text-xl text-gray-300 leading-relaxed max-w-lg">
+              {config?.system_description || 'Plataforma completa para análise e gestão de dados empresariais com tecnologia avançada'}
             </p>
           </div>
-        </CardContent>
-      </Card>
+
+          <div className="space-y-6">
+            <div className="flex items-center space-x-4 p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
+              <div className="p-3 bg-blue-500/20 rounded-lg">
+                <Database className="w-6 h-6 text-blue-400" />
+              </div>
+              <div>
+                <h3 className="text-white font-semibold">Consultas SQL Avançadas</h3>
+                <p className="text-gray-400 text-sm">Execute consultas complexas com facilidade</p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-4 p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
+              <div className="p-3 bg-indigo-500/20 rounded-lg">
+                <BarChart3 className="w-6 h-6 text-indigo-400" />
+              </div>
+              <div>
+                <h3 className="text-white font-semibold">Análise de Dados</h3>
+                <p className="text-gray-400 text-sm">Insights poderosos para seu negócio</p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-4 p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
+              <div className="p-3 bg-purple-500/20 rounded-lg">
+                <TrendingUp className="w-6 h-6 text-purple-400" />
+              </div>
+              <div>
+                <h3 className="text-white font-semibold">Gestão Inteligente</h3>
+                <p className="text-gray-400 text-sm">Automatize processos e otimize resultados</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right side - Login form */}
+        <div className="w-full max-w-md">
+          <Card className="bg-white/10 backdrop-blur-xl border-white/20 shadow-2xl">
+            <CardHeader className="text-center pb-8">
+              <CardTitle className="text-3xl font-bold text-white mb-2">
+                Bem-vindo
+              </CardTitle>
+              <p className="text-gray-300">
+                Faça login para acessar sua plataforma
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="space-y-2">
+                  <Input
+                    type="email"
+                    placeholder="Seu email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    disabled={loading}
+                    className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-blue-400 focus:ring-blue-400/20 h-12"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Input
+                    type="password"
+                    placeholder="Sua senha"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    disabled={loading}
+                    className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-blue-400 focus:ring-blue-400/20 h-12"
+                  />
+                </div>
+                {error && (
+                  <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
+                    <p className="text-red-300 text-sm text-center">{error}</p>
+                  </div>
+                )}
+                <Button 
+                  type="submit" 
+                  className="w-full h-12 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-semibold transition-all duration-200 transform hover:scale-[1.02]"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      <span>Entrando...</span>
+                    </div>
+                  ) : (
+                    'Entrar na Plataforma'
+                  )}
+                </Button>
+              </form>
+              
+              <div className="pt-4 border-t border-white/10">
+                <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                  <p className="text-sm text-blue-300 font-medium mb-2">Dados para teste:</p>
+                  <div className="space-y-1 text-sm text-gray-300">
+                    <p><span className="text-blue-400">Email:</span> admin@visao360.com.br</p>
+                    <p><span className="text-blue-400">Senha:</span> 123456</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
