@@ -9,8 +9,7 @@ interface UserRoleAndStatusFormProps {
     role: string;
     department: string;
     status: 'active' | 'inactive';
-    is_admin: boolean;
-    is_master: boolean;
+    is_admin: string; // '0' = master, '1' = usuário comum
   };
   onChange: (field: string, value: string | boolean) => void;
 }
@@ -30,6 +29,10 @@ const departments = [
 ];
 
 export function UserRoleAndStatusForm({ formData, onChange }: UserRoleAndStatusFormProps) {
+  // is_admin = '0' significa master, is_admin = '1' significa usuário comum
+  const isMaster = formData.is_admin === '0';
+  const isAdmin = formData.is_admin === '0'; // Master é admin também
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-3 gap-4">
@@ -84,7 +87,7 @@ export function UserRoleAndStatusForm({ formData, onChange }: UserRoleAndStatusF
         <div className="flex items-center space-x-2">
           <Checkbox
             id="is_admin"
-            checked={formData.is_admin}
+            checked={isAdmin}
             onCheckedChange={(checked) => onChange('is_admin', checked === true)}
             className="border-blue-200 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
           />
@@ -97,8 +100,8 @@ export function UserRoleAndStatusForm({ formData, onChange }: UserRoleAndStatusF
         <div className="flex items-center space-x-2">
           <Checkbox
             id="is_master"
-            checked={formData.is_master}
-            onCheckedChange={(checked) => onChange('is_master', checked === true)}
+            checked={isMaster}
+            onCheckedChange={(checked) => onChange('is_admin', checked === true)}
             className="border-amber-200 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
           />
           <Label htmlFor="is_master" className="flex items-center space-x-2">

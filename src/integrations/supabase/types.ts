@@ -179,8 +179,7 @@ export type Database = {
           department: string
           email: string
           id: string
-          is_admin: boolean
-          is_master: boolean
+          is_admin: string
           name: string
           password_hash: string | null
           phone: string
@@ -194,8 +193,7 @@ export type Database = {
           department: string
           email: string
           id?: string
-          is_admin?: boolean
-          is_master?: boolean
+          is_admin?: string
           name: string
           password_hash?: string | null
           phone: string
@@ -209,8 +207,7 @@ export type Database = {
           department?: string
           email?: string
           id?: string
-          is_admin?: boolean
-          is_master?: boolean
+          is_admin?: string
           name?: string
           password_hash?: string | null
           phone?: string
@@ -241,7 +238,7 @@ export type Database = {
           name: string
           email: string
           role: string
-          is_admin: boolean
+          is_admin: string
           is_master: boolean
           status: string
         }[]

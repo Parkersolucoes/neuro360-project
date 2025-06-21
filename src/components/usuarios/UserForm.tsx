@@ -23,8 +23,7 @@ export function UserForm({
     whatsapp: "",
     role: "user",
     department: "",
-    is_admin: false,
-    is_master: false,
+    is_admin: "1", // String: '0' = master, '1' = usuário comum
     status: "active" as 'active' | 'inactive'
   });
 
@@ -39,8 +38,7 @@ export function UserForm({
         whatsapp: editingUser.whatsapp,
         role: editingUser.role,
         department: editingUser.department,
-        is_admin: Boolean(editingUser.is_admin),
-        is_master: Boolean(editingUser.is_master),
+        is_admin: editingUser.is_admin,
         status: editingUser.status
       });
     } else {
@@ -51,8 +49,7 @@ export function UserForm({
         whatsapp: "",
         role: "user",
         department: "",
-        is_admin: false,
-        is_master: false,
+        is_admin: "1", // Default para usuário comum
         status: "active"
       });
     }
@@ -64,11 +61,10 @@ export function UserForm({
     setFormData(prev => {
       const newData = { ...prev };
       
-      // Tratar campos boolean especificamente
+      // Tratar campos específicos
       if (field === 'is_admin') {
-        newData.is_admin = Boolean(value);
-      } else if (field === 'is_master') {
-        newData.is_master = Boolean(value);
+        // Converter boolean para string: true = '0' (master), false = '1' (usuário comum)
+        newData.is_admin = value === true ? '0' : '1';
       } else if (field === 'status') {
         newData.status = String(value) as 'active' | 'inactive';
       } else {
@@ -96,8 +92,7 @@ export function UserForm({
         whatsapp: formData.whatsapp.trim(),
         role: formData.role,
         department: formData.department.trim(),
-        is_admin: Boolean(formData.is_admin),
-        is_master: Boolean(formData.is_master),
+        is_admin: formData.is_admin, // Já é string
         status: formData.status
       };
       

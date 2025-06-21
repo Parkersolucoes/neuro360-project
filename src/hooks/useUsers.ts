@@ -13,8 +13,7 @@ export interface User {
   whatsapp: string;
   role: string;
   department: string;
-  is_admin: boolean;
-  is_master: boolean;
+  is_admin: string; // Agora é string: '0' = master, '1' = usuário comum
   status: 'active' | 'inactive';
   created_at: string;
   updated_at: string;
@@ -73,8 +72,7 @@ export function useUsers() {
       
       const formattedUsers = (data || []).map(user => ({
         ...user,
-        status: user.status as 'active' | 'inactive',
-        is_master: Boolean(user.is_master)
+        status: user.status as 'active' | 'inactive'
       }));
       
       setUsers(formattedUsers);
@@ -140,8 +138,7 @@ export function useUsers() {
         whatsapp: userData.whatsapp.trim(),
         role: userData.role || 'user',
         department: userData.department.trim(),
-        is_admin: Boolean(userData.is_admin),
-        is_master: Boolean(userData.is_master),
+        is_admin: userData.is_admin || '1', // Default para usuário comum
         status: userData.status || 'active'
       };
 
@@ -168,8 +165,7 @@ export function useUsers() {
       
       const formattedUser = {
         ...data,
-        status: data.status as 'active' | 'inactive',
-        is_master: Boolean(data.is_master)
+        status: data.status as 'active' | 'inactive'
       };
       
       setUsers(prev => [formattedUser, ...prev]);
@@ -237,12 +233,9 @@ export function useUsers() {
         updateData.department = updateData.department.trim();
       }
 
+      // is_admin agora é string, não precisa de conversão boolean
       if (typeof updateData.is_admin !== 'undefined') {
-        updateData.is_admin = Boolean(updateData.is_admin);
-      }
-
-      if (typeof updateData.is_master !== 'undefined') {
-        updateData.is_master = Boolean(updateData.is_master);
+        updateData.is_admin = String(updateData.is_admin);
       }
 
       const { data, error } = await supabase
@@ -264,8 +257,7 @@ export function useUsers() {
       
       const formattedUser = {
         ...data,
-        status: data.status as 'active' | 'inactive',
-        is_master: Boolean(data.is_master)
+        status: data.status as 'active' | 'inactive'
       };
       
       setUsers(prev => prev.map(user => 

@@ -6,8 +6,8 @@ export interface UserLoginData {
   name: string;
   email: string;
   role: string;
-  is_admin: boolean;
-  is_master: boolean;
+  is_admin: string; // Agora é string: '0' = master, '1' = usuário comum
+  is_master: boolean; // Calculado pela função SQL
   status: string;
 }
 
@@ -40,8 +40,8 @@ export class UserAuthService {
         name: user.name,
         email: user.email,
         role: user.role,
-        is_admin: user.is_admin,
-        is_master: user.is_master,
+        is_admin: user.is_admin, // String do banco
+        is_master: user.is_master, // Boolean calculado pela função SQL
         status: user.status
       };
     } catch (error) {
