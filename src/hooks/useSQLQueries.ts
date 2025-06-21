@@ -1,7 +1,8 @@
 
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useCompanies } from '@/hooks/useCompanies';
 
 export interface SQLQuery {
   id: string;
@@ -13,6 +14,7 @@ export interface SQLQuery {
   status: 'success' | 'error' | 'pending';
   created_at?: string;
   updated_at?: string;
+  created_by?: string;
   sql_connections?: {
     name: string;
   };
@@ -22,11 +24,36 @@ export function useSQLQueries() {
   const [queries, setQueries] = useState<SQLQuery[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { currentCompany } = useCompanies();
 
   const fetchQueries = async () => {
     try {
-      // Since sql_queries table doesn't exist, return empty array
-      setQueries([]);
+      if (!currentCompany?.id) {
+        setQueries([]);
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('sql_queries')
+        .select(`
+          *,
+          sql_connections!inner(name, company_id)
+        `)
+        .eq('sql_connections.company_id', currentCompany.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching SQL queries:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao carregar consultas SQL",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      setQueries(data || []);
     } catch (error) {
       console.error('Error fetching SQL queries:', error);
       toast({
@@ -41,44 +68,76 @@ export function useSQLQueries() {
 
   const createQuery = async (query: Omit<SQLQuery, 'id' | 'created_at' | 'updated_at' | 'sql_connections'>) => {
     try {
-      // Simulate creating a query since table doesn't exist
-      const mockQuery: SQLQuery = {
-        id: `mock-query-${Date.now()}`,
-        ...query,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        sql_connections: {
-          name: 'Mock Connection'
-        }
-      };
+      if (!currentCompany?.id) {
+        toast({
+          title: "Erro",
+          description: "Selecione uma empresa para criar consultas SQL",
+          variant: "destructive"
+        });
+        throw new Error('No company selected');
+      }
+
+      const { data: currentUser } = await supabase.auth.getUser();
       
-      setQueries(prev => [mockQuery, ...prev]);
+      const { data, error } = await supabase
+        .from('sql_queries')
+        .insert([{
+          ...query,
+          created_by: currentUser.user?.id
+        }])
+        .select(`
+          *,
+          sql_connections(name)
+        `)
+        .single();
+
+      if (error) {
+        console.error('Error creating SQL query:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao criar consulta SQL",
+          variant: "destructive"
+        });
+        throw error;
+      }
+      
+      setQueries(prev => [data, ...prev]);
       toast({
-        title: "Informação",
-        description: "Funcionalidade SQL Queries será implementada em uma próxima versão. Consulta simulada criada."
+        title: "Sucesso",
+        description: "Consulta SQL criada com sucesso!"
       });
       
-      return mockQuery;
+      return data;
     } catch (error) {
       console.error('Error creating SQL query:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao criar consulta SQL",
-        variant: "destructive"
-      });
       throw error;
     }
   };
 
   const updateQuery = async (id: string, updates: Partial<SQLQuery>) => {
     try {
-      // Simulate updating query
-      const updatedQuery = queries.find(query => query.id === id);
-      if (!updatedQuery) throw new Error('Query not found');
+      const { data, error } = await supabase
+        .from('sql_queries')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .select(`
+          *,
+          sql_connections(name)
+        `)
+        .single();
+
+      if (error) {
+        console.error('Error updating SQL query:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao atualizar consulta SQL",
+          variant: "destructive"
+        });
+        throw error;
+      }
       
-      const newQuery = { ...updatedQuery, ...updates };
       setQueries(prev => prev.map(query => 
-        query.id === id ? newQuery : query
+        query.id === id ? data : query
       ));
       
       toast({
@@ -86,20 +145,30 @@ export function useSQLQueries() {
         description: "Consulta SQL atualizada com sucesso!"
       });
       
-      return newQuery;
+      return data;
     } catch (error) {
       console.error('Error updating SQL query:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao atualizar consulta SQL",
-        variant: "destructive"
-      });
       throw error;
     }
   };
 
   const deleteQuery = async (id: string) => {
     try {
+      const { error } = await supabase
+        .from('sql_queries')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error deleting SQL query:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao remover consulta SQL",
+          variant: "destructive"
+        });
+        throw error;
+      }
+
       setQueries(prev => prev.filter(query => query.id !== id));
       toast({
         title: "Sucesso",
@@ -107,18 +176,13 @@ export function useSQLQueries() {
       });
     } catch (error) {
       console.error('Error deleting SQL query:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao remover consulta SQL",
-        variant: "destructive"
-      });
       throw error;
     }
   };
 
   useEffect(() => {
     fetchQueries();
-  }, []);
+  }, [currentCompany?.id]);
 
   return {
     queries,
@@ -129,4 +193,3 @@ export function useSQLQueries() {
     refetch: fetchQueries
   };
 }
-

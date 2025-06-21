@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus } from "lucide-react";
 import { SQLConnection } from "@/hooks/useSQLConnections";
+import { useCompanies } from "@/hooks/useCompanies";
 
 interface QueryFormProps {
   connections: SQLConnection[];
@@ -21,12 +22,18 @@ interface QueryFormProps {
 
 export function QueryForm({ connections, onSaveQuery }: QueryFormProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { currentCompany } = useCompanies();
   const [newQuery, setNewQuery] = useState({
     name: "",
     description: "",
     query_text: "",
     connection_id: ""
   });
+
+  // Filtrar conexões apenas da empresa atual
+  const companyConnections = connections.filter(
+    connection => connection.company_id === currentCompany?.id
+  );
 
   const handleSaveQuery = async () => {
     try {
@@ -41,7 +48,10 @@ export function QueryForm({ connections, onSaveQuery }: QueryFormProps) {
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-blue-600 hover:bg-blue-700 border-black">
+        <Button 
+          className="bg-blue-600 hover:bg-blue-700 border-black"
+          disabled={!currentCompany || companyConnections.length === 0}
+        >
           <Plus className="w-4 h-4 mr-2" />
           Nova Consulta
         </Button>
@@ -69,7 +79,7 @@ export function QueryForm({ connections, onSaveQuery }: QueryFormProps) {
                   <SelectValue placeholder="Selecione a conexão" />
                 </SelectTrigger>
                 <SelectContent className="bg-white border-black">
-                  {connections.map((connection) => (
+                  {companyConnections.map((connection) => (
                     <SelectItem key={connection.id} value={connection.id}>
                       {connection.name} ({connection.host})
                     </SelectItem>
@@ -102,7 +112,11 @@ export function QueryForm({ connections, onSaveQuery }: QueryFormProps) {
             <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="border-black">
               Cancelar
             </Button>
-            <Button onClick={handleSaveQuery} disabled={!newQuery.name || !newQuery.query_text || !newQuery.connection_id} className="border-black">
+            <Button 
+              onClick={handleSaveQuery} 
+              disabled={!newQuery.name || !newQuery.query_text || !newQuery.connection_id} 
+              className="border-black"
+            >
               Salvar Consulta
             </Button>
           </div>

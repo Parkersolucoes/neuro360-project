@@ -3,7 +3,6 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   BarChart3,
-  Settings,
   QrCode,
   Database,
   MessageSquare,
@@ -18,7 +17,8 @@ import {
   ChevronDown,
   ChevronRight,
   SettingsIcon,
-  Building2
+  Building2,
+  Settings
 } from "lucide-react";
 import {
   Sidebar,
@@ -43,11 +43,6 @@ const menuItems = [
     title: "Dashboard",
     url: "/dashboard",
     icon: BarChart3,
-  },
-  {
-    title: "Configuração",
-    url: "/configuracao",
-    icon: Settings,
   },
   {
     title: "QR Code",
@@ -81,6 +76,11 @@ const adminMenuItems = [
     title: "Empresas",
     url: "/empresas",
     icon: Building2,
+  },
+  {
+    title: "Configuração",
+    url: "/configuracao",
+    icon: Settings,
   },
   {
     title: "Planos",
