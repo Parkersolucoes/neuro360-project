@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { usePlanTemplates } from '@/hooks/usePlanTemplates';
 import { useCompanies } from '@/hooks/useCompanies';
+import { Json } from '@/integrations/supabase/types';
 
 export interface Template {
   id: string;
@@ -12,7 +13,7 @@ export interface Template {
   description?: string;
   type: string;
   category: string;
-  variables: any[];
+  variables: Json;
   status: string;
   is_active: boolean;
   company_id: string | null;
