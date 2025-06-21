@@ -26,3 +26,6 @@ CREATE POLICY "Users can manage company evolution configs" ON public.evolution_c
 
 -- Garantir que RLS está habilitado
 ALTER TABLE public.evolution_configs ENABLE ROW LEVEL SECURITY;
+
+-- Habilitar RLS na tabela templates também
+ALTER TABLE public.templates ENABLE ROW LEVEL SECURITY;
