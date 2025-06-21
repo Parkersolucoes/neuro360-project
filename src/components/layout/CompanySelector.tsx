@@ -143,7 +143,7 @@ export function CompanySelector() {
                   {safeCompanies.map((company) => (
                     <CommandItem
                       key={company.id}
-                      value={company.name}
+                      value={company.id}
                       onSelect={() => handleCompanySelect(company.id)}
                       className="text-yellow-100 hover:bg-slate-700 hover:text-yellow-300"
                     >
