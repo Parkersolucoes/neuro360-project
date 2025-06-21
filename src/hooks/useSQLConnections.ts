@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useCompanies } from '@/hooks/useCompanies';
+import { usePlans } from '@/hooks/usePlans';
 
 export interface SQLConnection {
   id: string;
@@ -24,6 +25,7 @@ export function useSQLConnections() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { currentCompany } = useCompanies();
+  const { plans } = usePlans();
 
   const fetchConnections = async () => {
     try {
@@ -57,8 +59,43 @@ export function useSQLConnections() {
     }
   };
 
+  // Verificar limite de conexões baseado no plano da empresa
+  const checkConnectionLimit = () => {
+    if (!currentCompany) {
+      toast({
+        title: "Erro",
+        description: "Selecione uma empresa para criar conexões",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    // Buscar plano da empresa atual
+    const currentPlan = plans.find(plan => plan.id === currentCompany.plan_id);
+    const maxConnections = currentPlan?.max_sql_connections || 1;
+    
+    // Contar conexões da empresa atual
+    const companyConnections = connections.filter(conn => conn.company_id === currentCompany.id);
+
+    if (companyConnections.length >= maxConnections) {
+      toast({
+        title: "Limite atingido",
+        description: `Seu plano ${currentPlan?.name || 'atual'} permite apenas ${maxConnections} conexão(ões). Faça upgrade para criar mais conexões.`,
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    return true;
+  };
+
   const createConnection = async (connectionData: Omit<SQLConnection, 'id' | 'created_at' | 'updated_at'>) => {
     try {
+      // Verificar limite antes de criar
+      if (!checkConnectionLimit()) {
+        return;
+      }
+
       // Garantir que a conexão seja associada à empresa atual
       const dataWithCompany = {
         ...connectionData,
@@ -167,6 +204,7 @@ export function useSQLConnections() {
     createConnection,
     updateConnection,
     deleteConnection,
-    refetch: fetchConnections
+    refetch: fetchConnections,
+    checkConnectionLimit
   };
 }

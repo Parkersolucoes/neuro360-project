@@ -5,8 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Database, Save } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Database, Save, AlertCircle } from "lucide-react";
 import { useSQLConnections, SQLConnection } from "@/hooks/useSQLConnections";
+import { useCompanies } from "@/hooks/useCompanies";
+import { usePlans } from "@/hooks/usePlans";
 
 interface SQLConnectionFormProps {
   companyId: string;
@@ -15,6 +18,8 @@ interface SQLConnectionFormProps {
 
 export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormProps) {
   const { createConnection } = useSQLConnections();
+  const { currentCompany } = useCompanies();
+  const { plans } = usePlans();
 
   const [sqlForm, setSqlForm] = useState({
     name: "",
@@ -25,8 +30,20 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
     port: 5432
   });
 
+  // Buscar plano da empresa atual
+  const currentPlan = plans.find(plan => plan.id === currentCompany?.plan_id);
+  const maxConnections = currentPlan?.max_sql_connections || 1;
+  
+  // Filtrar conexões da empresa atual
+  const companyConnections = connections.filter(conn => conn.company_id === companyId);
+  const isLimitReached = companyConnections.length >= maxConnections;
+
   const handleSQLSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (isLimitReached) {
+      return;
+    }
     
     try {
       await createConnection({
@@ -48,9 +65,6 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
     }
   };
 
-  // Filtrar conexões da empresa atual
-  const companyConnections = connections.filter(conn => conn.company_id === companyId);
-
   return (
     <Card>
       <CardHeader>
@@ -59,12 +73,29 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
             <Database className="w-5 h-5 text-blue-600" />
             <span>Conexões SQL Server</span>
           </div>
-          <Badge variant="outline" className="text-blue-600 border-blue-200">
-            {companyConnections.length} conexões
-          </Badge>
+          <div className="flex items-center space-x-2">
+            <Badge variant="outline" className="text-blue-600 border-blue-200">
+              {companyConnections.length}/{maxConnections} conexões
+            </Badge>
+            {currentPlan && (
+              <Badge variant="secondary" className="text-sm">
+                Plano {currentPlan.name}
+              </Badge>
+            )}
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        {isLimitReached && (
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Limite de conexões atingido. Seu plano {currentPlan?.name || 'atual'} permite apenas {maxConnections} conexão(ões). 
+              Faça upgrade para criar mais conexões.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {companyConnections.length > 0 && (
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Conexões Ativas</h3>
@@ -102,6 +133,7 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
                 onChange={(e) => setSqlForm({...sqlForm, name: e.target.value})}
                 placeholder="Ex: Banco Principal"
                 className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                disabled={isLimitReached}
                 required
               />
             </div>
@@ -113,6 +145,7 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
                 onChange={(e) => setSqlForm({...sqlForm, host: e.target.value})}
                 placeholder="Ex: localhost"
                 className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                disabled={isLimitReached}
                 required
               />
             </div>
@@ -124,6 +157,7 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
                 onChange={(e) => setSqlForm({...sqlForm, database_name: e.target.value})}
                 placeholder="Nome do banco"
                 className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                disabled={isLimitReached}
                 required
               />
             </div>
@@ -136,6 +170,7 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
                 onChange={(e) => setSqlForm({...sqlForm, port: parseInt(e.target.value) || 5432})}
                 placeholder="5432"
                 className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                disabled={isLimitReached}
                 required
               />
             </div>
@@ -147,6 +182,7 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
                 onChange={(e) => setSqlForm({...sqlForm, username: e.target.value})}
                 placeholder="Usuário do banco"
                 className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                disabled={isLimitReached}
                 required
               />
             </div>
@@ -159,11 +195,16 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
                 onChange={(e) => setSqlForm({...sqlForm, password: e.target.value})}
                 placeholder="Senha do banco"
                 className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                disabled={isLimitReached}
                 required
               />
             </div>
           </div>
-          <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+          <Button 
+            type="submit" 
+            className="bg-blue-600 hover:bg-blue-700"
+            disabled={isLimitReached}
+          >
             <Save className="w-4 h-4 mr-2" />
             Salvar Conexão
           </Button>
