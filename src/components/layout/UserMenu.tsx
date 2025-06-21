@@ -27,10 +27,12 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { CompanySelector } from "./CompanySelector";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
+import { useCompanies } from "@/hooks/useCompanies";
 
 export function UserMenu() {
   const { userLogin, signOut } = useAuth();
   const { isMasterUser } = useAdminAuth();
+  const { companies } = useCompanies();
   const [showCompanyDialog, setShowCompanyDialog] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
@@ -48,6 +50,9 @@ export function UserMenu() {
   const handleSignOut = () => {
     signOut();
   };
+
+  // Mostrar seletor de empresa se for master OU se usuário normal tem mais de uma empresa
+  const shouldShowCompanySelector = isMasterUser || (Array.isArray(companies) && companies.length > 1);
 
   return (
     <>
@@ -88,7 +93,7 @@ export function UserMenu() {
             <span>Trocar Senha</span>
           </DropdownMenuItem>
           
-          {isMasterUser && (
+          {shouldShowCompanySelector && (
             <DropdownMenuItem onClick={() => setShowCompanyDialog(true)}>
               <Building2 className="mr-2 h-4 w-4" />
               <span>Selecionar Empresa</span>

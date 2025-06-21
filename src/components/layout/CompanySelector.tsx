@@ -87,10 +87,10 @@ export function CompanySelector() {
               variant="outline"
               role="combobox"
               aria-expanded={open}
-              className="w-full justify-between text-left"
+              className="w-full justify-between text-left bg-slate-800 hover:bg-slate-700 border-slate-600 text-yellow-400 hover:text-yellow-300"
             >
               <div className="flex items-center space-x-2 min-w-0">
-                <Building2 className="w-4 h-4 flex-shrink-0" />
+                <Building2 className="w-4 h-4 flex-shrink-0 text-yellow-400" />
                 <span className="truncate">
                   {currentCompany ? currentCompany.name : "Selecionar empresa..."}
                 </span>
@@ -98,11 +98,16 @@ export function CompanySelector() {
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-[300px] p-0" align="start">
-            <Command>
-              <CommandInput placeholder="Buscar empresa..." />
+          <PopoverContent className="w-[300px] p-0 bg-slate-800 border-slate-600" align="start">
+            <Command className="bg-slate-800">
+              <CommandInput 
+                placeholder="Buscar empresa..." 
+                className="text-yellow-100 placeholder:text-gray-400"
+              />
               <CommandList>
-                <CommandEmpty>Nenhuma empresa encontrada.</CommandEmpty>
+                <CommandEmpty className="text-gray-400 py-6 text-center">
+                  Nenhuma empresa encontrada.
+                </CommandEmpty>
                 <CommandGroup>
                   {safeCompanies.map((company) => (
                     <CommandItem
@@ -112,16 +117,17 @@ export function CompanySelector() {
                         setSelectedCompany(company.id === selectedCompany ? "" : company.id);
                         setOpen(false);
                       }}
+                      className="text-yellow-100 hover:bg-slate-700 hover:text-yellow-300"
                     >
                       <Check
                         className={cn(
-                          "mr-2 h-4 w-4",
+                          "mr-2 h-4 w-4 text-yellow-400",
                           selectedCompany === company.id ? "opacity-100" : "opacity-0"
                         )}
                       />
                       <div className="flex flex-col">
                         <span className="font-medium">{company.name}</span>
-                        <span className="text-xs text-muted-foreground">{company.document}</span>
+                        <span className="text-xs text-gray-400">{company.document}</span>
                       </div>
                     </CommandItem>
                   ))}
@@ -135,7 +141,7 @@ export function CompanySelector() {
       <Button
         onClick={handleApplySelection}
         size="sm"
-        className="bg-blue-600 hover:bg-blue-700 text-white px-3"
+        className="bg-yellow-500 hover:bg-yellow-600 text-slate-900 px-3 font-medium"
         disabled={!selectedCompany}
       >
         <RefreshCw className="w-4 h-4" />

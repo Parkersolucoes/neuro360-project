@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { CompaniesContext } from '@/contexts/CompaniesContext';
 import { Company } from '@/types/company';
@@ -54,7 +53,7 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      console.log('Fetching companies for user:', userLogin.id);
+      console.log('Fetching companies for regular user:', userLogin.id);
       const userCompanies = await CompanyService.fetchUserCompanies(userLogin.id);
       console.log('User companies fetched:', userCompanies);
       
@@ -66,10 +65,13 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
         
         setCompanies(typedCompanies);
 
-        // Se ainda não há empresa selecionada, selecionar a primeira
-        if (!currentCompany && typedCompanies.length > 0) {
-          console.log('Setting default company for user:', typedCompanies[0]);
+        // Para usuários normais, se há apenas uma empresa, selecioná-la automaticamente
+        // Se há múltiplas empresas, não selecionar automaticamente - deixar o usuário escolher
+        if (!currentCompany && typedCompanies.length === 1) {
+          console.log('Setting single company for user:', typedCompanies[0]);
           setCurrentCompany(typedCompanies[0]);
+        } else if (typedCompanies.length > 1) {
+          console.log('Multiple companies found for user - waiting for manual selection');
         }
       } else {
         console.log('No user companies found or invalid data format');
