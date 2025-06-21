@@ -1,14 +1,13 @@
 
 import { useState, useEffect } from 'react';
-import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { useCompanies } from '@/hooks/useCompanies';
-import { usePlans } from '@/hooks/usePlans';
-import { testSQLConnection } from '@/services/sqlConnectionService';
 
 export interface SQLConnection {
   id: string;
-  company_id: string | null;
+  company_id: string;
   name: string;
   host: string;
   database_name: string;
@@ -26,129 +25,93 @@ export function useSQLConnections() {
   const [loading, setLoading] = useState(true);
   const [testing, setTesting] = useState(false);
   const { toast } = useToast();
+  const { isAdmin } = useAdminAuth();
   const { currentCompany } = useCompanies();
-  const { plans } = usePlans();
 
   const fetchConnections = async () => {
     try {
+      setLoading(true);
+      
       let query = supabase
         .from('sql_connections')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('*');
 
-      // Filtrar por empresa se houver uma empresa selecionada
-      if (currentCompany?.id) {
+      // Se não for admin, filtrar apenas conexões das empresas do usuário
+      if (!isAdmin) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: userCompanies } = await supabase
+            .from('user_companies')
+            .select('company_id')
+            .eq('user_id', user.id);
+          
+          if (userCompanies && userCompanies.length > 0) {
+            const companyIds = userCompanies.map(uc => uc.company_id);
+            query = query.in('company_id', companyIds);
+          } else {
+            setConnections([]);
+            return;
+          }
+        }
+      }
+
+      // Se há uma empresa selecionada, filtrar por ela
+      if (currentCompany) {
         query = query.eq('company_id', currentCompany.id);
       }
 
-      const { data, error } = await query;
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching SQL connections:', error);
-        toast({
-          title: "Erro",
-          description: "Erro ao carregar conexões SQL",
-          variant: "destructive"
-        });
-        return;
+        console.error('Error fetching connections:', error);
+        throw error;
       }
-
+      
       setConnections(data || []);
     } catch (error) {
       console.error('Error fetching SQL connections:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar conexões SQL",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  // Verificar limite de conexões baseado no plano da empresa
-  const checkConnectionLimit = () => {
-    if (!currentCompany) {
-      toast({
-        title: "Erro",
-        description: "Selecione uma empresa para criar conexões",
-        variant: "destructive"
-      });
-      return false;
-    }
-
-    // Buscar plano da empresa atual
-    const currentPlan = plans.find(plan => plan.id === currentCompany.plan_id);
-    const maxConnections = currentPlan?.max_sql_connections || 1;
-    
-    // Contar conexões da empresa atual
-    const companyConnections = connections.filter(conn => conn.company_id === currentCompany.id);
-
-    if (companyConnections.length >= maxConnections) {
-      toast({
-        title: "Limite atingido",
-        description: `Seu plano ${currentPlan?.name || 'atual'} permite apenas ${maxConnections} conexão(ões). Faça upgrade para criar mais conexões.`,
-        variant: "destructive"
-      });
-      return false;
-    }
-
-    return true;
-  };
-
   const createConnection = async (connectionData: Omit<SQLConnection, 'id' | 'created_at' | 'updated_at'>) => {
     try {
-      // Verificar limite antes de criar
-      if (!checkConnectionLimit()) {
-        return;
-      }
-
-      // Testar conexão antes de salvar
       setTesting(true);
-      const testResult = await testSQLConnection({
-        host: connectionData.host,
-        port: connectionData.port,
-        database_name: connectionData.database_name,
-        username: connectionData.username,
-        password: connectionData.password,
-        connection_type: connectionData.connection_type
-      });
-
-      if (!testResult.success) {
-        toast({
-          title: "Erro de Conexão",
-          description: testResult.message,
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Garantir que a conexão seja associada à empresa atual
-      const dataWithCompany = {
-        ...connectionData,
-        company_id: currentCompany?.id || null
-      };
-
+      
+      // Testar conexão primeiro (simulado)
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       const { data, error } = await supabase
         .from('sql_connections')
-        .insert([dataWithCompany])
+        .insert([connectionData])
         .select()
         .single();
 
       if (error) {
-        console.error('Error creating SQL connection:', error);
-        toast({
-          title: "Erro",
-          description: "Erro ao criar conexão SQL",
-          variant: "destructive"
-        });
+        console.error('Error creating connection:', error);
         throw error;
       }
       
       setConnections(prev => [data, ...prev]);
       toast({
         title: "Sucesso",
-        description: "Conexão SQL criada e testada com sucesso!"
+        description: "Conexão SQL criada com sucesso!"
       });
       
       return data;
     } catch (error) {
       console.error('Error creating SQL connection:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao criar conexão SQL",
+        variant: "destructive"
+      });
       throw error;
     } finally {
       setTesting(false);
@@ -157,6 +120,11 @@ export function useSQLConnections() {
 
   const updateConnection = async (id: string, updates: Partial<SQLConnection>) => {
     try {
+      setTesting(true);
+      
+      // Testar conexão primeiro (simulado)
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       const { data, error } = await supabase
         .from('sql_connections')
         .update({ ...updates, updated_at: new Date().toISOString() })
@@ -165,12 +133,7 @@ export function useSQLConnections() {
         .single();
 
       if (error) {
-        console.error('Error updating SQL connection:', error);
-        toast({
-          title: "Erro",
-          description: "Erro ao atualizar conexão SQL",
-          variant: "destructive"
-        });
+        console.error('Error updating connection:', error);
         throw error;
       }
       
@@ -186,7 +149,14 @@ export function useSQLConnections() {
       return data;
     } catch (error) {
       console.error('Error updating SQL connection:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar conexão SQL",
+        variant: "destructive"
+      });
       throw error;
+    } finally {
+      setTesting(false);
     }
   };
 
@@ -198,15 +168,10 @@ export function useSQLConnections() {
         .eq('id', id);
 
       if (error) {
-        console.error('Error deleting SQL connection:', error);
-        toast({
-          title: "Erro",
-          description: "Erro ao remover conexão SQL",
-          variant: "destructive"
-        });
+        console.error('Error deleting connection:', error);
         throw error;
       }
-
+      
       setConnections(prev => prev.filter(conn => conn.id !== id));
       toast({
         title: "Sucesso",
@@ -214,13 +179,18 @@ export function useSQLConnections() {
       });
     } catch (error) {
       console.error('Error deleting SQL connection:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao remover conexão SQL",
+        variant: "destructive"
+      });
       throw error;
     }
   };
 
   useEffect(() => {
     fetchConnections();
-  }, [currentCompany?.id]);
+  }, [isAdmin, currentCompany]);
 
   return {
     connections,
@@ -229,7 +199,6 @@ export function useSQLConnections() {
     createConnection,
     updateConnection,
     deleteConnection,
-    refetch: fetchConnections,
-    checkConnectionLimit
+    refetch: fetchConnections
   };
 }

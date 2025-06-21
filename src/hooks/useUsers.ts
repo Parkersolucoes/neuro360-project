@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { useCompanies } from '@/hooks/useCompanies';
 
 export interface User {
   id: string;
@@ -22,6 +23,7 @@ export function useUsers() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { isAdmin } = useAdminAuth();
+  const { currentCompany } = useCompanies();
 
   const fetchUsers = async () => {
     try {
@@ -60,6 +62,22 @@ export function useUsers() {
             // Se o usuário não está associado a nenhuma empresa, mostrar apenas ele mesmo
             query = query.eq('id', user.id);
           }
+        }
+      }
+
+      // Se há uma empresa selecionada, filtrar usuários dessa empresa
+      if (currentCompany) {
+        const { data: companyUsers } = await supabase
+          .from('user_companies')
+          .select('user_id')
+          .eq('company_id', currentCompany.id);
+        
+        if (companyUsers && companyUsers.length > 0) {
+          const userIds = companyUsers.map(uc => uc.user_id);
+          query = query.in('id', userIds);
+        } else {
+          setUsers([]);
+          return;
         }
       }
 
@@ -182,7 +200,7 @@ export function useUsers() {
 
   useEffect(() => {
     fetchUsers();
-  }, [isAdmin]);
+  }, [isAdmin, currentCompany]);
 
   return {
     users,

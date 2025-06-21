@@ -2,55 +2,21 @@
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2, Users, Calendar, Settings, Database, FileText } from "lucide-react";
-import { useCompanyStats } from "@/hooks/useCompanyStats";
-
-interface Company {
-  id: string;
-  name: string;
-  document: string;
-  email: string;
-  phone: string;
-  address: string;
-  plan: "basic" | "pro" | "enterprise";
-  status: "active" | "inactive" | "suspended";
-  createdAt: string;
-  usersCount: number;
-  lastActivity: string;
-}
+import { Edit, Trash2, Mail, Phone, MapPin, Settings } from "lucide-react";
+import { Company } from "@/hooks/useCompanies";
 
 interface CompanyTableProps {
   companies: Company[];
-  onEdit: (company: Company) => void;
-  onDelete: (companyId: string) => void;
-  onConfigure?: (company: Company) => void;
+  onEditCompany: (company: Company) => void;
+  onDeleteCompany: (companyId: string) => void;
+  onConfigureCompany: (company: Company) => void;
 }
 
-const plans = [
-  { value: "basic", label: "Básico", color: "bg-gray-100 text-gray-800" },
-  { value: "pro", label: "Profissional", color: "bg-blue-100 text-blue-800" },
-  { value: "enterprise", label: "Empresarial", color: "bg-purple-100 text-purple-800" }
-];
-
-export function CompanyTable({ companies, onEdit, onDelete, onConfigure }: CompanyTableProps) {
-  const { stats } = useCompanyStats();
-
-  const getPlanLabel = (plan: string) => {
-    const planObj = plans.find(p => p.value === plan);
-    return planObj ? planObj.label : plan;
-  };
-
-  const getPlanColor = (plan: string) => {
-    const planObj = plans.find(p => p.value === plan);
-    return planObj ? planObj.color : "bg-gray-100 text-gray-800";
-  };
-
-  const getCompanyStats = (companyId: string) => {
-    return stats.find(stat => stat.company_id === companyId) || {
-      sql_connections_count: 0,
-      active_sql_connections_count: 0,
-      sql_queries_count: 0
-    };
+export function CompanyTable({ companies, onEditCompany, onDeleteCompany, onConfigureCompany }: CompanyTableProps) {
+  const handleDeleteCompany = async (companyId: string) => {
+    if (confirm("Tem certeza que deseja remover esta empresa?")) {
+      await onDeleteCompany(companyId);
+    }
   };
 
   return (
@@ -59,102 +25,84 @@ export function CompanyTable({ companies, onEdit, onDelete, onConfigure }: Compa
         <TableRow>
           <TableHead>Empresa</TableHead>
           <TableHead>Contato</TableHead>
-          <TableHead>Plano</TableHead>
-          <TableHead>Conexões SQL</TableHead>
-          <TableHead>Consultas SQL</TableHead>
+          <TableHead>Documento</TableHead>
           <TableHead>Status</TableHead>
-          <TableHead>Última Atividade</TableHead>
           <TableHead>Ações</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {companies.map((company) => {
-          const companyStats = getCompanyStats(company.id);
-          return (
-            <TableRow key={company.id}>
-              <TableCell>
-                <div>
-                  <div className="font-medium">{company.name}</div>
-                  <div className="text-sm text-gray-500">{company.document}</div>
+        {companies.map((company) => (
+          <TableRow key={company.id}>
+            <TableCell>
+              <div>
+                <div className="font-medium">{company.name}</div>
+                <div className="text-sm text-gray-500 flex items-center space-x-1">
+                  <MapPin className="w-3 h-3" />
+                  <span>{company.address || 'Endereço não informado'}</span>
                 </div>
-              </TableCell>
-              <TableCell>
-                <div className="space-y-1">
-                  <div className="text-sm">{company.email}</div>
-                  <div className="text-sm text-gray-500">{company.phone}</div>
-                </div>
-              </TableCell>
-              <TableCell>
-                <Badge className={getPlanColor(company.plan)}>
-                  {getPlanLabel(company.plan)}
-                </Badge>
-              </TableCell>
-              <TableCell>
+                <div className="text-sm text-gray-500">Criada em {new Date(company.created_at).toLocaleDateString()}</div>
+              </div>
+            </TableCell>
+            <TableCell>
+              <div className="space-y-1">
                 <div className="flex items-center space-x-2">
-                  <Database className="w-4 h-4 text-gray-400" />
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium">
-                      {companyStats.active_sql_connections_count}/{companyStats.sql_connections_count}
-                    </span>
-                    <span className="text-xs text-gray-500">Ativas/Total</span>
+                  <Mail className="w-3 h-3 text-gray-400" />
+                  <span className="text-sm">{company.email}</span>
+                </div>
+                {company.phone && (
+                  <div className="flex items-center space-x-2">
+                    <Phone className="w-3 h-3 text-gray-400" />
+                    <span className="text-sm">{company.phone}</span>
                   </div>
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center space-x-2">
-                  <FileText className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm">{companyStats.sql_queries_count}</span>
-                </div>
-              </TableCell>
-              <TableCell>
-                <Badge className={
-                  company.status === "active" 
-                    ? "bg-green-100 text-green-800" 
-                    : company.status === "suspended"
-                    ? "bg-red-100 text-red-800"
-                    : "bg-gray-100 text-gray-800"
-                }>
-                  {company.status === "active" ? "Ativa" : 
-                   company.status === "suspended" ? "Suspensa" : "Inativa"}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center space-x-2">
-                  <Calendar className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm">{company.lastActivity}</span>
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="flex space-x-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => onEdit(company)}
-                  >
-                    <Edit className="w-3 h-3" />
-                  </Button>
-                  {onConfigure && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => onConfigure(company)}
-                    >
-                      <Settings className="w-3 h-3" />
-                    </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    onClick={() => onDelete(company.id)}
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          );
-        })}
+                )}
+              </div>
+            </TableCell>
+            <TableCell>
+              <span className="font-mono text-sm">{company.document}</span>
+            </TableCell>
+            <TableCell>
+              <Badge className={
+                company.status === "active" 
+                  ? "bg-green-100 text-green-800" 
+                  : company.status === "inactive"
+                  ? "bg-gray-100 text-gray-800"
+                  : "bg-yellow-100 text-yellow-800"
+              }>
+                {company.status === "active" ? "Ativa" : 
+                 company.status === "inactive" ? "Inativa" : "Suspensa"}
+              </Badge>
+            </TableCell>
+            <TableCell>
+              <div className="flex space-x-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onConfigureCompany(company)}
+                  title="Configurações"
+                >
+                  <Settings className="w-3 h-3" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onEditCompany(company)}
+                  title="Editar"
+                >
+                  <Edit className="w-3 h-3" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  onClick={() => handleDeleteCompany(company.id)}
+                  title="Excluir"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </Button>
+              </div>
+            </TableCell>
+          </TableRow>
+        ))}
       </TableBody>
     </Table>
   );

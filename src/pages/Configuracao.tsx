@@ -1,14 +1,9 @@
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Database, MessageSquare, Settings } from "lucide-react";
-import { useSQLConnections } from "@/hooks/useSQLConnections";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle, Settings } from "lucide-react";
 import { useCompanies } from "@/hooks/useCompanies";
-import { SQLConnectionForm } from "@/components/configuracao/SQLConnectionForm";
-import { EvolutionAPIForm } from "@/components/configuracao/EvolutionAPIForm";
-import { CompanyAlert } from "@/components/configuracao/CompanyAlert";
 
 export default function Configuracao() {
-  const { connections } = useSQLConnections();
   const { currentCompany } = useCompanies();
 
   return (
@@ -21,43 +16,23 @@ export default function Configuracao() {
         <p className="text-gray-600 mt-2">Configure as integrações do sistema por empresa</p>
       </div>
 
-      <CompanyAlert currentCompany={currentCompany} />
+      <Alert>
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          As configurações foram movidas para a página de Empresas. 
+          Para configurar integrações específicas de uma empresa, acesse a página "Empresas" 
+          e clique no botão de configurações (⚙️) da empresa desejada.
+        </AlertDescription>
+      </Alert>
 
-      <Tabs defaultValue="sql" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="sql" className="flex items-center space-x-2">
-            <Database className="w-4 h-4" />
-            <span>SQL Server</span>
-          </TabsTrigger>
-          <TabsTrigger value="evolution" className="flex items-center space-x-2">
-            <MessageSquare className="w-4 h-4" />
-            <span>Evolution API</span>
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="sql">
-          {currentCompany ? (
-            <SQLConnectionForm 
-              companyId={currentCompany.id} 
-              connections={connections}
-            />
-          ) : (
-            <div className="text-center py-12 text-gray-500">
-              Selecione uma empresa para configurar conexões SQL
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="evolution">
-          {currentCompany ? (
-            <EvolutionAPIForm companyId={currentCompany.id} />
-          ) : (
-            <div className="text-center py-12 text-gray-500">
-              Selecione uma empresa para configurar Evolution API
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+      {!currentCompany && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Para visualizar configurações, selecione uma empresa no menu lateral.
+          </AlertDescription>
+        </Alert>
+      )}
     </div>
   );
 }

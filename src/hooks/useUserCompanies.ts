@@ -1,8 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { useCompanies } from '@/hooks/useCompanies';
 
 export interface UserCompany {
   id: string;
@@ -23,6 +23,7 @@ export function useUserCompanies() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { isAdmin } = useAdminAuth();
+  const { currentCompany } = useCompanies();
 
   const fetchUserCompanies = async () => {
     try {
@@ -52,6 +53,11 @@ export function useUserCompanies() {
             query = query.in('company_id', companyIds);
           }
         }
+      }
+
+      // Se há uma empresa selecionada, filtrar por ela
+      if (currentCompany) {
+        query = query.eq('company_id', currentCompany.id);
       }
 
       const { data, error } = await query.order('created_at', { ascending: false });
@@ -166,7 +172,7 @@ export function useUserCompanies() {
 
   useEffect(() => {
     fetchUserCompanies();
-  }, [isAdmin]);
+  }, [isAdmin, currentCompany]);
 
   return {
     userCompanies,
