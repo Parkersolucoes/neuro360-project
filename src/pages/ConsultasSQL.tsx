@@ -8,19 +8,24 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Play, Eye, Trash2, Database } from "lucide-react";
+import { Plus, Play, Eye, Trash2, Database, CheckCircle, XCircle, Clock } from "lucide-react";
 import { QueryResultTable } from "@/components/sql/QueryResultTable";
 import { useSQLConnections } from "@/hooks/useSQLConnections";
 import { useSQLQueries } from "@/hooks/useSQLQueries";
+import { useToast } from "@/hooks/use-toast";
 
 interface QueryResult {
   columns: string[];
   data: any[];
+  status: 'success' | 'error' | 'pending';
+  executionTime?: number;
+  errorMessage?: string;
 }
 
 export default function ConsultasSQL() {
   const { connections } = useSQLConnections();
   const { queries, createQuery, updateQuery, deleteQuery } = useSQLQueries();
+  const { toast } = useToast();
 
   const [selectedQuery, setSelectedQuery] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -33,35 +38,160 @@ export default function ConsultasSQL() {
     connection_id: ""
   });
 
-  // Simular execução de consulta
+  // Simular execução de consulta com resultados mais realistas
   const mockQueryExecution = (query: string): Promise<QueryResult> => {
     return new Promise((resolve) => {
+      const startTime = Date.now();
+      
       setTimeout(() => {
-        // Simulando diferentes tipos de consulta baseado no conteúdo
-        if (query.toLowerCase().includes('vendas')) {
+        const executionTime = Date.now() - startTime;
+        
+        // Simular erro em alguns casos
+        if (query.toLowerCase().includes('drop') || query.toLowerCase().includes('delete from users')) {
           resolve({
-            columns: ['id', 'data', 'cliente', 'valor', 'status'],
-            data: [
-              { id: 1, data: '2024-01-15', cliente: 'João Silva', valor: 'R$ 1.250,00', status: 'Pago' },
-              { id: 2, data: '2024-01-15', cliente: 'Maria Santos', valor: 'R$ 890,50', status: 'Pendente' },
-              { id: 3, data: '2024-01-15', cliente: 'Pedro Costa', valor: 'R$ 2.100,00', status: 'Pago' }
-            ]
+            columns: [],
+            data: [],
+            status: 'error',
+            executionTime,
+            errorMessage: 'Operação não permitida: comandos DROP e DELETE em tabelas críticas são bloqueados por segurança.'
           });
-        } else if (query.toLowerCase().includes('clientes')) {
+          return;
+        }
+
+        // Simular diferentes tipos de consulta baseado no conteúdo
+        if (query.toLowerCase().includes('vendas') || query.toLowerCase().includes('sales')) {
           resolve({
-            columns: ['nome', 'telefone', 'valor_devido'],
+            columns: ['id', 'data_venda', 'cliente', 'produto', 'quantidade', 'valor_unitario', 'valor_total', 'status'],
             data: [
-              { nome: 'Ana Paula', telefone: '(11) 9999-1234', valor_devido: 'R$ 450,00' },
-              { nome: 'Carlos Lima', telefone: '(11) 8888-5678', valor_devido: 'R$ 1.200,00' }
-            ]
+              { 
+                id: 1, 
+                data_venda: '2024-01-15', 
+                cliente: 'João Silva', 
+                produto: 'Notebook Dell',
+                quantidade: 1,
+                valor_unitario: 'R$ 3.250,00',
+                valor_total: 'R$ 3.250,00', 
+                status: 'Pago' 
+              },
+              { 
+                id: 2, 
+                data_venda: '2024-01-15', 
+                cliente: 'Maria Santos', 
+                produto: 'Mouse Gamer',
+                quantidade: 2,
+                valor_unitario: 'R$ 145,00',
+                valor_total: 'R$ 290,00', 
+                status: 'Pendente' 
+              },
+              { 
+                id: 3, 
+                data_venda: '2024-01-16', 
+                cliente: 'Pedro Costa', 
+                produto: 'Teclado Mecânico',
+                quantidade: 1,
+                valor_unitario: 'R$ 420,00',
+                valor_total: 'R$ 420,00', 
+                status: 'Pago' 
+              },
+              { 
+                id: 4, 
+                data_venda: '2024-01-16', 
+                cliente: 'Ana Paula', 
+                produto: 'Monitor 4K',
+                quantidade: 2,
+                valor_unitario: 'R$ 890,00',
+                valor_total: 'R$ 1.780,00', 
+                status: 'Processando' 
+              }
+            ],
+            status: 'success',
+            executionTime
+          });
+        } else if (query.toLowerCase().includes('clientes') || query.toLowerCase().includes('customers')) {
+          resolve({
+            columns: ['id', 'nome', 'email', 'telefone', 'cidade', 'data_cadastro', 'valor_devido', 'status'],
+            data: [
+              { 
+                id: 1,
+                nome: 'Ana Paula Oliveira', 
+                email: 'ana.paula@email.com',
+                telefone: '(11) 99999-1234', 
+                cidade: 'São Paulo',
+                data_cadastro: '2024-01-10',
+                valor_devido: 'R$ 450,00',
+                status: 'Ativo'
+              },
+              { 
+                id: 2,
+                nome: 'Carlos Lima Silva', 
+                email: 'carlos.lima@email.com',
+                telefone: '(11) 88888-5678', 
+                cidade: 'Rio de Janeiro',
+                data_cadastro: '2024-01-12',
+                valor_devido: 'R$ 1.200,00',
+                status: 'Ativo'
+              },
+              { 
+                id: 3,
+                nome: 'Fernanda Costa', 
+                email: 'fernanda@email.com',
+                telefone: '(11) 77777-9012', 
+                cidade: 'Belo Horizonte',
+                data_cadastro: '2024-01-14',
+                valor_devido: 'R$ 0,00',
+                status: 'Ativo'
+              }
+            ],
+            status: 'success',
+            executionTime
+          });
+        } else if (query.toLowerCase().includes('produtos') || query.toLowerCase().includes('products')) {
+          resolve({
+            columns: ['id', 'nome', 'categoria', 'preco', 'estoque', 'fornecedor', 'data_cadastro'],
+            data: [
+              { 
+                id: 1,
+                nome: 'Notebook Dell Inspiron 15', 
+                categoria: 'Informática',
+                preco: 'R$ 3.250,00',
+                estoque: 15,
+                fornecedor: 'Dell Inc.',
+                data_cadastro: '2024-01-05'
+              },
+              { 
+                id: 2,
+                nome: 'Mouse Gamer RGB', 
+                categoria: 'Periféricos',
+                preco: 'R$ 145,00',
+                estoque: 43,
+                fornecedor: 'Logitech',
+                data_cadastro: '2024-01-08'
+              },
+              { 
+                id: 3,
+                nome: 'Teclado Mecânico RGB', 
+                categoria: 'Periféricos',
+                preco: 'R$ 420,00',
+                estoque: 28,
+                fornecedor: 'Corsair',
+                data_cadastro: '2024-01-10'
+              }
+            ],
+            status: 'success',
+            executionTime
           });
         } else {
           resolve({
-            columns: ['resultado'],
-            data: [{ resultado: 'Consulta executada com sucesso' }]
+            columns: ['resultado', 'timestamp'],
+            data: [{ 
+              resultado: 'Consulta executada com sucesso',
+              timestamp: new Date().toLocaleString('pt-BR')
+            }],
+            status: 'success',
+            executionTime
           });
         }
-      }, 2000);
+      }, Math.random() * 1500 + 500); // Simular tempo de execução realista
     });
   };
 
@@ -78,11 +208,35 @@ export default function ConsultasSQL() {
       
       // Atualizar status da consulta
       await updateQuery(queryId, { 
-        status: "success",
+        status: result.status,
         last_execution: new Date().toISOString()
       });
+
+      if (result.status === 'success') {
+        toast({
+          title: "Consulta executada",
+          description: `${result.data.length} registros encontrados em ${result.executionTime}ms`,
+        });
+      } else {
+        toast({
+          title: "Erro na consulta",
+          description: result.errorMessage || "Erro desconhecido",
+          variant: "destructive"
+        });
+      }
     } catch (error) {
       await updateQuery(queryId, { status: "error" });
+      setQueryResult({
+        columns: [],
+        data: [],
+        status: 'error',
+        errorMessage: 'Erro interno do servidor'
+      });
+      toast({
+        title: "Erro",
+        description: "Erro interno ao executar consulta",
+        variant: "destructive"
+      });
     } finally {
       setIsExecuting(false);
     }
@@ -119,12 +273,23 @@ export default function ConsultasSQL() {
     }
   };
 
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'success':
+        return <CheckCircle className="w-3 h-3 text-green-600" />;
+      case 'error':
+        return <XCircle className="w-3 h-3 text-red-600" />;
+      default:
+        return <Clock className="w-3 h-3 text-blue-600" />;
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Consultas SQL</h1>
-          <p className="text-gray-600 mt-2">Gerencie suas consultas e teste os resultados</p>
+          <p className="text-gray-600 mt-2">Gerencie suas consultas e visualize os resultados em tabelas organizadas</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -180,7 +345,7 @@ export default function ConsultasSQL() {
                 <Textarea
                   id="query"
                   placeholder="SELECT * FROM tabela WHERE..."
-                  className="min-h-32 bg-white border-black"
+                  className="min-h-32 bg-white border-black font-mono"
                   value={newQuery.query_text}
                   onChange={(e) => setNewQuery({...newQuery, query_text: e.target.value})}
                 />
@@ -207,7 +372,7 @@ export default function ConsultasSQL() {
             </CardTitle>
             <p className="text-sm text-gray-600">Lista de todas as consultas SQL configuradas</p>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 max-h-96 overflow-y-auto">
             {queries.map((query) => (
               <div
                 key={query.id}
@@ -218,9 +383,12 @@ export default function ConsultasSQL() {
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <h3 className="font-medium text-gray-900">{query.name}</h3>
-                    <p className="text-sm text-gray-600 mt-1">{query.description}</p>
-                    <p className="text-xs text-gray-500 mt-2">
+                    <div className="flex items-center space-x-2 mb-1">
+                      <h3 className="font-medium text-gray-900">{query.name}</h3>
+                      {getStatusIcon(query.status)}
+                    </div>
+                    <p className="text-sm text-gray-600 mb-2">{query.description}</p>
+                    <p className="text-xs text-gray-500">
                       Conexão: {query.sql_connections?.name}
                     </p>
                     {query.last_execution && (
@@ -289,7 +457,10 @@ export default function ConsultasSQL() {
             {selectedQuery ? (
               <div className="space-y-4">
                 <div>
-                  <h3 className="font-medium text-gray-900">{selectedQuery.name}</h3>
+                  <h3 className="font-medium text-gray-900 flex items-center space-x-2">
+                    <span>{selectedQuery.name}</span>
+                    {getStatusIcon(selectedQuery.status)}
+                  </h3>
                   <p className="text-sm text-gray-600">{selectedQuery.description}</p>
                 </div>
                 <div className="space-y-2">
@@ -297,7 +468,7 @@ export default function ConsultasSQL() {
                   <Textarea
                     value={selectedQuery.query_text}
                     readOnly
-                    className="min-h-32 bg-gray-50 border-black"
+                    className="min-h-32 bg-gray-50 border-black font-mono text-sm"
                   />
                 </div>
                 <div className="space-y-2">
@@ -325,12 +496,15 @@ export default function ConsultasSQL() {
         </Card>
       </div>
 
-      {/* Tabela de Resultados */}
+      {/* Tabela de Resultados Melhorada */}
       {(queryResult || isExecuting) && (
         <QueryResultTable 
           data={queryResult?.data || []}
           columns={queryResult?.columns || []}
           isLoading={isExecuting}
+          status={queryResult?.status}
+          executionTime={queryResult?.executionTime}
+          errorMessage={queryResult?.errorMessage}
         />
       )}
     </div>
