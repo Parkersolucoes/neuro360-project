@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { MessageSquare, Save, TestTube } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useEvolutionConfig } from "@/hooks/useEvolutionConfig";
+import { EvolutionApiService } from "@/services/evolutionApiService";
 
 interface EvolutionAPIFormProps {
   companyId: string;
@@ -23,6 +24,8 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
     api_key: "",
     webhook_url: ""
   });
+
+  const [isTesting, setIsTesting] = useState(false);
 
   // Preencher o formulário da Evolution com dados existentes
   useEffect(() => {
@@ -77,10 +80,55 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
   };
 
   const handleTestConnection = async () => {
-    toast({
-      title: "Teste de Conexão",
-      description: "Funcionalidade de teste será implementada em breve",
-    });
+    if (!evolutionForm.api_url || !evolutionForm.api_key) {
+      toast({
+        title: "Erro",
+        description: "URL da API e chave são obrigatórias para o teste",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsTesting(true);
+    
+    try {
+      const isConnected = await EvolutionApiService.testConnection({
+        api_url: evolutionForm.api_url,
+        api_key: evolutionForm.api_key
+      });
+
+      if (isConnected) {
+        toast({
+          title: "Sucesso",
+          description: "Conexão com a Evolution API estabelecida com sucesso!",
+        });
+        
+        // Atualizar status no banco se a configuração já existe
+        if (evolutionConfig) {
+          await saveConfig({
+            ...evolutionForm,
+            company_id: companyId,
+            is_active: true,
+            status: 'connected' as const
+          });
+        }
+      } else {
+        toast({
+          title: "Erro de Conexão",
+          description: "Não foi possível conectar com a Evolution API. Verifique a URL e a chave da API.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Connection test failed:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao testar conexão com a Evolution API",
+        variant: "destructive"
+      });
+    } finally {
+      setIsTesting(false);
+    }
   };
 
   if (loading) {
@@ -173,10 +221,11 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
               type="button" 
               variant="outline" 
               onClick={handleTestConnection}
+              disabled={isTesting}
               className="border-blue-600 text-blue-600 hover:bg-blue-50"
             >
               <TestTube className="w-4 h-4 mr-2" />
-              Testar Conexão
+              {isTesting ? "Testando..." : "Testar Conexão"}
             </Button>
           </div>
         </form>

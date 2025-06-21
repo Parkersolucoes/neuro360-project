@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQRSessions } from "@/hooks/useQRSessions";
 import { QRCodeDisplay } from "./QRCodeDisplay";
 import { SessionInfo } from "./SessionInfo";
-import { generateQRCodeSVG } from "@/utils/qrCodeGenerator";
+import { EvolutionApiService } from "@/services/evolutionApiService";
 
 interface QRCodeGeneratorProps {
   evolutionConfigId: string;
@@ -23,53 +23,148 @@ export function QRCodeGenerator({
   currentCompanyName
 }: QRCodeGeneratorProps) {
   const { toast } = useToast();
-  const { session, createSession, updateSession, disconnectSession } = useQRSessions();
+  const { session, createSession, updateSession, disconnectSession, refetch } = useQRSessions();
   
   const [qrCode, setQrCode] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [evolutionService, setEvolutionService] = useState<EvolutionApiService | null>(null);
 
-  const sessionStatus = session?.session_status || "disconnected";
+  const sessionStatus = session?.status || "disconnected";
+
+  // Buscar sessão existente ao carregar o componente
+  useEffect(() => {
+    refetch(currentCompanyId);
+  }, [currentCompanyId, refetch]);
+
+  // Inicializar serviço da Evolution API
+  useEffect(() => {
+    const initEvolutionService = async () => {
+      try {
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { data: config } = await supabase
+          .from('evolution_configs')
+          .select('*')
+          .eq('id', evolutionConfigId)
+          .single();
+
+        if (config) {
+          const service = new EvolutionApiService({
+            ...config,
+            status: config.status as 'connected' | 'disconnected' | 'testing'
+          });
+          setEvolutionService(service);
+        }
+      } catch (error) {
+        console.error('Error initializing Evolution service:', error);
+      }
+    };
+
+    initEvolutionService();
+  }, [evolutionConfigId]);
 
   const generateQRCode = async () => {
+    if (!evolutionService) {
+      toast({
+        title: "Erro",
+        description: "Serviço Evolution API não está configurado",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsGenerating(true);
     
     try {
-      // Como a tabela qr_sessions não existe, vamos simular a criação
-      const mockSessionId = `session_${Date.now()}`;
+      // Criar ou atualizar sessão no banco
+      let currentSession = session;
+      if (!currentSession) {
+        currentSession = await createSession(evolutionConfigId, instanceName, currentCompanyId);
+      }
+
+      // Gerar QR Code através da Evolution API
+      const qrResponse = await evolutionService.generateQRCode();
       
-      // Gerar QR Code usando dados simulados
-      const qrData = `whatsapp-evolution:${mockSessionId}:${currentCompanyId}:${instanceName}:${Date.now()}`;
-      const qrCodeSVG = generateQRCodeSVG(qrData);
+      setQrCode(qrResponse.qrCode);
       
-      setQrCode(qrCodeSVG);
-      setIsGenerating(false);
+      // Atualizar sessão com o QR Code
+      await updateSession({
+        status: 'waiting',
+        qr_code: qrResponse.qrCode,
+        updated_at: new Date().toISOString()
+      });
       
       toast({
         title: "QR Code gerado",
-        description: "Use o WhatsApp Web para escanear o código (simulação)",
+        description: "Escaneie o código com seu WhatsApp para conectar",
       });
 
-      // Simular processo de conexão
-      setTimeout(() => {
-        toast({
-          title: "Simulação",
-          description: `Funcionalidade QR Code em desenvolvimento para ${currentCompanyName}`,
-        });
-      }, 5000);
+      // Iniciar polling para verificar status da conexão
+      startStatusPolling();
     } catch (error) {
-      setIsGenerating(false);
       console.error('Error generating QR code:', error);
       toast({
         title: "Erro",
-        description: "Erro ao gerar QR Code",
+        description: "Erro ao gerar QR Code. Verifique as configurações da Evolution API.",
         variant: "destructive"
       });
+    } finally {
+      setIsGenerating(false);
     }
   };
 
-  const handleDisconnectSession = () => {
-    disconnectSession();
-    setQrCode("");
+  const startStatusPolling = () => {
+    const pollInterval = setInterval(async () => {
+      if (!evolutionService) return;
+
+      try {
+        const status = await evolutionService.getInstanceStatus();
+        
+        if (status.status === 'open') {
+          // Instância conectada
+          await updateSession({
+            status: 'connected',
+            connected_at: new Date().toISOString(),
+            last_activity: new Date().toISOString()
+          });
+          
+          clearInterval(pollInterval);
+          
+          toast({
+            title: "WhatsApp Conectado!",
+            description: "Sua instância está pronta para uso",
+          });
+        }
+      } catch (error) {
+        console.error('Error checking instance status:', error);
+      }
+    }, 5000); // Verificar a cada 5 segundos
+
+    // Limpar polling após 5 minutos
+    setTimeout(() => {
+      clearInterval(pollInterval);
+    }, 300000);
+  };
+
+  const handleDisconnectSession = async () => {
+    if (!evolutionService) return;
+
+    try {
+      await evolutionService.disconnectInstance();
+      await disconnectSession();
+      setQrCode("");
+      
+      toast({
+        title: "Sessão desconectada",
+        description: "WhatsApp foi desconectado com sucesso",
+      });
+    } catch (error) {
+      console.error('Error disconnecting session:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao desconectar sessão",
+        variant: "destructive"
+      });
+    }
   };
 
   const refreshQRCode = () => {
@@ -77,8 +172,8 @@ export function QRCodeGenerator({
   };
 
   useEffect(() => {
-    if (session?.qr_code_data) {
-      setQrCode(session.qr_code_data);
+    if (session?.qr_code) {
+      setQrCode(session.qr_code);
     }
   }, [session]);
 
