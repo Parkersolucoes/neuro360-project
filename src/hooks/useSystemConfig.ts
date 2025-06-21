@@ -13,6 +13,13 @@ export interface SystemConfig {
   updated_at: string;
 }
 
+interface SystemConfigValue {
+  system_name?: string;
+  system_description?: string;
+  primary_color?: string;
+  login_background_image?: string;
+}
+
 export function useSystemConfig() {
   const [config, setConfig] = useState<SystemConfig | null>(null);
   const [loading, setLoading] = useState(true);
@@ -37,7 +44,7 @@ export function useSystemConfig() {
 
       if (data) {
         // Converter os dados do banco para o formato esperado
-        const configValue = data.config_value as any;
+        const configValue = data.config_value as SystemConfigValue;
         const systemConfig: SystemConfig = {
           id: data.id,
           system_name: configValue.system_name || 'Visão 360 - Soluções em Dados',
@@ -82,7 +89,7 @@ export function useSystemConfig() {
           system_description: 'Plataforma completa para análise e gestão de dados empresariais',
           primary_color: '#1e293b',
           login_background_image: ''
-        },
+        } as SystemConfigValue,
         description: 'Configurações de aparência do sistema',
         is_public: true
       };
@@ -95,12 +102,13 @@ export function useSystemConfig() {
 
       if (error) throw error;
 
+      const configValue = data.config_value as SystemConfigValue;
       const systemConfig: SystemConfig = {
         id: data.id,
-        system_name: data.config_value.system_name,
-        system_description: data.config_value.system_description,
-        primary_color: data.config_value.primary_color,
-        login_background_image: data.config_value.login_background_image,
+        system_name: configValue.system_name || 'Visão 360 - Soluções em Dados',
+        system_description: configValue.system_description || 'Plataforma completa para análise e gestão de dados empresariais',
+        primary_color: configValue.primary_color || '#1e293b',
+        login_background_image: configValue.login_background_image || '',
         created_at: data.created_at,
         updated_at: data.updated_at
       };
@@ -123,7 +131,7 @@ export function useSystemConfig() {
           system_description: updates.system_description || config?.system_description,
           primary_color: updates.primary_color || config?.primary_color,
           login_background_image: updates.login_background_image || config?.login_background_image
-        },
+        } as SystemConfigValue,
         description: 'Configurações de aparência do sistema',
         is_public: true
       };

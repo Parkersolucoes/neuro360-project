@@ -17,6 +17,7 @@ interface AuthContextType {
   userLogin: UserLogin | null;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
+  signOut: () => Promise<void>; // Adicionar alias para compatibilidade
   loading: boolean;
 }
 
@@ -71,6 +72,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  // Alias para compatibilidade com AppSidebar
+  const signOut = logout;
+
   // Verificar se há usuário logado no localStorage
   useEffect(() => {
     const savedUser = localStorage.getItem('userLogin');
@@ -99,6 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       userLogin,
       login,
       logout,
+      signOut,
       loading
     }}>
       {children}

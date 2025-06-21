@@ -7,10 +7,11 @@ export interface Template {
   id: string;
   name: string;
   content: string;
-  type: string;
+  category: string;
+  variables: any[];
+  status: string;
   company_id: string | null;
-  description?: string;
-  is_active: boolean;
+  user_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -34,12 +35,20 @@ export function useTemplates() {
 
   const fetchTemplates = async () => {
     try {
-      console.log('Templates: Table templates does not exist in current database schema');
+      console.log('Templates: Using message_templates table instead of templates');
+      setLoading(true);
       
-      // Como a tabela templates não existe, retornar array vazio
-      setTemplates([]);
+      // Buscar templates da tabela message_templates
+      const response = await fetch('/api/message-templates');
+      if (response.ok) {
+        const data = await response.json();
+        setTemplates(data || []);
+      } else {
+        setTemplates([]);
+      }
     } catch (error) {
       console.error('Error fetching templates:', error);
+      setTemplates([]);
     } finally {
       setLoading(false);
     }
@@ -47,7 +56,7 @@ export function useTemplates() {
 
   const createTemplate = async (templateData: Omit<Template, 'id' | 'created_at' | 'updated_at'>) => {
     try {
-      console.log('Templates: Cannot create template - table templates does not exist');
+      console.log('Templates: Cannot create template - functionality not implemented');
       
       toast({
         title: "Erro",
@@ -66,7 +75,7 @@ export function useTemplates() {
 
   const updateTemplate = async (id: string, updates: Partial<Template>) => {
     try {
-      console.log('Templates: Cannot update template - table templates does not exist');
+      console.log('Templates: Cannot update template - functionality not implemented');
       
       toast({
         title: "Erro",
@@ -85,7 +94,7 @@ export function useTemplates() {
 
   const deleteTemplate = async (id: string) => {
     try {
-      console.log('Templates: Cannot delete template - table templates does not exist');
+      console.log('Templates: Cannot delete template - functionality not implemented');
       
       toast({
         title: "Erro",

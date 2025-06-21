@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 
 export interface PlanTemplate {
   id: string;
@@ -13,19 +12,16 @@ export interface PlanTemplate {
 
 export function usePlanTemplates() {
   const [planTemplates, setPlanTemplates] = useState<PlanTemplate[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   const fetchPlanTemplates = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('plan_templates')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setPlanTemplates(data || []);
+      console.log('PlanTemplates: Table plan_templates does not exist in current database schema');
+      
+      // Como a tabela plan_templates não existe no banco, retornar array vazio
+      setPlanTemplates([]);
     } catch (error) {
       console.error('Error fetching plan templates:', error);
       toast({
@@ -40,24 +36,15 @@ export function usePlanTemplates() {
 
   const linkTemplateToPlan = async (templateId: string, planId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('plan_templates')
-        .insert({
-          template_id: templateId,
-          plan_id: planId
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      setPlanTemplates(prev => [...prev, data]);
+      console.log('PlanTemplates: Cannot link template to plan - table plan_templates does not exist');
+      
       toast({
-        title: "Sucesso",
-        description: "Template associado ao plano com sucesso"
+        title: "Erro",
+        description: "Funcionalidade de associação de templates está temporariamente indisponível",
+        variant: "destructive"
       });
 
-      return data;
+      throw new Error('Table plan_templates does not exist');
     } catch (error) {
       console.error('Error linking template to plan:', error);
       toast({
@@ -71,22 +58,15 @@ export function usePlanTemplates() {
 
   const unlinkTemplateFromPlan = async (templateId: string, planId: string) => {
     try {
-      const { error } = await supabase
-        .from('plan_templates')
-        .delete()
-        .eq('template_id', templateId)
-        .eq('plan_id', planId);
-
-      if (error) throw error;
-
-      setPlanTemplates(prev => prev.filter(pt => 
-        !(pt.template_id === templateId && pt.plan_id === planId)
-      ));
+      console.log('PlanTemplates: Cannot unlink template from plan - table plan_templates does not exist');
       
       toast({
-        title: "Sucesso",
-        description: "Template desassociado do plano com sucesso"
+        title: "Erro",
+        description: "Funcionalidade de desassociação de templates está temporariamente indisponível",
+        variant: "destructive"
       });
+
+      throw new Error('Table plan_templates does not exist');
     } catch (error) {
       console.error('Error unlinking template from plan:', error);
       toast({
