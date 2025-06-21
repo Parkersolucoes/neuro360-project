@@ -19,7 +19,7 @@ export default function Usuarios() {
   const { toast } = useToast();
   const { users, loading, createUser, updateUser, deleteUser } = useUsers();
   const { companies } = useCompanies();
-  const { createUserCompanies, getUserCompanies } = useUserCompanies();
+  const { createUserCompanies, getUserCompanies, getUserCompanyNames } = useUserCompanies();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -52,6 +52,8 @@ export default function Usuarios() {
 
   const saveUser = async () => {
     try {
+      console.log('Saving user with companies:', { selectedCompanies, primaryCompany });
+      
       let savedUser;
       if (editingUser) {
         savedUser = await updateUser(editingUser.id, newUser);
@@ -89,6 +91,7 @@ export default function Usuarios() {
   };
 
   const editUser = (user: User) => {
+    console.log('Editing user:', user.id);
     setEditingUser(user);
     setNewUser({
       name: user.name,
@@ -103,6 +106,7 @@ export default function Usuarios() {
     
     // Carregar empresas associadas ao usuário
     const userCompanies = getUserCompanies(user.id);
+    console.log('User companies for editing:', userCompanies);
     const companyIds = userCompanies.map(uc => uc.company_id);
     const primary = userCompanies.find(uc => uc.is_primary)?.company_id || '';
     
@@ -120,28 +124,29 @@ export default function Usuarios() {
   const handleCompanyToggle = (companyId: string, checked: boolean) => {
     if (checked) {
       setSelectedCompanies(prev => [...prev, companyId]);
+      // Se é a primeira empresa selecionada, torna ela principal
       if (selectedCompanies.length === 0) {
         setPrimaryCompany(companyId);
       }
     } else {
       setSelectedCompanies(prev => prev.filter(id => id !== companyId));
+      // Se removeu a empresa principal, limpa ou define outra
       if (primaryCompany === companyId) {
-        setPrimaryCompany('');
+        const remaining = selectedCompanies.filter(id => id !== companyId);
+        setPrimaryCompany(remaining.length > 0 ? remaining[0] : '');
       }
+    }
+  };
+
+  const handlePrimaryCompanyChange = (companyId: string, checked: boolean) => {
+    if (checked) {
+      setPrimaryCompany(companyId);
     }
   };
 
   const getRoleLabel = (role: string) => {
     const roleObj = roles.find(r => r.value === role);
     return roleObj ? roleObj.label : role;
-  };
-
-  const getUserCompanyNames = (userId: string) => {
-    const userCompanies = getUserCompanies(userId);
-    return userCompanies.map(uc => {
-      const company = companies.find(c => c.id === uc.company_id);
-      return company ? company.name : 'Empresa não encontrada';
-    }).join(', ') || 'Nenhuma empresa';
   };
 
   if (loading) {
@@ -285,21 +290,23 @@ export default function Usuarios() {
                   </Label>
                   <div className="border rounded-lg p-4 space-y-3 max-h-48 overflow-y-auto">
                     {companies.map((company) => (
-                      <div key={company.id} className="flex items-center space-x-3">
-                        <Checkbox
-                          id={`company-${company.id}`}
-                          checked={selectedCompanies.includes(company.id)}
-                          onCheckedChange={(checked) => handleCompanyToggle(company.id, checked as boolean)}
-                        />
-                        <Label htmlFor={`company-${company.id}`} className="flex-1">
-                          {company.name}
-                        </Label>
+                      <div key={company.id} className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <Checkbox
+                            id={`company-${company.id}`}
+                            checked={selectedCompanies.includes(company.id)}
+                            onCheckedChange={(checked) => handleCompanyToggle(company.id, checked as boolean)}
+                          />
+                          <Label htmlFor={`company-${company.id}`} className="flex-1">
+                            {company.name}
+                          </Label>
+                        </div>
                         {selectedCompanies.includes(company.id) && (
                           <div className="flex items-center space-x-2">
                             <Checkbox
                               id={`primary-${company.id}`}
                               checked={primaryCompany === company.id}
-                              onCheckedChange={(checked) => checked && setPrimaryCompany(company.id)}
+                              onCheckedChange={(checked) => handlePrimaryCompanyChange(company.id, checked as boolean)}
                             />
                             <Label htmlFor={`primary-${company.id}`} className="text-sm text-gray-600">
                               Principal
@@ -308,6 +315,11 @@ export default function Usuarios() {
                         )}
                       </div>
                     ))}
+                    {companies.length === 0 && (
+                      <p className="text-sm text-gray-500 text-center py-4">
+                        Nenhuma empresa cadastrada
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -343,7 +355,7 @@ export default function Usuarios() {
                 <TableHead>Contato</TableHead>
                 <TableHead>Função</TableHead>
                 <TableHead>Departamento</TableHead>
-                <TableHead>Empresas</TableHead>
+                <TableHead>Empresas Vinculadas</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Ações</TableHead>
               </TableRow>
@@ -387,7 +399,9 @@ export default function Usuarios() {
                   </TableCell>
                   <TableCell>{user.department}</TableCell>
                   <TableCell>
-                    <div className="text-sm">{getUserCompanyNames(user.id)}</div>
+                    <div className="text-sm max-w-48">
+                      {getUserCompanyNames(user.id)}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Badge className={
