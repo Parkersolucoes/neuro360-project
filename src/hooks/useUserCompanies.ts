@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -11,7 +10,7 @@ export interface UserCompany {
   company_id: string;
   role: string;
   is_primary: boolean;
-  permissions: any;
+  permissions?: any;
   created_at: string;
   updated_at: string;
   companies?: {

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -68,11 +69,10 @@ export default function ConfiguracaoSistema() {
       </div>
 
       <Tabs defaultValue="appearance" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="appearance">Aparência</TabsTrigger>
           <TabsTrigger value="payments">Gateway de Pagamento</TabsTrigger>
           <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
-          <TabsTrigger value="companies">Empresas</TabsTrigger>
           <TabsTrigger value="updates">Atualizações</TabsTrigger>
         </TabsList>
 
@@ -163,28 +163,6 @@ export default function ConfiguracaoSistema() {
 
         <TabsContent value="webhooks">
           <WebhookConfiguration />
-        </TabsContent>
-
-        <TabsContent value="companies">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <span>Gerenciamento de Empresas</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 mb-4">
-                Funcionalidade de empresas será implementada aqui. 
-                Por enquanto, use o menu "Empresas" na navegação principal.
-              </p>
-              <Button 
-                onClick={() => window.location.href = '/empresas'}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                Ir para Empresas
-              </Button>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="updates">
