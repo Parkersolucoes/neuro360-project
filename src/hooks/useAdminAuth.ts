@@ -2,14 +2,14 @@
 import { useAuth } from './useAuth';
 
 export function useAdminAuth() {
-  const { profile } = useAuth();
+  const { userLogin } = useAuth();
 
-  const isAdmin = profile?.is_admin || profile?.is_master_user || false;
-  const isMasterUser = profile?.is_master_user || false;
+  const isAdmin = userLogin?.is_admin || userLogin?.is_master || false;
+  const isMasterUser = userLogin?.is_master || false;
 
   return {
     isAdmin,
     isMasterUser,
-    profile
+    userLogin
   };
 }
