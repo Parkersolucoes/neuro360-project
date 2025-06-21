@@ -49,7 +49,7 @@ export function UserForm({
         whatsapp: editingUser.whatsapp,
         role: editingUser.role,
         department: editingUser.department,
-        is_admin: editingUser.is_admin === true || editingUser.is_admin === 'true',
+        is_admin: Boolean(editingUser.is_admin),
         status: editingUser.status
       });
     } else {
@@ -73,7 +73,7 @@ export function UserForm({
       const updates: Partial<typeof prev> = {};
       
       if (field === 'is_admin') {
-        updates.is_admin = value === true || value === 'true';
+        updates.is_admin = Boolean(value);
       } else if (field === 'status') {
         updates.status = value as 'active' | 'inactive';
       } else {
