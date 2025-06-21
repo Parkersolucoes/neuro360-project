@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +10,7 @@ import { MessageSquare, Mail, Lock, User, Package, Calendar } from "lucide-react
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useSystemUpdates } from "@/hooks/useSystemUpdates";
+import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -19,6 +19,7 @@ export default function Auth() {
   const { signIn, signUp, user, loading } = useAuth();
   const { toast } = useToast();
   const { updates, loading: updatesLoading } = useSystemUpdates();
+  const { config: systemConfig } = useSystemConfig();
 
   const [loginForm, setLoginForm] = useState({
     email: "",
@@ -112,6 +113,10 @@ export default function Auth() {
     );
   }
 
+  const systemName = systemConfig?.system_name || "360 Solutions";
+  const systemDescription = systemConfig?.system_description || "Automação WhatsApp Inteligente";
+  const backgroundImage = systemConfig?.login_background_image;
+
   return (
     <div className="min-h-screen flex bg-gray-50">
       {/* Painel esquerdo - Login */}
@@ -124,10 +129,10 @@ export default function Auth() {
               </div>
             </div>
             <h2 className="mt-6 text-3xl font-bold text-gray-900">
-              WhatsApp Automation
+              {systemName}
             </h2>
             <p className="mt-2 text-sm text-gray-600">
-              Faça login em sua conta ou crie uma nova
+              {systemDescription}
             </p>
           </div>
 
@@ -258,9 +263,17 @@ export default function Auth() {
         </div>
       </div>
 
-      {/* Painel direito - Atualizações */}
-      <div className="hidden lg:block lg:w-96 bg-slate-800 text-white">
-        <div className="p-8 h-full overflow-y-auto">
+      {/* Painel direito - Atualizações com imagem de fundo personalizada */}
+      <div 
+        className="hidden lg:block lg:w-96 bg-slate-800 text-white relative overflow-hidden"
+        style={backgroundImage ? {
+          backgroundImage: `linear-gradient(rgba(30, 41, 59, 0.85), rgba(30, 41, 59, 0.85)), url(${backgroundImage})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        } : {}}
+      >
+        <div className="p-8 h-full overflow-y-auto relative z-10">
           <div className="mb-8">
             <h3 className="text-xl font-bold mb-2">Atualizações Recentes</h3>
             <p className="text-slate-300 text-sm">

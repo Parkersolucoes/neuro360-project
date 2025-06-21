@@ -13,13 +13,15 @@ import {
   Shield,
   Save,
   Webhook,
-  Package
+  Package,
+  Palette
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAssasConfig } from "@/hooks/useAssasConfig";
 import { useAuth } from "@/hooks/useAuth";
 import { WebhookConfiguration } from "@/components/webhook/WebhookConfiguration";
 import { SystemUpdatesManager } from "@/components/admin/SystemUpdatesManager";
+import { SystemAppearanceManager } from "@/components/admin/SystemAppearanceManager";
 
 export default function ConfiguracaoSistema() {
   const { toast } = useToast();
@@ -90,13 +92,18 @@ export default function ConfiguracaoSistema() {
         <p className="text-gray-600 mt-2">Configurações avançadas exclusivas para administradores</p>
       </div>
 
-      <Tabs defaultValue="payments" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs defaultValue="appearance" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="appearance">Aparência</TabsTrigger>
           <TabsTrigger value="payments">Gateway de Pagamento</TabsTrigger>
           <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
           <TabsTrigger value="companies">Empresas</TabsTrigger>
           <TabsTrigger value="updates">Atualizações</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="appearance">
+          <SystemAppearanceManager />
+        </TabsContent>
 
         <TabsContent value="payments">
           <Card>
