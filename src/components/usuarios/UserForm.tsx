@@ -66,9 +66,9 @@ export function UserForm({
       
       // Tratar campos boolean especificamente
       if (field === 'is_admin') {
-        newData.is_admin = typeof value === 'boolean' ? value : Boolean(value);
+        newData.is_admin = typeof value === 'boolean' ? value : value === 'true' || value === true;
       } else if (field === 'is_master') {
-        newData.is_master = typeof value === 'boolean' ? value : Boolean(value);
+        newData.is_master = typeof value === 'boolean' ? value : value === 'true' || value === true;
       } else if (field === 'status') {
         newData.status = value as 'active' | 'inactive';
       } else {
