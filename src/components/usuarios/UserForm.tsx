@@ -49,7 +49,7 @@ export function UserForm({
         whatsapp: editingUser.whatsapp,
         role: editingUser.role,
         department: editingUser.department,
-        is_admin: editingUser.is_admin,
+        is_admin: Boolean(editingUser.is_admin),
         status: editingUser.status
       });
     } else {
@@ -69,12 +69,12 @@ export function UserForm({
   const handleFieldChange = (field: string, value: string | boolean) => {
     console.log('Field changed:', field, 'Value:', value, 'Type:', typeof value);
     
-    // Garantir que is_admin seja sempre boolean
-    if (field === 'is_admin') {
-      setFormData(prev => ({ ...prev, [field]: Boolean(value) }));
-    } else {
-      setFormData(prev => ({ ...prev, [field]: value }));
-    }
+    setFormData(prev => {
+      if (field === 'is_admin') {
+        return { ...prev, [field]: Boolean(value) };
+      }
+      return { ...prev, [field]: value };
+    });
   };
 
   const handleCompanyToggle = (companyId: string, checked: boolean) => {
