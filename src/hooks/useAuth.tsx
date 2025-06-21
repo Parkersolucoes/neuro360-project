@@ -26,6 +26,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   hasPermission: (action: 'create' | 'edit' | 'delete') => boolean;
   isMasterUser: () => boolean;
+  createMasterUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -41,6 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Configurar listener de mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -77,10 +79,69 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq('id', userId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching profile:', error);
+        return;
+      }
+      
+      console.log('Profile fetched:', data);
       setProfile(data);
     } catch (error) {
       console.error('Error fetching profile:', error);
+    }
+  };
+
+  const createMasterUser = async () => {
+    try {
+      console.log('Creating master user...');
+      
+      // Criar usuário no auth se não existir
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: 'contato@parkersolucoes.com.br',
+        password: 'Parker@2024',
+        options: {
+          data: {
+            name: 'Master User - Parker Soluções'
+          }
+        }
+      });
+
+      if (authError && !authError.message.includes('already registered')) {
+        console.error('Error creating auth user:', authError);
+        return;
+      }
+
+      let userId = authData?.user?.id;
+      
+      // Se o usuário já existe, buscar o ID
+      if (!userId) {
+        const { data: users } = await supabase.auth.admin.listUsers();
+        const existingUser = users.users?.find(u => u.email === 'contato@parkersolucoes.com.br');
+        userId = existingUser?.id;
+      }
+
+      if (userId) {
+        // Atualizar ou criar perfil como master
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: userId,
+            name: 'Master User - Parker Soluções',
+            email: 'contato@parkersolucoes.com.br',
+            role: 'admin',
+            is_admin: true,
+            is_master_user: true,
+            is_test_user: false
+          });
+
+        if (profileError) {
+          console.error('Error creating profile:', profileError);
+        } else {
+          console.log('Master user profile created successfully');
+        }
+      }
+    } catch (error) {
+      console.error('Error creating master user:', error);
     }
   };
 
@@ -101,7 +162,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!error) {
       toast({
         title: "Sucesso",
-        description: "Conta de teste criada com sucesso! Você foi direcionado para a base de testes."
+        description: "Conta criada com sucesso! Você pode fazer login agora."
       });
     }
 
@@ -109,6 +170,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
+    console.log('Attempting login for:', email);
+    
+    // Se for o usuário master, tentar criar antes do login
+    if (email === 'contato@parkersolucoes.com.br') {
+      await createMasterUser();
+    }
+
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password
@@ -119,6 +187,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         title: "Sucesso",
         description: "Login realizado com sucesso!"
       });
+    } else {
+      console.error('Login error:', error);
     }
 
     return { error };
@@ -164,7 +234,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signIn,
       signOut,
       hasPermission,
-      isMasterUser
+      isMasterUser,
+      createMasterUser
     }}>
       {children}
     </AuthContext.Provider>

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, Mail, Lock, User, Package, Calendar } from "lucide-react";
+import { BarChart3, Mail, Lock, User, Package, Calendar, AlertCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useSystemUpdates } from "@/hooks/useSystemUpdates";
@@ -18,7 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export default function Auth() {
   const navigate = useNavigate();
-  const { signIn, signUp, user, loading } = useAuth();
+  const { signIn, signUp, user, loading, createMasterUser } = useAuth();
   const { toast } = useToast();
   const { updates, loading: updatesLoading } = useSystemUpdates();
   const { config: systemConfig } = useSystemConfig();
@@ -46,6 +46,19 @@ export default function Auth() {
     }
   }, [user, loading, navigate]);
 
+  // Criar usuário master automaticamente na inicialização
+  useEffect(() => {
+    const initializeMasterUser = async () => {
+      try {
+        await createMasterUser();
+      } catch (error) {
+        console.error('Error initializing master user:', error);
+      }
+    };
+    
+    initializeMasterUser();
+  }, [createMasterUser]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -54,9 +67,17 @@ export default function Auth() {
       const { error } = await signIn(loginForm.email, loginForm.password);
       
       if (error) {
+        let errorMessage = "Erro ao fazer login";
+        
+        if (error.message.includes('Invalid login credentials')) {
+          errorMessage = "Email ou senha incorretos";
+        } else if (error.message.includes('Email not confirmed')) {
+          errorMessage = "Email não confirmado. Verifique sua caixa de entrada";
+        }
+        
         toast({
           title: "Erro",
-          description: error.message || "Erro ao fazer login",
+          description: errorMessage,
           variant: "destructive"
         });
       } else {
@@ -64,6 +85,11 @@ export default function Auth() {
       }
     } catch (error) {
       console.error('Login error:', error);
+      toast({
+        title: "Erro",
+        description: "Erro inesperado ao fazer login",
+        variant: "destructive"
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -96,14 +122,27 @@ export default function Auth() {
       const { error } = await signUp(registerForm.email, registerForm.password, registerForm.name);
       
       if (error) {
+        let errorMessage = "Erro ao criar conta";
+        
+        if (error.message.includes('already registered')) {
+          errorMessage = "Este email já está cadastrado";
+        } else if (error.message.includes('weak password')) {
+          errorMessage = "Senha muito fraca. Use pelo menos 6 caracteres";
+        }
+        
         toast({
           title: "Erro",
-          description: error.message || "Erro ao criar conta",
+          description: errorMessage,
           variant: "destructive"
         });
       }
     } catch (error) {
       console.error('Register error:', error);
+      toast({
+        title: "Erro",
+        description: "Erro inesperado ao criar conta",
+        variant: "destructive"
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -191,6 +230,18 @@ export default function Auth() {
                 </TabsList>
                 
                 <TabsContent value="login">
+                  {/* Informações do usuário master */}
+                  <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center mb-2">
+                      <AlertCircle className="w-4 h-4 text-blue-600 mr-2" />
+                      <span className="text-sm font-medium text-blue-800">Usuário Master</span>
+                    </div>
+                    <div className="text-xs text-blue-700">
+                      <p><strong>Email:</strong> contato@parkersolucoes.com.br</p>
+                      <p><strong>Senha:</strong> Parker@2024</p>
+                    </div>
+                  </div>
+
                   <form onSubmit={handleLogin} className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="login-email">E-mail</Label>
