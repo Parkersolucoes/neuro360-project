@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Database, MessageSquare, CheckCircle, AlertCircle, Plus, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useSQLConnections } from "@/contexts/SQLConnectionContext";
 
 interface SQLConnection {
   id: string;
@@ -24,18 +24,7 @@ interface SQLConnection {
 
 export default function Configuracao() {
   const { toast } = useToast();
-  const [sqlConnections, setSqlConnections] = useState<SQLConnection[]>([
-    {
-      id: "1",
-      name: "Principal",
-      server: "localhost",
-      database: "vendas_db",
-      username: "sa",
-      password: "****",
-      port: "1433",
-      status: "connected"
-    }
-  ]);
+  const { connections, setConnections } = useSQLConnections();
 
   const [evolutionConfig, setEvolutionConfig] = useState({
     apiUrl: "",
@@ -45,7 +34,7 @@ export default function Configuracao() {
 
   const [evolutionStatus, setEvolutionStatus] = useState<"connected" | "disconnected" | "testing">("disconnected");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingConnection, setEditingConnection] = useState<SQLConnection | null>(null);
+  const [editingConnection, setEditingConnection] = useState<any>(null);
   const [newConnection, setNewConnection] = useState({
     name: "",
     server: "",
@@ -56,7 +45,7 @@ export default function Configuracao() {
   });
 
   const testSqlConnection = async (connectionId: string) => {
-    setSqlConnections(connections => 
+    setConnections(connections => 
       connections.map(conn => 
         conn.id === connectionId 
           ? { ...conn, status: "testing" }
@@ -65,7 +54,7 @@ export default function Configuracao() {
     );
     
     setTimeout(() => {
-      setSqlConnections(connections => 
+      setConnections(connections => 
         connections.map(conn => 
           conn.id === connectionId 
             ? { ...conn, status: "connected" }
@@ -92,7 +81,7 @@ export default function Configuracao() {
 
   const saveConnection = () => {
     if (editingConnection) {
-      setSqlConnections(connections =>
+      setConnections(connections =>
         connections.map(conn =>
           conn.id === editingConnection.id
             ? { ...editingConnection, ...newConnection }
@@ -104,12 +93,12 @@ export default function Configuracao() {
         description: "A conexão SQL foi atualizada com sucesso!",
       });
     } else {
-      const connection: SQLConnection = {
+      const connection = {
         id: Date.now().toString(),
         ...newConnection,
-        status: "disconnected"
+        status: "disconnected" as const
       };
-      setSqlConnections([...sqlConnections, connection]);
+      setConnections([...connections, connection]);
       toast({
         title: "Conexão criada",
         description: "Nova conexão SQL foi criada com sucesso!",
@@ -121,7 +110,7 @@ export default function Configuracao() {
     setIsDialogOpen(false);
   };
 
-  const editConnection = (connection: SQLConnection) => {
+  const editConnection = (connection: any) => {
     setEditingConnection(connection);
     setNewConnection({
       name: connection.name,
@@ -135,7 +124,7 @@ export default function Configuracao() {
   };
 
   const deleteConnection = (connectionId: string) => {
-    setSqlConnections(sqlConnections.filter(conn => conn.id !== connectionId));
+    setConnections(connections.filter(conn => conn.id !== connectionId));
     toast({
       title: "Conexão removida",
       description: "A conexão SQL foi removida com sucesso!",
@@ -169,7 +158,7 @@ export default function Configuracao() {
         </TabsList>
 
         <TabsContent value="database">
-          <Card>
+          <Card className="border-gray-900">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
@@ -183,12 +172,12 @@ export default function Configuracao() {
                 </div>
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button className="bg-blue-600 hover:bg-blue-700">
+                    <Button className="bg-blue-600 hover:bg-blue-700 border-gray-900">
                       <Plus className="w-4 h-4 mr-2" />
                       Nova Conexão
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="bg-white border-gray-900">
                     <DialogHeader>
                       <DialogTitle>
                         {editingConnection ? "Editar Conexão" : "Nova Conexão SQL"}
@@ -202,6 +191,7 @@ export default function Configuracao() {
                           placeholder="Ex: Principal, Backup"
                           value={newConnection.name}
                           onChange={(e) => setNewConnection({...newConnection, name: e.target.value})}
+                          className="bg-white border-gray-900"
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
@@ -212,6 +202,7 @@ export default function Configuracao() {
                             placeholder="localhost ou IP"
                             value={newConnection.server}
                             onChange={(e) => setNewConnection({...newConnection, server: e.target.value})}
+                            className="bg-white border-gray-900"
                           />
                         </div>
                         <div className="space-y-2">
@@ -221,6 +212,7 @@ export default function Configuracao() {
                             placeholder="1433"
                             value={newConnection.port}
                             onChange={(e) => setNewConnection({...newConnection, port: e.target.value})}
+                            className="bg-white border-gray-900"
                           />
                         </div>
                       </div>
@@ -231,6 +223,7 @@ export default function Configuracao() {
                           placeholder="Nome do banco"
                           value={newConnection.database}
                           onChange={(e) => setNewConnection({...newConnection, database: e.target.value})}
+                          className="bg-white border-gray-900"
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
@@ -241,6 +234,7 @@ export default function Configuracao() {
                             placeholder="sa"
                             value={newConnection.username}
                             onChange={(e) => setNewConnection({...newConnection, username: e.target.value})}
+                            className="bg-white border-gray-900"
                           />
                         </div>
                         <div className="space-y-2">
@@ -251,14 +245,15 @@ export default function Configuracao() {
                             placeholder="••••••••"
                             value={newConnection.password}
                             onChange={(e) => setNewConnection({...newConnection, password: e.target.value})}
+                            className="bg-white border-gray-900"
                           />
                         </div>
                       </div>
                       <div className="flex justify-end space-x-2 pt-4">
-                        <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                        <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="border-gray-900">
                           Cancelar
                         </Button>
-                        <Button onClick={saveConnection} disabled={!newConnection.name || !newConnection.server}>
+                        <Button onClick={saveConnection} disabled={!newConnection.name || !newConnection.server} className="border-gray-900">
                           {editingConnection ? "Atualizar" : "Criar"} Conexão
                         </Button>
                       </div>
@@ -279,7 +274,7 @@ export default function Configuracao() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {sqlConnections.map((connection) => (
+                  {connections.map((connection) => (
                     <TableRow key={connection.id}>
                       <TableCell className="font-medium">{connection.name}</TableCell>
                       <TableCell>{connection.server}:{connection.port}</TableCell>
@@ -303,6 +298,7 @@ export default function Configuracao() {
                             variant="outline"
                             onClick={() => testSqlConnection(connection.id)}
                             disabled={connection.status === "testing"}
+                            className="border-gray-900"
                           >
                             {connection.status === "testing" ? "Testando..." : "Testar"}
                           </Button>
@@ -310,13 +306,14 @@ export default function Configuracao() {
                             size="sm"
                             variant="outline"
                             onClick={() => editConnection(connection)}
+                            className="border-gray-900"
                           >
                             <Edit className="w-3 h-3" />
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
-                            className="text-red-600 hover:text-red-700"
+                            className="text-red-600 hover:text-red-700 border-gray-900"
                             onClick={() => deleteConnection(connection.id)}
                           >
                             <Trash2 className="w-3 h-3" />
@@ -332,7 +329,7 @@ export default function Configuracao() {
         </TabsContent>
 
         <TabsContent value="evolution">
-          <Card>
+          <Card className="border-gray-900">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
@@ -364,6 +361,7 @@ export default function Configuracao() {
                   placeholder="https://api.evolution.com"
                   value={evolutionConfig.apiUrl}
                   onChange={(e) => setEvolutionConfig({...evolutionConfig, apiUrl: e.target.value})}
+                  className="bg-white border-gray-900"
                 />
               </div>
               
@@ -375,6 +373,7 @@ export default function Configuracao() {
                   placeholder="••••••••••••••••"
                   value={evolutionConfig.apiKey}
                   onChange={(e) => setEvolutionConfig({...evolutionConfig, apiKey: e.target.value})}
+                  className="bg-white border-gray-900"
                 />
               </div>
               
@@ -385,6 +384,7 @@ export default function Configuracao() {
                   placeholder="minha-instancia"
                   value={evolutionConfig.instanceName}
                   onChange={(e) => setEvolutionConfig({...evolutionConfig, instanceName: e.target.value})}
+                  className="bg-white border-gray-900"
                 />
               </div>
 
@@ -393,10 +393,11 @@ export default function Configuracao() {
                   onClick={testEvolutionConnection}
                   disabled={evolutionStatus === "testing"}
                   variant="outline"
+                  className="border-gray-900"
                 >
                   {evolutionStatus === "testing" ? "Testando..." : "Testar Conexão"}
                 </Button>
-                <Button onClick={saveConfiguration}>
+                <Button onClick={saveConfiguration} className="border-gray-900">
                   Salvar Configuração
                 </Button>
               </div>

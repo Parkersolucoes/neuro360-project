@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Play, Eye, Trash2, Database } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useSQLConnections } from "@/contexts/SQLConnectionContext";
+import { QueryResultTable } from "@/components/sql/QueryResultTable";
 
 interface SQLQuery {
   id: string;
@@ -21,8 +23,14 @@ interface SQLQuery {
   status: "success" | "error" | "pending";
 }
 
+interface QueryResult {
+  columns: string[];
+  data: any[];
+}
+
 export default function ConsultasSQL() {
   const { toast } = useToast();
+  const { connections } = useSQLConnections();
   const [queries, setQueries] = useState<SQLQuery[]>([
     {
       id: "1",
@@ -46,6 +54,8 @@ export default function ConsultasSQL() {
 
   const [selectedQuery, setSelectedQuery] = useState<SQLQuery | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [queryResult, setQueryResult] = useState<QueryResult | null>(null);
+  const [isExecuting, setIsExecuting] = useState(false);
   const [newQuery, setNewQuery] = useState({
     name: "",
     description: "",
@@ -53,18 +63,84 @@ export default function ConsultasSQL() {
     connection: ""
   });
 
-  const executeQuery = (queryId: string) => {
-    toast({
-      title: "Consulta executada",
-      description: "A consulta foi executada com sucesso!",
+  // Simular execução de consulta
+  const mockQueryExecution = (query: string): Promise<QueryResult> => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        // Simulando diferentes tipos de consulta baseado no conteúdo
+        if (query.toLowerCase().includes('vendas')) {
+          resolve({
+            columns: ['id', 'data', 'cliente', 'valor', 'status'],
+            data: [
+              { id: 1, data: '2024-01-15', cliente: 'João Silva', valor: 'R$ 1.250,00', status: 'Pago' },
+              { id: 2, data: '2024-01-15', cliente: 'Maria Santos', valor: 'R$ 890,50', status: 'Pendente' },
+              { id: 3, data: '2024-01-15', cliente: 'Pedro Costa', valor: 'R$ 2.100,00', status: 'Pago' }
+            ]
+          });
+        } else if (query.toLowerCase().includes('clientes')) {
+          resolve({
+            columns: ['nome', 'telefone', 'valor_devido'],
+            data: [
+              { nome: 'Ana Paula', telefone: '(11) 9999-1234', valor_devido: 'R$ 450,00' },
+              { nome: 'Carlos Lima', telefone: '(11) 8888-5678', valor_devido: 'R$ 1.200,00' }
+            ]
+          });
+        } else {
+          resolve({
+            columns: ['resultado'],
+            data: [{ resultado: 'Consulta executada com sucesso' }]
+          });
+        }
+      }, 2000);
     });
   };
 
-  const testQuery = (queryId: string) => {
-    toast({
-      title: "Teste executado",
-      description: "A consulta foi testada com sucesso!",
-    });
+  const executeQuery = async (queryId: string) => {
+    const query = queries.find(q => q.id === queryId);
+    if (!query) return;
+
+    setIsExecuting(true);
+    setQueryResult(null);
+
+    try {
+      const result = await mockQueryExecution(query.query);
+      setQueryResult(result);
+      
+      // Atualizar status da consulta
+      setQueries(prev => prev.map(q => 
+        q.id === queryId 
+          ? { ...q, status: "success" as const, lastExecution: new Date().toLocaleString() }
+          : q
+      ));
+
+      toast({
+        title: "Consulta executada",
+        description: `${result.data.length} registros encontrados`,
+      });
+    } catch (error) {
+      setQueries(prev => prev.map(q => 
+        q.id === queryId 
+          ? { ...q, status: "error" as const }
+          : q
+      ));
+      
+      toast({
+        title: "Erro na consulta",
+        description: "Erro ao executar a consulta SQL",
+        variant: "destructive"
+      });
+    } finally {
+      setIsExecuting(false);
+    }
+  };
+
+  const testQuery = async (queryId: string) => {
+    await executeQuery(queryId);
+  };
+
+  const testSelectedQuery = async () => {
+    if (!selectedQuery) return;
+    await executeQuery(selectedQuery.id);
   };
 
   const saveQuery = () => {
@@ -94,12 +170,12 @@ export default function ConsultasSQL() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700">
+            <Button className="bg-blue-600 hover:bg-blue-700 border-gray-900">
               <Plus className="w-4 h-4 mr-2" />
               Nova Consulta
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl bg-white border-gray-900">
             <DialogHeader>
               <DialogTitle>Nova Consulta SQL</DialogTitle>
             </DialogHeader>
@@ -112,17 +188,21 @@ export default function ConsultasSQL() {
                     placeholder="Nome da consulta"
                     value={newQuery.name}
                     onChange={(e) => setNewQuery({...newQuery, name: e.target.value})}
+                    className="bg-white border-gray-900"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="connection">Conexão</Label>
                   <Select value={newQuery.connection} onValueChange={(value) => setNewQuery({...newQuery, connection: value})}>
-                    <SelectTrigger>
+                    <SelectTrigger className="bg-white border-gray-900">
                       <SelectValue placeholder="Selecione a conexão" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="principal">Principal</SelectItem>
-                      <SelectItem value="backup">Backup</SelectItem>
+                    <SelectContent className="bg-white border-gray-900">
+                      {connections.map((connection) => (
+                        <SelectItem key={connection.id} value={connection.name}>
+                          {connection.name} ({connection.server})
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -134,6 +214,7 @@ export default function ConsultasSQL() {
                   placeholder="Descrição da consulta"
                   value={newQuery.description}
                   onChange={(e) => setNewQuery({...newQuery, description: e.target.value})}
+                  className="bg-white border-gray-900"
                 />
               </div>
               <div className="space-y-2">
@@ -141,16 +222,16 @@ export default function ConsultasSQL() {
                 <Textarea
                   id="query"
                   placeholder="SELECT * FROM tabela WHERE..."
-                  className="min-h-32"
+                  className="min-h-32 bg-white border-gray-900"
                   value={newQuery.query}
                   onChange={(e) => setNewQuery({...newQuery, query: e.target.value})}
                 />
               </div>
               <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="border-gray-900">
                   Cancelar
                 </Button>
-                <Button onClick={saveQuery} disabled={!newQuery.name || !newQuery.query}>
+                <Button onClick={saveQuery} disabled={!newQuery.name || !newQuery.query} className="border-gray-900">
                   Salvar Consulta
                 </Button>
               </div>
@@ -160,7 +241,7 @@ export default function ConsultasSQL() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
+        <Card className="border-gray-900">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Database className="w-5 h-5 text-blue-500" />
@@ -172,8 +253,8 @@ export default function ConsultasSQL() {
             {queries.map((query) => (
               <div
                 key={query.id}
-                className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
-                  selectedQuery?.id === query.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md border-gray-900 ${
+                  selectedQuery?.id === query.id ? 'border-blue-500 bg-blue-50' : ''
                 }`}
                 onClick={() => setSelectedQuery(query)}
               >
@@ -200,6 +281,7 @@ export default function ConsultasSQL() {
                   <Button
                     size="sm"
                     variant="outline"
+                    className="border-gray-900"
                     onClick={(e) => {
                       e.stopPropagation();
                       executeQuery(query.id);
@@ -211,7 +293,7 @@ export default function ConsultasSQL() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="bg-gray-800 text-white hover:bg-gray-900"
+                    className="bg-gray-800 text-white hover:bg-gray-900 border-gray-900"
                     onClick={(e) => {
                       e.stopPropagation();
                       testQuery(query.id);
@@ -223,7 +305,7 @@ export default function ConsultasSQL() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 border-gray-900"
                     onClick={(e) => {
                       e.stopPropagation();
                       setQueries(queries.filter(q => q.id !== query.id));
@@ -237,7 +319,7 @@ export default function ConsultasSQL() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-gray-900">
           <CardHeader>
             <CardTitle>Selecione uma Consulta</CardTitle>
             <p className="text-sm text-gray-600">Visualize e teste a consulta selecionada</p>
@@ -254,17 +336,21 @@ export default function ConsultasSQL() {
                   <Textarea
                     value={selectedQuery.query}
                     readOnly
-                    className="min-h-32 bg-gray-50"
+                    className="min-h-32 bg-gray-50 border-gray-900"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Conexão</Label>
-                  <Input value={selectedQuery.connection} readOnly className="bg-gray-50" />
+                  <Input value={selectedQuery.connection} readOnly className="bg-gray-50 border-gray-900" />
                 </div>
                 <div className="flex space-x-2">
-                  <Button onClick={() => executeQuery(selectedQuery.id)} className="flex-1">
+                  <Button 
+                    onClick={testSelectedQuery} 
+                    className="flex-1 border-gray-900"
+                    disabled={isExecuting}
+                  >
                     <Play className="w-4 h-4 mr-2" />
-                    Executar Consulta
+                    {isExecuting ? "Executando..." : "Testar Consulta"}
                   </Button>
                 </div>
               </div>
@@ -277,6 +363,15 @@ export default function ConsultasSQL() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Tabela de Resultados */}
+      {(queryResult || isExecuting) && (
+        <QueryResultTable 
+          data={queryResult?.data || []}
+          columns={queryResult?.columns || []}
+          isLoading={isExecuting}
+        />
+      )}
     </div>
   );
 }
