@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Users, Edit, Trash2, Phone, Mail, Shield, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useUsers } from "@/hooks/useUsers";
+import { useUsers, User } from "@/hooks/useUsers";
 import { useCompanies } from "@/hooks/useCompanies";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 
@@ -22,7 +21,7 @@ export default function Usuarios() {
   const { isAdmin } = useAdminAuth();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<any>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const [newUser, setNewUser] = useState({
     name: "",
     email: "",
@@ -32,7 +31,7 @@ export default function Usuarios() {
     department: "",
     company_id: "",
     is_admin: false,
-    status: "active" as const
+    status: "active" as 'active' | 'inactive'
   });
 
   const roles = [
@@ -75,7 +74,7 @@ export default function Usuarios() {
     }
   };
 
-  const editUser = (user: any) => {
+  const editUser = (user: User) => {
     setEditingUser(user);
     setNewUser({
       name: user.name,
@@ -241,7 +240,10 @@ export default function Usuarios() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="status">Status</Label>
-                <Select value={newUser.status} onValueChange={(value) => setNewUser({...newUser, status: value as 'active' | 'inactive'})}>
+                <Select 
+                  value={newUser.status} 
+                  onValueChange={(value: 'active' | 'inactive') => setNewUser({...newUser, status: value})}
+                >
                   <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                     <SelectValue placeholder="Selecione o status" />
                   </SelectTrigger>

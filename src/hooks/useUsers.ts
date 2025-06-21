@@ -31,7 +31,14 @@ export function useUsers() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setUsers(data || []);
+      
+      // Type assertion para garantir que o status seja do tipo correto
+      const typedUsers = (data || []).map(user => ({
+        ...user,
+        status: user.status as 'active' | 'inactive'
+      }));
+      
+      setUsers(typedUsers);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast({
@@ -54,13 +61,19 @@ export function useUsers() {
 
       if (error) throw error;
       
-      setUsers(prev => [data, ...prev]);
+      // Type assertion para garantir que o status seja do tipo correto
+      const typedUser = {
+        ...data,
+        status: data.status as 'active' | 'inactive'
+      };
+      
+      setUsers(prev => [typedUser, ...prev]);
       toast({
         title: "Sucesso",
         description: "Usuário criado com sucesso!"
       });
       
-      return data;
+      return typedUser;
     } catch (error) {
       console.error('Error creating user:', error);
       toast({
@@ -83,8 +96,14 @@ export function useUsers() {
 
       if (error) throw error;
       
+      // Type assertion para garantir que o status seja do tipo correto
+      const typedUser = {
+        ...data,
+        status: data.status as 'active' | 'inactive'
+      };
+      
       setUsers(prev => prev.map(user => 
-        user.id === id ? data : user
+        user.id === id ? typedUser : user
       ));
       
       toast({
@@ -92,7 +111,7 @@ export function useUsers() {
         description: "Usuário atualizado com sucesso!"
       });
       
-      return data;
+      return typedUser;
     } catch (error) {
       console.error('Error updating user:', error);
       toast({
