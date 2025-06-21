@@ -34,34 +34,28 @@ export function QRCodeGenerator({
     setIsGenerating(true);
     
     try {
-      const newSession = await createSession(evolutionConfigId, instanceName, currentCompanyId);
+      // Como a tabela qr_sessions não existe, vamos simular a criação
+      const mockSessionId = `session_${Date.now()}`;
       
-      // Gerar QR Code usando dados da Evolution API
-      const qrData = `whatsapp-evolution:${newSession.id}:${currentCompanyId}:${instanceName}:${Date.now()}`;
+      // Gerar QR Code usando dados simulados
+      const qrData = `whatsapp-evolution:${mockSessionId}:${currentCompanyId}:${instanceName}:${Date.now()}`;
       const qrCodeSVG = generateQRCodeSVG(qrData);
       
       setQrCode(qrCodeSVG);
-      updateSession({ qr_code_data: qrCodeSVG });
       setIsGenerating(false);
       
       toast({
         title: "QR Code gerado",
-        description: "Use o WhatsApp Web para escanear o código",
+        description: "Use o WhatsApp Web para escanear o código (simulação)",
       });
 
-      // Simular processo de conexão da Evolution API
+      // Simular processo de conexão
       setTimeout(() => {
-        updateSession({ 
-          session_status: "connected",
-          connected_at: new Date().toISOString(),
-          last_activity: new Date().toISOString()
-        });
-        
         toast({
-          title: "Sessão conectada!",
-          description: `WhatsApp conectado para ${currentCompanyName} via Evolution API`,
+          title: "Simulação",
+          description: `Funcionalidade QR Code em desenvolvimento para ${currentCompanyName}`,
         });
-      }, 15000); // 15 segundos para simular tempo de conexão
+      }, 5000);
     } catch (error) {
       setIsGenerating(false);
       console.error('Error generating QR code:', error);
