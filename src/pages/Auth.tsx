@@ -24,8 +24,8 @@ export default function Auth() {
   const { config: systemConfig } = useSystemConfig();
 
   const [loginForm, setLoginForm] = useState({
-    email: "",
-    password: ""
+    email: "contato@parkersolucoes.com.br",
+    password: "Parker@2024"
   });
 
   const [registerForm, setRegisterForm] = useState({
@@ -50,6 +50,7 @@ export default function Auth() {
   useEffect(() => {
     const initializeMasterUser = async () => {
       try {
+        console.log('Initializing master user...');
         await createMasterUser();
       } catch (error) {
         console.error('Error initializing master user:', error);
@@ -61,33 +62,53 @@ export default function Auth() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Login attempt started with:', { email: loginForm.email });
+    
+    if (!loginForm.email || !loginForm.password) {
+      toast({
+        title: "Erro",
+        description: "Email e senha são obrigatórios",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      const { error } = await signIn(loginForm.email, loginForm.password);
+      console.log('Calling signIn function...');
+      const { error } = await signIn(loginForm.email.trim(), loginForm.password);
       
       if (error) {
+        console.error('Login error details:', error);
         let errorMessage = "Erro ao fazer login";
         
-        if (error.message.includes('Invalid login credentials')) {
-          errorMessage = "Email ou senha incorretos";
+        if (error.message.includes('Invalid login credentials') || error.message.includes('invalid_credentials')) {
+          errorMessage = "Email ou senha incorretos. Verifique suas credenciais.";
         } else if (error.message.includes('Email not confirmed')) {
           errorMessage = "Email não confirmado. Verifique sua caixa de entrada";
+        } else if (error.message.includes('too_many_requests')) {
+          errorMessage = "Muitas tentativas de login. Tente novamente em alguns minutos.";
         }
         
         toast({
-          title: "Erro",
+          title: "Erro no Login",
           description: errorMessage,
           variant: "destructive"
         });
       } else {
+        console.log('Login successful, redirecting...');
+        toast({
+          title: "Sucesso",
+          description: "Login realizado com sucesso!"
+        });
         navigate('/dashboard');
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Unexpected login error:', error);
       toast({
         title: "Erro",
-        description: "Erro inesperado ao fazer login",
+        description: "Erro inesperado ao fazer login. Tente novamente.",
         variant: "destructive"
       });
     } finally {
@@ -190,6 +211,39 @@ export default function Auth() {
     }
   };
 
+  const testMasterLogin = async () => {
+    console.log('Testing master user login...');
+    setIsSubmitting(true);
+    
+    try {
+      const { error } = await signIn("contato@parkersolucoes.com.br", "Parker@2024");
+      
+      if (error) {
+        console.error('Test login failed:', error);
+        toast({
+          title: "Teste Falhou",
+          description: `Erro no teste: ${error.message}`,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Teste Bem-sucedido",
+          description: "Login do usuário master funcionou!",
+        });
+        navigate('/dashboard');
+      }
+    } catch (error) {
+      console.error('Test login error:', error);
+      toast({
+        title: "Erro no Teste",
+        description: "Erro inesperado no teste de login",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -236,9 +290,19 @@ export default function Auth() {
                       <AlertCircle className="w-4 h-4 text-blue-600 mr-2" />
                       <span className="text-sm font-medium text-blue-800">Usuário Master</span>
                     </div>
-                    <div className="text-xs text-blue-700">
+                    <div className="text-xs text-blue-700 space-y-1">
                       <p><strong>Email:</strong> contato@parkersolucoes.com.br</p>
                       <p><strong>Senha:</strong> Parker@2024</p>
+                      <Button 
+                        type="button" 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={testMasterLogin}
+                        disabled={isSubmitting}
+                        className="mt-2 text-xs"
+                      >
+                        {isSubmitting ? 'Testando...' : 'Testar Login Master'}
+                      </Button>
                     </div>
                   </div>
 

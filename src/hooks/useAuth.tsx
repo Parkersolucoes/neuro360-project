@@ -1,4 +1,3 @@
-
 import { useState, useEffect, createContext, useContext } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -198,28 +197,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    console.log('Attempting login for:', email);
+    console.log('SignIn function called with email:', email);
     
-    // Se for o email master, garante que o usuário master existe
-    if (email === 'contato@parkersolucoes.com.br') {
-      await createMasterUser();
-    }
+    // Limpar qualquer sessão anterior
+    await supabase.auth.signOut();
+    
+    try {
+      // Se for o email master, garante que o usuário master existe
+      if (email === 'contato@parkersolucoes.com.br') {
+        console.log('Master user email detected, ensuring master user exists...');
+        await createMasterUser();
+      }
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-
-    if (!error) {
-      toast({
-        title: "Sucesso",
-        description: "Login realizado com sucesso!"
+      console.log('Attempting Supabase signInWithPassword...');
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password
       });
-    } else {
-      console.error('Login error:', error);
-    }
 
-    return { error };
+      console.log('Supabase signIn response:', { data, error });
+
+      if (error) {
+        console.error('Supabase signIn error:', error);
+        return { error };
+      }
+
+      if (data?.user) {
+        console.log('Login successful for user:', data.user.email);
+        // O estado será atualizado automaticamente pelo onAuthStateChange
+        return { error: null };
+      } else {
+        console.error('No user data returned from signIn');
+        return { error: { message: 'Nenhum dado de usuário retornado' } };
+      }
+    } catch (error: any) {
+      console.error('Unexpected error during signIn:', error);
+      return { error: { message: error.message || 'Erro inesperado durante o login' } };
+    }
   };
 
   const signOut = async () => {
