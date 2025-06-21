@@ -31,7 +31,13 @@ export function useSystemConfig() {
       if (data) {
         setConfig(data as SystemConfig);
       } else {
-        setConfig(null);
+        // Se não houver configuração, criar uma padrão
+        const defaultConfig = {
+          system_name: "360 Solutions",
+          system_description: "Soluções de Análise dados para seu negócio",
+          primary_color: "#1e293b"
+        };
+        await saveConfig(defaultConfig);
       }
     } catch (error) {
       console.error('Error fetching system config:', error);

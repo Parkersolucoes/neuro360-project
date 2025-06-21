@@ -244,6 +244,7 @@ export type Database = {
           email: string | null
           id: string
           is_admin: boolean
+          is_test_user: boolean
           name: string | null
           role: string
           updated_at: string
@@ -253,6 +254,7 @@ export type Database = {
           email?: string | null
           id: string
           is_admin?: boolean
+          is_test_user?: boolean
           name?: string | null
           role?: string
           updated_at?: string
@@ -262,6 +264,7 @@ export type Database = {
           email?: string | null
           id?: string
           is_admin?: boolean
+          is_test_user?: boolean
           name?: string | null
           role?: string
           updated_at?: string
@@ -502,6 +505,80 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      test_companies: {
+        Row: {
+          address: string | null
+          created_at: string
+          document: string
+          email: string
+          id: string
+          name: string
+          phone: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          document: string
+          email: string
+          id?: string
+          name: string
+          phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          document?: string
+          email?: string
+          id?: string
+          name?: string
+          phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      test_user_companies: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          role?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_user_companies_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "test_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       transactions: {
         Row: {

@@ -39,7 +39,7 @@ export function SystemInfoForm({
           id="system_description"
           value={systemDescription}
           onChange={(e) => onSystemDescriptionChange(e.target.value)}
-          placeholder="Descrição do sistema"
+          placeholder="Soluções de Análise dados para seu negócio"
           rows={3}
         />
       </div>

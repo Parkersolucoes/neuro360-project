@@ -10,6 +10,7 @@ interface Profile {
   email: string | null;
   role: string;
   is_admin: boolean;
+  is_test_user: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -98,7 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!error) {
       toast({
         title: "Sucesso",
-        description: "Conta criada com sucesso! Verifique seu e-mail para confirmar."
+        description: "Conta de teste criada com sucesso! Você foi direcionado para a base de testes."
       });
     }
 

@@ -6,6 +6,7 @@ CREATE TABLE public.profiles (
   email TEXT,
   role TEXT NOT NULL DEFAULT 'user',
   is_admin BOOLEAN NOT NULL DEFAULT false,
+  is_test_user BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
@@ -20,14 +21,23 @@ LANGUAGE plpgsql
 SECURITY DEFINER SET search_path = ''
 AS $$
 BEGIN
-  INSERT INTO public.profiles (id, name, email, role, is_admin)
+  -- Novos usuários criados através de registro são marcados como usuários de teste
+  INSERT INTO public.profiles (id, name, email, role, is_admin, is_test_user)
   VALUES (
     NEW.id, 
     NEW.raw_user_meta_data ->> 'name',
     NEW.email,
     'user',
-    false
+    false,
+    true  -- Marcar como usuário de teste por padrão para novos registros
   );
+  
+  -- Criar associação automática com empresas de teste para novos usuários
+  INSERT INTO public.test_user_companies (user_id, company_id, role)
+  SELECT NEW.id, id, 'user'
+  FROM public.test_companies
+  LIMIT 1;  -- Associar com a primeira empresa de teste
+  
   RETURN NEW;
 END;
 $$;
