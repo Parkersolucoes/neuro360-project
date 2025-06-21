@@ -70,19 +70,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchProfile = async (userId: string) => {
     try {
+      console.log('Fetching profile for user:', userId);
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching profile:', error);
         return;
       }
       
-      console.log('Profile fetched:', data);
-      setProfile(data);
+      if (data) {
+        console.log('Profile fetched:', data);
+        setProfile(data);
+      } else {
+        console.log('No profile found, will be created via trigger or manual creation');
+      }
     } catch (error) {
       console.error('Error fetching profile:', error);
     }
@@ -92,6 +98,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('Creating master user...');
       
+      // Primeiro, tenta fazer login para ver se o usuário já existe
+      const { data: existingSession, error: loginError } = await supabase.auth.signInWithPassword({
+        email: 'contato@parkersolucoes.com.br',
+        password: 'Parker@2024'
+      });
+
+      if (existingSession?.user && !loginError) {
+        console.log('Master user already exists and can login');
+        return;
+      }
+
+      // Se o login falhar, tenta criar o usuário
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: 'contato@parkersolucoes.com.br',
         password: 'Parker@2024',
@@ -107,24 +125,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // If user creation was successful or user already exists
-      if (authData?.user?.id) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .upsert({
-            id: authData.user.id,
-            name: 'Master User - Parker Soluções',
-            email: 'contato@parkersolucoes.com.br',
-            role: 'admin',
-            is_admin: true,
-            is_master_user: true,
-            is_test_user: false
-          });
+      // Se o usuário foi criado ou já existe, garante que o perfil existe
+      let userId = authData?.user?.id;
+      
+      if (!userId) {
+        // Se não conseguiu o ID do usuário criado, tenta pegar da tabela auth
+        const { data: userData } = await supabase.auth.signInWithPassword({
+          email: 'contato@parkersolucoes.com.br',
+          password: 'Parker@2024'
+        });
+        userId = userData?.user?.id;
+      }
 
-        if (profileError) {
-          console.error('Error creating profile:', profileError);
+      if (userId) {
+        // Verifica se o perfil já existe
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle();
+
+        if (!existingProfile) {
+          // Cria o perfil se não existir
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .insert({
+              id: userId,
+              name: 'Master User - Parker Soluções',
+              email: 'contato@parkersolucoes.com.br',
+              role: 'admin',
+              is_admin: true,
+              is_master_user: true,
+              is_test_user: false
+            });
+
+          if (profileError) {
+            console.error('Error creating profile:', profileError);
+          } else {
+            console.log('Master user profile created successfully');
+          }
         } else {
-          console.log('Master user profile created successfully');
+          console.log('Master user profile already exists');
         }
       }
     } catch (error) {
@@ -159,6 +200,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string) => {
     console.log('Attempting login for:', email);
     
+    // Se for o email master, garante que o usuário master existe
     if (email === 'contato@parkersolucoes.com.br') {
       await createMasterUser();
     }
