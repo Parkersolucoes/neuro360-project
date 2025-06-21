@@ -39,6 +39,13 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
             const defaultCompany = typedCompanies.find(c => c.id === '0a988013-fa43-4d9d-9bfa-22c245c0c1ea') || typedCompanies[0];
             console.log('CompaniesProvider: Setting default company for master:', defaultCompany);
             setCurrentCompanyInternal(defaultCompany);
+          } else if (currentCompany) {
+            // Atualizar a empresa atual se ela existe na lista atualizada
+            const updatedCurrentCompany = typedCompanies.find(c => c.id === currentCompany.id);
+            if (updatedCurrentCompany) {
+              console.log('CompaniesProvider: Updating current company with new data:', updatedCurrentCompany);
+              setCurrentCompanyInternal(updatedCurrentCompany);
+            }
           }
         } else {
           console.log('CompaniesProvider: No companies found or invalid data format');
@@ -74,6 +81,13 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
           setCurrentCompanyInternal(typedCompanies[0]);
         } else if (typedCompanies.length > 1) {
           console.log('CompaniesProvider: Multiple companies found for user - waiting for manual selection');
+        } else if (currentCompany) {
+          // Atualizar a empresa atual se ela existe na lista atualizada
+          const updatedCurrentCompany = typedCompanies.find(c => c.id === currentCompany.id);
+          if (updatedCurrentCompany) {
+            console.log('CompaniesProvider: Updating current company with new data:', updatedCurrentCompany);
+            setCurrentCompanyInternal(updatedCurrentCompany);
+          }
         }
       } else {
         console.log('CompaniesProvider: No user companies found or invalid data format');
@@ -199,6 +213,7 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
         description: "Empresa atualizada com sucesso!"
       });
 
+      // Recarregar empresas para garantir dados atualizados
       await fetchCompanies();
       return data as Company;
     } catch (error) {
