@@ -21,17 +21,17 @@ import { useAdminAuth } from "@/hooks/useAdminAuth";
 export default function Configuracao() {
   const { toast } = useToast();
   const { connections, createConnection } = useSQLConnections();
-  const { config: evolutionConfig, createConfig: createEvolutionConfig } = useEvolutionConfig();
+  const { config: evolutionConfig, saveConfig: saveEvolutionConfig } = useEvolutionConfig();
   const { isAdmin } = useAdminAuth();
 
   // Estados para formulários
   const [sqlForm, setSqlForm] = useState({
     name: "",
-    host: "", // Changed from server to host to match schema
+    host: "",
     database_name: "",
     username: "",
     password: "",
-    port: "5432" // Changed default from 1433 to 5432 for PostgreSQL
+    port: 5432
   });
 
   const [evolutionForm, setEvolutionForm] = useState({
@@ -45,7 +45,6 @@ export default function Configuracao() {
     try {
       await createConnection({
         ...sqlForm,
-        port: parseInt(sqlForm.port),
         company_id: null,
         connection_type: 'postgresql',
         is_active: true
@@ -56,7 +55,7 @@ export default function Configuracao() {
         database_name: "",
         username: "",
         password: "",
-        port: "5432"
+        port: 5432
       });
       toast({
         title: "Sucesso",
@@ -70,7 +69,7 @@ export default function Configuracao() {
   const handleEvolutionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await createEvolutionConfig({
+      await saveEvolutionConfig({
         ...evolutionForm,
         company_id: null,
         is_active: true
@@ -207,8 +206,9 @@ export default function Configuracao() {
                     <Label htmlFor="sql_port">Porta</Label>
                     <Input
                       id="sql_port"
+                      type="number"
                       value={sqlForm.port}
-                      onChange={(e) => setSqlForm({...sqlForm, port: e.target.value})}
+                      onChange={(e) => setSqlForm({...sqlForm, port: parseInt(e.target.value) || 5432})}
                       placeholder="5432"
                       className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                       required

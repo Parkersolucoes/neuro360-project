@@ -7,7 +7,7 @@ import { useSQLConnections } from "@/hooks/useSQLConnections";
 import { useEvolutionConfig } from "@/hooks/useEvolutionConfig";
 
 export default function Dashboard() {
-  const { currentCompany, userCompanies } = useCompanies();
+  const { currentCompany, companies } = useCompanies();
   const { connections } = useSQLConnections();
   const { config } = useEvolutionConfig();
 
@@ -91,13 +91,13 @@ export default function Dashboard() {
       </div>
 
       {/* Company Selector Info */}
-      {userCompanies.length > 1 && (
+      {companies.length > 1 && (
         <Card className="border-blue-200 bg-blue-50">
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
               <Building2 className="w-5 h-5 text-blue-600" />
               <span className="text-sm text-blue-800">
-                Você tem acesso a {userCompanies.length} empresas. 
+                Você tem acesso a {companies.length} empresas. 
                 {currentCompany && ` Visualizando: ${currentCompany.name}`}
               </span>
             </div>

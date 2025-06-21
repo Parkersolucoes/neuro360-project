@@ -1,18 +1,21 @@
 
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface SQLConnection {
   id: string;
+  company_id: string | null;
   name: string;
-  server: string;
+  host: string;
   database_name: string;
   username: string;
   password: string;
-  port: string;
-  status: 'connected' | 'disconnected' | 'testing';
-  created_at?: string;
-  updated_at?: string;
+  port: number;
+  connection_type: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export function useSQLConnections() {
@@ -22,57 +25,81 @@ export function useSQLConnections() {
 
   const fetchConnections = async () => {
     try {
-      // Since sql_connections table doesn't exist, return empty array
-      setConnections([]);
+      const { data, error } = await supabase
+        .from('sql_connections')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching SQL connections:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao carregar conexões SQL",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      setConnections(data || []);
     } catch (error) {
       console.error('Error fetching SQL connections:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao carregar conexões SQL",
-        variant: "destructive"
-      });
     } finally {
       setLoading(false);
     }
   };
 
-  const createConnection = async (connection: Omit<SQLConnection, 'id' | 'created_at' | 'updated_at'>) => {
+  const createConnection = async (connectionData: Omit<SQLConnection, 'id' | 'created_at' | 'updated_at'>) => {
     try {
-      // Simulate creating a connection since table doesn't exist
-      const mockConnection: SQLConnection = {
-        id: `mock-connection-${Date.now()}`,
-        ...connection,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
+      const { data, error } = await supabase
+        .from('sql_connections')
+        .insert([connectionData])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating SQL connection:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao criar conexão SQL",
+          variant: "destructive"
+        });
+        throw error;
+      }
       
-      setConnections(prev => [mockConnection, ...prev]);
+      setConnections(prev => [data, ...prev]);
       toast({
-        title: "Informação",
-        description: "Funcionalidade SQL Connections será implementada em uma próxima versão. Conexão simulada criada."
+        title: "Sucesso",
+        description: "Conexão SQL criada com sucesso!"
       });
       
-      return mockConnection;
+      return data;
     } catch (error) {
       console.error('Error creating SQL connection:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao criar conexão SQL",
-        variant: "destructive"
-      });
       throw error;
     }
   };
 
   const updateConnection = async (id: string, updates: Partial<SQLConnection>) => {
     try {
-      // Simulate updating connection
-      const updatedConnection = connections.find(conn => conn.id === id);
-      if (!updatedConnection) throw new Error('Connection not found');
+      const { data, error } = await supabase
+        .from('sql_connections')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating SQL connection:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao atualizar conexão SQL",
+          variant: "destructive"
+        });
+        throw error;
+      }
       
-      const newConnection = { ...updatedConnection, ...updates };
       setConnections(prev => prev.map(conn => 
-        conn.id === id ? newConnection : conn
+        conn.id === id ? data : conn
       ));
       
       toast({
@@ -80,20 +107,30 @@ export function useSQLConnections() {
         description: "Conexão SQL atualizada com sucesso!"
       });
       
-      return newConnection;
+      return data;
     } catch (error) {
       console.error('Error updating SQL connection:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao atualizar conexão SQL",
-        variant: "destructive"
-      });
       throw error;
     }
   };
 
   const deleteConnection = async (id: string) => {
     try {
+      const { error } = await supabase
+        .from('sql_connections')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error deleting SQL connection:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao remover conexão SQL",
+          variant: "destructive"
+        });
+        throw error;
+      }
+
       setConnections(prev => prev.filter(conn => conn.id !== id));
       toast({
         title: "Sucesso",
@@ -101,11 +138,6 @@ export function useSQLConnections() {
       });
     } catch (error) {
       console.error('Error deleting SQL connection:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao remover conexão SQL",
-        variant: "destructive"
-      });
       throw error;
     }
   };

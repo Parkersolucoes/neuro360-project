@@ -10,7 +10,6 @@ export interface EvolutionConfig {
   api_key: string;
   instance_name: string;
   is_active: boolean;
-  status?: string;
   created_at: string;
   updated_at: string;
 }
@@ -39,10 +38,7 @@ export function useEvolutionConfig() {
       }
 
       if (data && data.length > 0) {
-        setConfig({
-          ...data[0],
-          status: 'disconnected' // Default status
-        });
+        setConfig(data[0]);
       }
     } catch (error) {
       console.error('Error fetching Evolution config:', error);
@@ -69,10 +65,7 @@ export function useEvolutionConfig() {
         throw error;
       }
 
-      setConfig({
-        ...data,
-        status: 'disconnected'
-      });
+      setConfig(data);
       toast({
         title: "Sucesso",
         description: "Configuração da Evolution API criada com sucesso!"
@@ -104,10 +97,7 @@ export function useEvolutionConfig() {
         throw error;
       }
 
-      setConfig({
-        ...data,
-        status: data.status || 'disconnected'
-      });
+      setConfig(data);
       toast({
         title: "Sucesso",
         description: "Configuração da Evolution API atualizada com sucesso!"

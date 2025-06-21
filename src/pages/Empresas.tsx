@@ -12,30 +12,24 @@ import { usePlans } from "@/hooks/usePlans";
 import type { Company as ComponentCompany } from "@/components/empresas/types";
 
 export default function Empresas() {
-  const { userCompanies, createCompany, updateCompany, deleteCompany, loading } = useCompanies();
+  const { companies, createCompany, updateCompany, deleteCompany, loading } = useCompanies();
   const { plans, loading: plansLoading } = usePlans();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<ComponentCompany | null>(null);
 
   // Convert hook companies to component companies
-  const companies: ComponentCompany[] = userCompanies.map(uc => {
-    const planName = uc.companies?.plans?.name || 'basic';
-    // Map plan names to the expected types
-    const mappedPlan = planName === 'Básico' ? 'basic' : 
-                      planName === 'Profissional' ? 'pro' : 
-                      planName === 'Empresarial' ? 'enterprise' : 'basic';
-    
+  const componentCompanies: ComponentCompany[] = companies.map(company => {
     return {
-      id: uc.companies?.id || '',
-      name: uc.companies?.name || '',
-      document: uc.companies?.document || '',
-      email: uc.companies?.email || '',
-      phone: uc.companies?.phone || '',
-      address: uc.companies?.address || '',
-      plan: mappedPlan as 'basic' | 'pro' | 'enterprise',
-      status: uc.companies?.status === 'active' ? 'active' as const : 
-              uc.companies?.status === 'suspended' ? 'suspended' as const : 'inactive' as const,
-      createdAt: uc.companies?.created_at || '',
+      id: company.id,
+      name: company.name,
+      document: company.document,
+      email: company.email,
+      phone: company.phone || '',
+      address: company.address || '',
+      plan: 'basic' as const, // Default plan mapping
+      status: company.status === 'active' ? 'active' as const : 
+              company.status === 'suspended' ? 'suspended' as const : 'inactive' as const,
+      createdAt: company.created_at,
       usersCount: 1,
       lastActivity: 'Online'
     };
@@ -154,7 +148,7 @@ export default function Empresas() {
         </Dialog>
       </div>
 
-      <CompanyStats companies={companies} />
+      <CompanyStats companies={componentCompanies} />
 
       <Card>
         <CardHeader>
@@ -165,7 +159,7 @@ export default function Empresas() {
         </CardHeader>
         <CardContent>
           <CompanyTable
-            companies={companies}
+            companies={componentCompanies}
             onEdit={handleEditCompany}
             onDelete={handleDeleteCompany}
           />
