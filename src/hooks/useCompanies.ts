@@ -66,7 +66,7 @@ export function useCompanies() {
           ...item.companies,
           status: item.companies.status as 'active' | 'inactive' | 'suspended'
         } : undefined
-      }));
+      })) as UserCompany[];
       
       setUserCompanies(typedData);
       

@@ -23,8 +23,9 @@ export default function Empresas() {
     email: uc.companies?.email || '',
     phone: uc.companies?.phone || '',
     address: uc.companies?.address || '',
-    plan: uc.companies?.plans?.name || 'Sem plano' as any,
-    status: uc.companies?.status === 'active' ? 'Ativa' as const : 'Inativa' as const,
+    plan: uc.companies?.plans?.name || 'basic' as 'basic',
+    status: uc.companies?.status === 'active' ? 'active' as const : 
+            uc.companies?.status === 'suspended' ? 'suspended' as const : 'inactive' as const,
     createdAt: uc.companies?.created_at || '',
     usersCount: 1,
     lastActivity: 'Online'
@@ -38,7 +39,7 @@ export default function Empresas() {
         email: companyData.email,
         phone: companyData.phone,
         address: companyData.address,
-        status: companyData.status === 'Ativa' ? 'active' as const : 'inactive' as const
+        status: companyData.status
       };
 
       if (editingCompany) {
