@@ -44,7 +44,7 @@ export function useEvolutionConfig(companyId?: string) {
       }
 
       console.log('EvolutionConfig: Fetched config:', data);
-      setConfig(data);
+      setConfig(data as EvolutionConfig);
     } catch (error) {
       console.error('Error fetching Evolution config:', error);
       toast({
@@ -70,7 +70,7 @@ export function useEvolutionConfig(companyId?: string) {
       if (error) throw error;
 
       console.log('EvolutionConfig: Config created successfully:', data);
-      setConfig(data);
+      setConfig(data as EvolutionConfig);
       
       toast({
         title: "Sucesso",
@@ -103,7 +103,7 @@ export function useEvolutionConfig(companyId?: string) {
       if (error) throw error;
 
       console.log('EvolutionConfig: Config updated successfully:', data);
-      setConfig(data);
+      setConfig(data as EvolutionConfig);
       
       toast({
         title: "Sucesso",
