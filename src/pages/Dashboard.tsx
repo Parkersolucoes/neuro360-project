@@ -184,19 +184,19 @@ export default function Dashboard() {
                 <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center space-x-3">
                     <div className={`w-3 h-3 rounded-full ${
-                      connection.status === 'connected' ? 'bg-green-500' : 'bg-red-500'
+                      connection.is_active ? 'bg-green-500' : 'bg-red-500'
                     }`}></div>
                     <div>
                       <span className="font-medium text-gray-900 text-sm">{connection.name}</span>
-                      <p className="text-xs text-gray-500">{connection.server}</p>
+                      <p className="text-xs text-gray-500">{connection.host}</p>
                     </div>
                   </div>
                   <Badge className={
-                    connection.status === 'connected' 
+                    connection.is_active 
                       ? "bg-green-100 text-green-800" 
                       : "bg-red-100 text-red-800"
                   }>
-                    {connection.status === 'connected' ? 'Conectado' : 'Desconectado'}
+                    {connection.is_active ? 'Conectado' : 'Desconectado'}
                   </Badge>
                 </div>
               ))
@@ -212,16 +212,16 @@ export default function Dashboard() {
                   <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-2">
                     <div className="flex items-center space-x-3">
                       <div className={`w-3 h-3 rounded-full ${
-                        evolutionConfig.status === 'connected' ? 'bg-green-500' : 'bg-red-500'
+                        evolutionConfig.is_active ? 'bg-green-500' : 'bg-red-500'
                       }`}></div>
                       <span className="font-medium text-gray-900 text-sm">{evolutionConfig.instance_name}</span>
                     </div>
                     <Badge className={
-                      evolutionConfig.status === 'connected' 
+                      evolutionConfig.is_active 
                         ? "bg-green-100 text-green-800" 
                         : "bg-red-100 text-red-800"
                     }>
-                      {evolutionConfig.status === 'connected' ? 'Online' : 'Offline'}
+                      {evolutionConfig.is_active ? 'Online' : 'Offline'}
                     </Badge>
                   </div>
                 ))

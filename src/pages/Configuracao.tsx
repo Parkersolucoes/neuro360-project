@@ -21,17 +21,17 @@ import { useAdminAuth } from "@/hooks/useAdminAuth";
 export default function Configuracao() {
   const { toast } = useToast();
   const { connections, createConnection } = useSQLConnections();
-  const { config: evolutionConfig, saveConfig: saveEvolutionConfig } = useEvolutionConfig();
+  const { config: evolutionConfig, createConfig: createEvolutionConfig } = useEvolutionConfig();
   const { isAdmin } = useAdminAuth();
 
   // Estados para formulários
   const [sqlForm, setSqlForm] = useState({
     name: "",
-    server: "",
+    host: "", // Changed from server to host to match schema
     database_name: "",
     username: "",
     password: "",
-    port: "1433"
+    port: "5432" // Changed default from 1433 to 5432 for PostgreSQL
   });
 
   const [evolutionForm, setEvolutionForm] = useState({
@@ -45,15 +45,18 @@ export default function Configuracao() {
     try {
       await createConnection({
         ...sqlForm,
-        status: 'disconnected'
+        port: parseInt(sqlForm.port),
+        company_id: null,
+        connection_type: 'postgresql',
+        is_active: true
       });
       setSqlForm({
         name: "",
-        server: "",
+        host: "",
         database_name: "",
         username: "",
         password: "",
-        port: "1433"
+        port: "5432"
       });
       toast({
         title: "Sucesso",
@@ -67,9 +70,10 @@ export default function Configuracao() {
   const handleEvolutionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await saveEvolutionConfig({
+      await createEvolutionConfig({
         ...evolutionForm,
-        status: 'disconnected'
+        company_id: null,
+        is_active: true
       });
       setEvolutionForm({
         instance_name: "",
@@ -143,19 +147,19 @@ export default function Configuracao() {
                     <div key={connection.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                       <div className="flex items-center space-x-3">
                         <div className={`w-3 h-3 rounded-full ${
-                          connection.status === 'connected' ? 'bg-green-500' : 'bg-red-500'
+                          connection.is_active ? 'bg-green-500' : 'bg-red-500'
                         }`}></div>
                         <div>
                           <p className="font-medium">{connection.name}</p>
-                          <p className="text-sm text-gray-500">{connection.server}:{connection.port}</p>
+                          <p className="text-sm text-gray-500">{connection.host}:{connection.port}</p>
                         </div>
                       </div>
                       <Badge className={
-                        connection.status === 'connected' 
+                        connection.is_active 
                           ? "bg-green-100 text-green-800" 
                           : "bg-red-100 text-red-800"
                       }>
-                        {connection.status === 'connected' ? 'Conectado' : 'Desconectado'}
+                        {connection.is_active ? 'Ativo' : 'Inativo'}
                       </Badge>
                     </div>
                   ))}
@@ -178,11 +182,11 @@ export default function Configuracao() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="sql_server">Servidor</Label>
+                    <Label htmlFor="sql_host">Servidor</Label>
                     <Input
-                      id="sql_server"
-                      value={sqlForm.server}
-                      onChange={(e) => setSqlForm({...sqlForm, server: e.target.value})}
+                      id="sql_host"
+                      value={sqlForm.host}
+                      onChange={(e) => setSqlForm({...sqlForm, host: e.target.value})}
                       placeholder="Ex: localhost"
                       className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                       required
@@ -205,7 +209,7 @@ export default function Configuracao() {
                       id="sql_port"
                       value={sqlForm.port}
                       onChange={(e) => setSqlForm({...sqlForm, port: e.target.value})}
-                      placeholder="1433"
+                      placeholder="5432"
                       className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                       required
                     />
@@ -253,11 +257,11 @@ export default function Configuracao() {
                 </div>
                 {evolutionConfig && (
                   <Badge className={
-                    evolutionConfig.status === 'connected' 
+                    evolutionConfig.is_active 
                       ? "bg-green-100 text-green-800" 
                       : "bg-red-100 text-red-800"
                   }>
-                    {evolutionConfig.status === 'connected' ? 'Conectado' : 'Desconectado'}
+                    {evolutionConfig.is_active ? 'Ativo' : 'Inativo'}
                   </Badge>
                 )}
               </CardTitle>

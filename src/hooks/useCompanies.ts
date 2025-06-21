@@ -16,8 +16,13 @@ export interface Company {
   updated_at: string;
 }
 
+export interface UserCompany {
+  companies: Company | null;
+}
+
 export function useCompanies() {
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [userCompanies, setUserCompanies] = useState<UserCompany[]>([]);
   const [currentCompany, setCurrentCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -40,6 +45,12 @@ export function useCompanies() {
       }
 
       setCompanies(data || []);
+      
+      // Convert to userCompanies format for compatibility
+      const userCompaniesData = (data || []).map(company => ({
+        companies: company
+      }));
+      setUserCompanies(userCompaniesData);
       
       // Set first company as current if none selected
       if (data && data.length > 0 && !currentCompany) {
@@ -71,6 +82,7 @@ export function useCompanies() {
       }
 
       setCompanies(prev => [data, ...prev]);
+      setUserCompanies(prev => [{ companies: data }, ...prev]);
       toast({
         title: "Sucesso",
         description: "Empresa criada com sucesso!"
@@ -104,6 +116,10 @@ export function useCompanies() {
 
       setCompanies(prev => prev.map(company => 
         company.id === id ? data : company
+      ));
+
+      setUserCompanies(prev => prev.map(uc => 
+        uc.companies?.id === id ? { companies: data } : uc
       ));
 
       if (currentCompany?.id === id) {
@@ -140,6 +156,7 @@ export function useCompanies() {
       }
 
       setCompanies(prev => prev.filter(company => company.id !== id));
+      setUserCompanies(prev => prev.filter(uc => uc.companies?.id !== id));
       
       if (currentCompany?.id === id) {
         const remaining = companies.filter(c => c.id !== id);
@@ -162,6 +179,7 @@ export function useCompanies() {
 
   return {
     companies,
+    userCompanies,
     currentCompany,
     loading,
     createCompany,

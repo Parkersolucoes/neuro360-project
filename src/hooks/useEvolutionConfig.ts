@@ -10,6 +10,7 @@ export interface EvolutionConfig {
   api_key: string;
   instance_name: string;
   is_active: boolean;
+  status?: string;
   created_at: string;
   updated_at: string;
 }
@@ -38,7 +39,10 @@ export function useEvolutionConfig() {
       }
 
       if (data && data.length > 0) {
-        setConfig(data[0]);
+        setConfig({
+          ...data[0],
+          status: 'disconnected' // Default status
+        });
       }
     } catch (error) {
       console.error('Error fetching Evolution config:', error);
@@ -65,7 +69,10 @@ export function useEvolutionConfig() {
         throw error;
       }
 
-      setConfig(data);
+      setConfig({
+        ...data,
+        status: 'disconnected'
+      });
       toast({
         title: "Sucesso",
         description: "Configuração da Evolution API criada com sucesso!"
@@ -97,7 +104,10 @@ export function useEvolutionConfig() {
         throw error;
       }
 
-      setConfig(data);
+      setConfig({
+        ...data,
+        status: data.status || 'disconnected'
+      });
       toast({
         title: "Sucesso",
         description: "Configuração da Evolution API atualizada com sucesso!"
@@ -106,6 +116,19 @@ export function useEvolutionConfig() {
       return data;
     } catch (error) {
       console.error('Error updating Evolution config:', error);
+      throw error;
+    }
+  };
+
+  const saveConfig = async (configData: Partial<EvolutionConfig>) => {
+    try {
+      if (config && config.id) {
+        return await updateConfig(config.id, configData);
+      } else {
+        return await createConfig(configData as Omit<EvolutionConfig, 'id' | 'created_at' | 'updated_at'>);
+      }
+    } catch (error) {
+      console.error('Error saving Evolution config:', error);
       throw error;
     }
   };
@@ -119,6 +142,7 @@ export function useEvolutionConfig() {
     loading,
     createConfig,
     updateConfig,
+    saveConfig,
     refetch: fetchConfig
   };
 }

@@ -96,6 +96,35 @@ export function useSystemConfig() {
     }
   };
 
+  // Alias for compatibility with existing code
+  const saveConfig = updateConfig;
+
+  const uploadImage = async (file: File): Promise<string> => {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `system-images/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('system-assets')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        console.error('Error uploading image:', uploadError);
+        throw uploadError;
+      }
+
+      const { data } = supabase.storage
+        .from('system-assets')
+        .getPublicUrl(filePath);
+
+      return data.publicUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      throw error;
+    }
+  };
+
   useEffect(() => {
     fetchConfig();
   }, []);
@@ -104,6 +133,8 @@ export function useSystemConfig() {
     config,
     loading,
     updateConfig,
+    saveConfig,
+    uploadImage,
     refetch: fetchConfig
   };
 }
