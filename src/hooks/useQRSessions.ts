@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 
 export interface QRSession {
   id: string;
@@ -25,25 +24,10 @@ export function useQRSessions() {
 
   const fetchSession = async (companyId?: string) => {
     try {
-      let query = supabase
-        .from('qr_sessions')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (companyId) {
-        query = query.eq('company_id', companyId);
-      }
-
-      const { data, error } = await query.limit(1);
-
-      if (error) {
-        console.error('Error fetching QR session:', error);
-        return;
-      }
-
-      if (data && data.length > 0) {
-        setSession(data[0]);
-      }
+      console.log('QRSessions: Table qr_sessions does not exist in current database schema');
+      
+      // Como a tabela qr_sessions não existe mais, retornar null
+      setSession(null);
     } catch (error) {
       console.error('Error fetching QR session:', error);
     } finally {
@@ -53,30 +37,15 @@ export function useQRSessions() {
 
   const createSession = async (evolutionConfigId: string, instanceName: string, companyId?: string) => {
     try {
-      const { data, error } = await supabase
-        .from('qr_sessions')
-        .insert([{
-          company_id: companyId || null,
-          evolution_config_id: evolutionConfigId,
-          session_name: instanceName,
-          instance_name: instanceName,
-          session_status: 'waiting'
-        }])
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error creating QR session:', error);
-        toast({
-          title: "Erro",
-          description: "Erro ao criar sessão QR",
-          variant: "destructive"
-        });
-        throw error;
-      }
-
-      setSession(data);
-      return data;
+      console.log('QRSessions: Cannot create session - table qr_sessions does not exist');
+      
+      toast({
+        title: "Erro",
+        description: "Funcionalidade QR Code está temporariamente indisponível",
+        variant: "destructive"
+      });
+      
+      throw new Error('qr_sessions table does not exist');
     } catch (error) {
       console.error('Error creating QR session:', error);
       throw error;
@@ -84,40 +53,27 @@ export function useQRSessions() {
   };
 
   const updateSession = async (updates: Partial<QRSession>) => {
-    if (!session) return;
-
     try {
-      const { data, error } = await supabase
-        .from('qr_sessions')
-        .update({ ...updates, updated_at: new Date().toISOString() })
-        .eq('id', session.id)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error updating QR session:', error);
-        return;
-      }
-
-      setSession(prev => prev ? { ...prev, ...data } : null);
+      console.log('QRSessions: Cannot update session - table qr_sessions does not exist');
+      
+      toast({
+        title: "Erro",
+        description: "Funcionalidade QR Code está temporariamente indisponível",
+        variant: "destructive"
+      });
     } catch (error) {
       console.error('Error updating QR session:', error);
     }
   };
 
   const disconnectSession = () => {
-    if (session) {
-      updateSession({ 
-        session_status: 'disconnected',
-        qr_code_data: null,
-        phone_number: null
-      });
-      
-      toast({
-        title: "Sessão desconectada",
-        description: "WhatsApp desconectado com sucesso!"
-      });
-    }
+    console.log('QRSessions: Cannot disconnect session - table qr_sessions does not exist');
+    
+    toast({
+      title: "Erro",
+      description: "Funcionalidade QR Code está temporariamente indisponível",
+      variant: "destructive"
+    });
   };
 
   useEffect(() => {
