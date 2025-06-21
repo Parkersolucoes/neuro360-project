@@ -2,7 +2,7 @@
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Shield } from "lucide-react";
+import { Shield, Crown } from "lucide-react";
 
 interface UserRoleAndStatusFormProps {
   formData: {
@@ -10,6 +10,7 @@ interface UserRoleAndStatusFormProps {
     department: string;
     status: 'active' | 'inactive';
     is_admin: boolean;
+    is_master: boolean;
   };
   onChange: (field: string, value: string | boolean) => void;
 }
@@ -79,17 +80,32 @@ export function UserRoleAndStatusForm({ formData, onChange }: UserRoleAndStatusF
         </div>
       </div>
 
-      <div className="flex items-center space-x-2">
-        <Checkbox
-          id="is_admin"
-          checked={formData.is_admin}
-          onCheckedChange={(checked) => onChange('is_admin', checked === true)}
-          className="border-blue-200 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
-        />
-        <Label htmlFor="is_admin" className="flex items-center space-x-2">
-          <Shield className="w-4 h-4 text-blue-500" />
-          <span>Usuário Administrador (recebe alertas de erro)</span>
-        </Label>
+      <div className="space-y-3">
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="is_admin"
+            checked={formData.is_admin}
+            onCheckedChange={(checked) => onChange('is_admin', checked === true)}
+            className="border-blue-200 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
+          />
+          <Label htmlFor="is_admin" className="flex items-center space-x-2">
+            <Shield className="w-4 h-4 text-blue-500" />
+            <span>Usuário Administrador (recebe alertas de erro)</span>
+          </Label>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="is_master"
+            checked={formData.is_master}
+            onCheckedChange={(checked) => onChange('is_master', checked === true)}
+            className="border-amber-200 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
+          />
+          <Label htmlFor="is_master" className="flex items-center space-x-2">
+            <Crown className="w-4 h-4 text-amber-500" />
+            <span>Usuário Master (controle total do sistema)</span>
+          </Label>
+        </div>
       </div>
     </div>
   );
