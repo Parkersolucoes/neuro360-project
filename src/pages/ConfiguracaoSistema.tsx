@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,6 +38,7 @@ export default function ConfiguracaoSistema() {
     try {
       await saveAssasConfig({
         ...assasForm,
+        is_active: true,
         status: 'disconnected'
       });
       setAssasForm({
