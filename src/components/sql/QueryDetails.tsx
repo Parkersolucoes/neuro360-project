@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Database, CheckCircle, XCircle, Clock, Play } from "lucide-react";
-import { SQLQuery } from "@/hooks/useSQLQueries";
+import { SQLQuery } from "@/types/sqlQuery";
 
 interface QueryDetailsProps {
   selectedQuery: SQLQuery | null;

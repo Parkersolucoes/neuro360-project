@@ -1,12 +1,13 @@
 
 import { useState } from "react";
 import { useSQLConnections } from "@/hooks/useSQLConnections";
-import { useSQLQueries, SQLQuery } from "@/hooks/useSQLQueries";
+import { useSQLQueries } from "@/hooks/useSQLQueries";
 import { useQueryExecution } from "@/hooks/useQueryExecution";
 import { QueryForm } from "@/components/sql/QueryForm";
 import { QueryList } from "@/components/sql/QueryList";
 import { QueryDetails } from "@/components/sql/QueryDetails";
 import { QueryResultTable } from "@/components/sql/QueryResultTable";
+import { SQLQuery } from "@/types/sqlQuery";
 
 export default function ConsultasSQL() {
   const { connections } = useSQLConnections();

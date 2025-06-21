@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Database, CheckCircle, XCircle, Clock, Eye, Play, Trash2 } from "lucide-react";
-import { SQLQuery } from "@/hooks/useSQLQueries";
+import { SQLQuery } from "@/types/sqlQuery";
 
 interface QueryListProps {
   queries: SQLQuery[];

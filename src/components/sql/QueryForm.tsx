@@ -12,10 +12,11 @@ import { SQLConnection } from "@/hooks/useSQLConnections";
 import { useCompanies } from "@/hooks/useCompanies";
 import { usePlans } from "@/hooks/usePlans";
 import { useToast } from "@/hooks/use-toast";
+import { SQLQuery } from "@/types/sqlQuery";
 
 interface QueryFormProps {
   connections: SQLConnection[];
-  queries: any[];
+  queries: SQLQuery[];
   onSaveQuery: (query: {
     name: string;
     description: string;
