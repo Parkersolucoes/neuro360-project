@@ -59,20 +59,20 @@ export function useCompanies() {
 
       if (error) throw error;
       
-      const typedData = (data || []).map(item => ({
+      const typedData: UserCompany[] = (data || []).map(item => ({
         ...item,
         role: item.role as 'admin' | 'user' | 'manager',
         companies: item.companies ? {
           ...item.companies,
           status: item.companies.status as 'active' | 'inactive' | 'suspended'
         } : undefined
-      })) as UserCompany[];
+      }));
       
       setUserCompanies(typedData);
       
       // Set first company as current if none selected
-      if (typedData.length > 0 && !currentCompany) {
-        setCurrentCompany(typedData[0].companies || null);
+      if (typedData.length > 0 && !currentCompany && typedData[0].companies) {
+        setCurrentCompany(typedData[0].companies);
       }
     } catch (error) {
       console.error('Error fetching user companies:', error);

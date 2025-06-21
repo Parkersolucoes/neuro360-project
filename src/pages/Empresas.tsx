@@ -8,38 +8,57 @@ import { CompanyForm } from "@/components/empresas/CompanyForm";
 import { CompanyTable } from "@/components/empresas/CompanyTable";
 import { CompanyStats } from "@/components/empresas/CompanyStats";
 import { useCompanies } from "@/hooks/useCompanies";
+import { usePlans } from "@/hooks/usePlans";
 import type { Company as ComponentCompany } from "@/components/empresas/types";
 
 export default function Empresas() {
   const { userCompanies, createCompany, updateCompany, deleteCompany, loading } = useCompanies();
+  const { plans, loading: plansLoading } = usePlans();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<ComponentCompany | null>(null);
 
   // Convert hook companies to component companies
-  const companies: ComponentCompany[] = userCompanies.map(uc => ({
-    id: uc.companies?.id || '',
-    name: uc.companies?.name || '',
-    document: uc.companies?.document || '',
-    email: uc.companies?.email || '',
-    phone: uc.companies?.phone || '',
-    address: uc.companies?.address || '',
-    plan: uc.companies?.plans?.name || 'basic' as 'basic',
-    status: uc.companies?.status === 'active' ? 'active' as const : 
-            uc.companies?.status === 'suspended' ? 'suspended' as const : 'inactive' as const,
-    createdAt: uc.companies?.created_at || '',
-    usersCount: 1,
-    lastActivity: 'Online'
-  }));
+  const companies: ComponentCompany[] = userCompanies.map(uc => {
+    const planName = uc.companies?.plans?.name || 'basic';
+    // Map plan names to the expected types
+    const mappedPlan = planName === 'Básico' ? 'basic' : 
+                      planName === 'Profissional' ? 'pro' : 
+                      planName === 'Empresarial' ? 'enterprise' : 'basic';
+    
+    return {
+      id: uc.companies?.id || '',
+      name: uc.companies?.name || '',
+      document: uc.companies?.document || '',
+      email: uc.companies?.email || '',
+      phone: uc.companies?.phone || '',
+      address: uc.companies?.address || '',
+      plan: mappedPlan as 'basic' | 'pro' | 'enterprise',
+      status: uc.companies?.status === 'active' ? 'active' as const : 
+              uc.companies?.status === 'suspended' ? 'suspended' as const : 'inactive' as const,
+      createdAt: uc.companies?.created_at || '',
+      usersCount: 1,
+      lastActivity: 'Online'
+    };
+  });
 
-  const handleSaveCompany = async (companyData: Omit<ComponentCompany, 'id' | 'createdAt' | 'usersCount' | 'lastActivity'>) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    document: '',
+    email: '',
+    phone: '',
+    address: '',
+    plan_id: ''
+  });
+
+  const handleSaveCompany = async () => {
     try {
       const formattedData = {
-        name: companyData.name,
-        document: companyData.document,
-        email: companyData.email,
-        phone: companyData.phone,
-        address: companyData.address,
-        status: companyData.status
+        name: formData.name,
+        document: formData.document,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        status: 'active' as const
       };
 
       if (editingCompany) {
@@ -50,6 +69,14 @@ export default function Empresas() {
       
       setIsDialogOpen(false);
       setEditingCompany(null);
+      setFormData({
+        name: '',
+        document: '',
+        email: '',
+        phone: '',
+        address: '',
+        plan_id: ''
+      });
     } catch (error) {
       console.error('Error saving company:', error);
     }
@@ -57,6 +84,14 @@ export default function Empresas() {
 
   const handleEditCompany = (company: ComponentCompany) => {
     setEditingCompany(company);
+    setFormData({
+      name: company.name,
+      document: company.document,
+      email: company.email,
+      phone: company.phone,
+      address: company.address,
+      plan_id: ''
+    });
     setIsDialogOpen(true);
   };
 
@@ -68,7 +103,7 @@ export default function Empresas() {
     }
   };
 
-  if (loading) {
+  if (loading || plansLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
@@ -97,12 +132,23 @@ export default function Empresas() {
               </DialogTitle>
             </DialogHeader>
             <CompanyForm
-              company={editingCompany}
+              formData={formData}
+              setFormData={setFormData}
               onSave={handleSaveCompany}
               onCancel={() => {
                 setIsDialogOpen(false);
                 setEditingCompany(null);
+                setFormData({
+                  name: '',
+                  document: '',
+                  email: '',
+                  phone: '',
+                  address: '',
+                  plan_id: ''
+                });
               }}
+              isEditing={!!editingCompany}
+              plans={plans}
             />
           </DialogContent>
         </Dialog>
