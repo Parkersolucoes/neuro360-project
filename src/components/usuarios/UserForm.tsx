@@ -70,7 +70,7 @@ export function UserForm({
       } else if (field === 'is_master') {
         newData.is_master = Boolean(value);
       } else if (field === 'status') {
-        newData.status = value as 'active' | 'inactive';
+        newData.status = String(value) as 'active' | 'inactive';
       } else {
         // Para campos string
         (newData as any)[field] = String(value);

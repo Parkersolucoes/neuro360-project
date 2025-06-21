@@ -1,81 +1,46 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import { SQLQuery } from '@/types/sqlQuery';
 
 export class SQLQueryService {
   static async fetchQueriesForCompany(companyId: string) {
-    const { data, error } = await supabase
-      .from('sql_queries')
-      .select(`
-        *,
-        sql_connections!inner(name, company_id)
-      `)
-      .eq('sql_connections.company_id', companyId)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      throw new Error(`Erro ao carregar consultas SQL: ${error.message}`);
+    try {
+      console.log('SQLQueryService: Table sql_queries does not exist in current database schema');
+      
+      // Como a tabela sql_queries não existe, retornar array vazio
+      return [];
+    } catch (error) {
+      throw new Error(`Erro ao carregar consultas SQL: Funcionalidade temporariamente indisponível`);
     }
-
-    return this.mapSupabaseDataToSQLQuery(data || []);
   }
 
   static async createQuery(queryData: Omit<SQLQuery, 'id' | 'created_at' | 'updated_at' | 'sql_connections'>) {
-    const { data: currentUser } = await supabase.auth.getUser();
-    
-    const { data, error } = await supabase
-      .from('sql_queries')
-      .insert([{
-        connection_id: queryData.connection_id,
-        name: queryData.name,
-        description: queryData.description,
-        query_text: queryData.query_text,
-        created_by: currentUser.user?.id
-      }])
-      .select(`
-        *,
-        sql_connections(name)
-      `)
-      .single();
-
-    if (error) {
-      throw new Error(`Erro ao criar consulta SQL: ${error.message}`);
+    try {
+      console.log('SQLQueryService: Cannot create query - table sql_queries does not exist');
+      
+      throw new Error('Funcionalidade de consultas SQL está temporariamente indisponível');
+    } catch (error) {
+      throw new Error(`Erro ao criar consulta SQL: Funcionalidade temporariamente indisponível`);
     }
-    
-    return this.mapSingleSupabaseDataToSQLQuery(data);
   }
 
   static async updateQuery(id: string, updates: Partial<SQLQuery>) {
-    const { data, error } = await supabase
-      .from('sql_queries')
-      .update({ 
-        name: updates.name,
-        description: updates.description,
-        query_text: updates.query_text,
-        updated_at: new Date().toISOString() 
-      })
-      .eq('id', id)
-      .select(`
-        *,
-        sql_connections(name)
-      `)
-      .single();
-
-    if (error) {
-      throw new Error(`Erro ao atualizar consulta SQL: ${error.message}`);
+    try {
+      console.log('SQLQueryService: Cannot update query - table sql_queries does not exist');
+      
+      throw new Error('Funcionalidade de consultas SQL está temporariamente indisponível');
+    } catch (error) {
+      throw new Error(`Erro ao atualizar consulta SQL: Funcionalidade temporariamente indisponível`);
     }
-    
-    return this.mapSingleSupabaseDataToSQLQuery(data, updates.status);
   }
 
   static async deleteQuery(id: string) {
-    const { error } = await supabase
-      .from('sql_queries')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      throw new Error(`Erro ao remover consulta SQL: ${error.message}`);
+    try {
+      console.log('SQLQueryService: Cannot delete query - table sql_queries does not exist');
+      
+      throw new Error('Funcionalidade de consultas SQL está temporariamente indisponível');
+    } catch (error) {
+      throw new Error(`Erro ao remover consulta SQL: Funcionalidade temporariamente indisponível`);
     }
   }
 
@@ -91,7 +56,7 @@ export class SQLQueryService {
       updated_at: item.updated_at,
       created_by: item.created_by,
       sql_connections: {
-        name: item.sql_connections.name
+        name: item.sql_connections?.name || 'Conexão Desconhecida'
       }
     }));
   }

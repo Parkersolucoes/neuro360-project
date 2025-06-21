@@ -8,12 +8,22 @@ export interface Template {
   content: string;
   type: string;
   company_id: string | null;
+  description?: string;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 }
 
+export interface PlanTemplate {
+  id: string;
+  plan_id: string;
+  template_id: string;
+  created_at: string;
+}
+
 export function useTemplates() {
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [planTemplates, setPlanTemplates] = useState<PlanTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -23,6 +33,7 @@ export function useTemplates() {
       
       // Como a tabela templates não existe, retornar array vazio
       setTemplates([]);
+      setPlanTemplates([]);
     } catch (error) {
       console.error('Error fetching templates:', error);
     } finally {
@@ -87,16 +98,57 @@ export function useTemplates() {
     }
   };
 
+  const linkTemplateToPlan = async (templateId: string, planId: string) => {
+    try {
+      console.log('Templates: Cannot link template to plan - table plan_templates does not exist');
+      
+      toast({
+        title: "Erro",
+        description: "Funcionalidade de associação de templates está temporariamente indisponível",
+        variant: "destructive"
+      });
+    } catch (error) {
+      console.error('Error linking template to plan:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao associar template ao plano",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const unlinkTemplateFromPlan = async (templateId: string, planId: string) => {
+    try {
+      console.log('Templates: Cannot unlink template from plan - table plan_templates does not exist');
+      
+      toast({
+        title: "Erro",
+        description: "Funcionalidade de desassociação de templates está temporariamente indisponível",
+        variant: "destructive"
+      });
+    } catch (error) {
+      console.error('Error unlinking template from plan:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao desassociar template do plano",
+        variant: "destructive"
+      });
+    }
+  };
+
   useEffect(() => {
     fetchTemplates();
   }, []);
 
   return {
     templates,
+    planTemplates,
     loading,
     createTemplate,
     updateTemplate,
     deleteTemplate,
+    linkTemplateToPlan,
+    unlinkTemplateFromPlan,
     refetch: fetchTemplates
   };
 }

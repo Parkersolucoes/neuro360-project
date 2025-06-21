@@ -43,10 +43,15 @@ export default function Templates() {
   const saveTemplate = async () => {
     try {
       let template;
+      const templateData = {
+        ...newTemplate,
+        company_id: null // Definindo company_id como necessário pela interface
+      };
+      
       if (editingTemplate) {
-        template = await updateTemplate(editingTemplate.id, newTemplate);
+        template = await updateTemplate(editingTemplate.id, templateData);
       } else {
-        template = await createTemplate(newTemplate);
+        template = await createTemplate(templateData);
       }
 
       // Gerenciar associações com planos
@@ -91,7 +96,7 @@ export default function Templates() {
       description: template.description || "",
       content: template.content,
       type: template.type,
-      is_active: template.is_active
+      is_active: template.is_active || true
     });
     
     // Carregar planos associados
