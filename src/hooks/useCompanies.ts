@@ -8,31 +8,27 @@ export interface Company {
   name: string;
   document: string;
   email: string;
-  phone?: string;
-  address?: string;
-  plan_id?: string;
-  status: string;
+  phone: string;
+  address: string;
+  plan_id: string | null;
+  status: "active" | "inactive" | "suspended";
   created_at: string;
   updated_at: string;
 }
 
-export interface UserCompany {
-  companies: Company | null;
-}
-
 export function useCompanies() {
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [userCompanies, setUserCompanies] = useState<UserCompany[]>([]);
   const [currentCompany, setCurrentCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   const fetchCompanies = async () => {
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from('companies')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('name');
 
       if (error) {
         console.error('Error fetching companies:', error);
@@ -41,23 +37,25 @@ export function useCompanies() {
           description: "Erro ao carregar empresas",
           variant: "destructive"
         });
+        setCompanies([]); // Garantir que sempre seja um array
         return;
       }
 
-      setCompanies(data || []);
+      const companiesData = data || [];
+      setCompanies(companiesData);
       
-      // Convert to userCompanies format for compatibility
-      const userCompaniesData = (data || []).map(company => ({
-        companies: company
-      }));
-      setUserCompanies(userCompaniesData);
-      
-      // Set first company as current if none selected
-      if (data && data.length > 0 && !currentCompany) {
-        setCurrentCompany(data[0]);
+      // Se não há empresa selecionada e há empresas disponíveis, selecionar a primeira
+      if (!currentCompany && companiesData.length > 0) {
+        setCurrentCompany(companiesData[0]);
       }
     } catch (error) {
       console.error('Error fetching companies:', error);
+      setCompanies([]); // Garantir que sempre seja um array
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar empresas",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
@@ -80,14 +78,13 @@ export function useCompanies() {
         });
         throw error;
       }
-
+      
       setCompanies(prev => [data, ...prev]);
-      setUserCompanies(prev => [{ companies: data }, ...prev]);
       toast({
         title: "Sucesso",
         description: "Empresa criada com sucesso!"
       });
-
+      
       return data;
     } catch (error) {
       console.error('Error creating company:', error);
@@ -113,24 +110,20 @@ export function useCompanies() {
         });
         throw error;
       }
-
+      
       setCompanies(prev => prev.map(company => 
         company.id === id ? data : company
       ));
-
-      setUserCompanies(prev => prev.map(uc => 
-        uc.companies?.id === id ? { companies: data } : uc
-      ));
-
+      
       if (currentCompany?.id === id) {
         setCurrentCompany(data);
       }
-
+      
       toast({
         title: "Sucesso",
         description: "Empresa atualizada com sucesso!"
       });
-
+      
       return data;
     } catch (error) {
       console.error('Error updating company:', error);
@@ -156,13 +149,12 @@ export function useCompanies() {
       }
 
       setCompanies(prev => prev.filter(company => company.id !== id));
-      setUserCompanies(prev => prev.filter(uc => uc.companies?.id !== id));
       
       if (currentCompany?.id === id) {
-        const remaining = companies.filter(c => c.id !== id);
-        setCurrentCompany(remaining.length > 0 ? remaining[0] : null);
+        const remainingCompanies = companies.filter(company => company.id !== id);
+        setCurrentCompany(remainingCompanies.length > 0 ? remainingCompanies[0] : null);
       }
-
+      
       toast({
         title: "Sucesso",
         description: "Empresa removida com sucesso!"
@@ -179,13 +171,12 @@ export function useCompanies() {
 
   return {
     companies,
-    userCompanies,
     currentCompany,
+    setCurrentCompany,
     loading,
     createCompany,
     updateCompany,
     deleteCompany,
-    setCurrentCompany,
     refetch: fetchCompanies
   };
 }
