@@ -73,7 +73,8 @@ export function UserForm({
       const updates: Partial<typeof prev> = {};
       
       if (field === 'is_admin') {
-        updates.is_admin = Boolean(value);
+        // Garantir que is_admin seja sempre boolean
+        updates.is_admin = value === true || value === 'true' || value === true;
       } else if (field === 'status') {
         updates.status = value as 'active' | 'inactive';
       } else {
