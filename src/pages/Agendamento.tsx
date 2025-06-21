@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -46,10 +47,16 @@ export default function Agendamento() {
 
   const saveScheduling = async () => {
     try {
+      // Ajustar o template_id se for "none" para string vazia no backend
+      const schedulingData = {
+        ...newScheduling,
+        template_id: newScheduling.template_id === "none" ? "" : newScheduling.template_id
+      };
+
       if (editingScheduling) {
-        await updateScheduling(editingScheduling.id, newScheduling);
+        await updateScheduling(editingScheduling.id, schedulingData);
       } else {
-        await createScheduling(newScheduling);
+        await createScheduling(schedulingData);
       }
       
       setNewScheduling({ 
@@ -79,7 +86,7 @@ export default function Agendamento() {
       scheduled_time: scheduling.scheduled_time,
       recipient_phone: scheduling.recipient_phone,
       message_content: scheduling.message_content,
-      template_id: scheduling.template_id || "",
+      template_id: scheduling.template_id || "none",
       company_id: scheduling.company_id || "",
       status: scheduling.status
     });
@@ -200,7 +207,7 @@ export default function Agendamento() {
                     <SelectValue placeholder="Selecione um template" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Nenhum template</SelectItem>
+                    <SelectItem value="none">Nenhum template</SelectItem>
                     {templates.map((template) => (
                       <SelectItem key={template.id} value={template.id}>
                         {template.name}
