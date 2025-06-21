@@ -68,6 +68,7 @@ export function UserForm({
   }, [editingUser]);
 
   const handleFieldChange = (field: string, value: string | boolean) => {
+    console.log('Field changed:', field, 'Value:', value, 'Type:', typeof value);
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -112,7 +113,7 @@ export function UserForm({
   const isFormValid = formData.name && formData.email && formData.phone && formData.whatsapp && formData.department;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-white">
       <UserBasicInfoForm 
         formData={formData}
         onChange={handleFieldChange}

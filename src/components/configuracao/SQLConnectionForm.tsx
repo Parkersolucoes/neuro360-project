@@ -10,6 +10,7 @@ import { Database, Plus, Edit, Trash2, Save } from "lucide-react";
 import { SQLConnection, useSQLConnections } from "@/hooks/useSQLConnections";
 import { usePlans } from "@/hooks/usePlans";
 import { useCompanies } from "@/hooks/useCompanies";
+import { useToast } from "@/hooks/use-toast";
 
 interface SQLConnectionFormProps {
   companyId: string;
@@ -19,7 +20,8 @@ interface SQLConnectionFormProps {
 export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormProps) {
   const { createConnection, updateConnection, deleteConnection, testing } = useSQLConnections();
   const { plans } = usePlans();
-  const { companies } = useCompanies();
+  const { companies, currentCompany } = useCompanies();
+  const { toast } = useToast();
   
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [editingConnection, setEditingConnection] = useState<SQLConnection | null>(null);
@@ -33,9 +35,11 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
     connection_type: "sqlserver"
   });
 
-  const company = companies.find(c => c.id === companyId);
+  // Usar a empresa atual do contexto se não foi passada uma específica
+  const effectiveCompanyId = companyId || currentCompany?.id;
+  const company = companies.find(c => c.id === effectiveCompanyId);
   const currentPlan = company?.plan_id ? plans.find(plan => plan.id === company.plan_id) : null;
-  const companyConnections = connections.filter(conn => conn.company_id === companyId);
+  const companyConnections = connections.filter(conn => conn.company_id === effectiveCompanyId);
   const canAddConnection = currentPlan ? companyConnections.length < currentPlan.max_sql_connections : false;
 
   useEffect(() => {
@@ -66,12 +70,23 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!effectiveCompanyId) {
+      toast({
+        title: "Erro",
+        description: "Nenhuma empresa selecionada. Selecione uma empresa no menu principal.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     try {
       const connectionData = {
         ...connectionForm,
-        company_id: companyId,
+        company_id: effectiveCompanyId,
         is_active: true
       };
+
+      console.log('Salvando conexão SQL:', connectionData);
 
       if (editingConnection) {
         await updateConnection(editingConnection.id, connectionData);
@@ -82,6 +97,11 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
       resetForm();
     } catch (error) {
       console.error('Error saving connection:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao salvar conexão SQL. Verifique os dados e tente novamente.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -110,13 +130,39 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
   };
 
   const handleNewConnection = () => {
+    if (!effectiveCompanyId) {
+      toast({
+        title: "Erro",
+        description: "Selecione uma empresa no menu principal antes de criar uma conexão.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     if (!canAddConnection) {
-      alert(`Limite de conexões atingido. O plano ${currentPlan?.name} permite apenas ${currentPlan?.max_sql_connections} conexões.`);
+      toast({
+        title: "Limite atingido",
+        description: `O plano ${currentPlan?.name} permite apenas ${currentPlan?.max_sql_connections} conexões.`,
+        variant: "destructive"
+      });
       return;
     }
     setEditingConnection(null);
     setIsFormVisible(true);
   };
+
+  if (!effectiveCompanyId) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center py-8 text-gray-500">
+            <Database className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+            <p>Selecione uma empresa no menu principal para configurar conexões SQL.</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -125,7 +171,7 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Database className="w-5 h-5 text-blue-600" />
-              <span>Conexões SQL Server</span>
+              <span>Conexões SQL Server - {company?.name}</span>
             </div>
             <div className="flex items-center space-x-2">
               {currentPlan && (
@@ -137,6 +183,7 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
                 onClick={handleNewConnection}
                 disabled={!canAddConnection}
                 size="sm"
+                className="bg-blue-500 hover:bg-blue-600 text-white"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Nova Conexão
@@ -154,8 +201,8 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
           {currentPlan && companyConnections.length === 0 && !isFormVisible && (
             <div className="text-center py-8 text-gray-500">
               <Database className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-              <p>Nenhuma conexão SQL configurada.</p>
-              <Button onClick={handleNewConnection} className="mt-4">
+              <p>Nenhuma conexão SQL configurada para esta empresa.</p>
+              <Button onClick={handleNewConnection} className="mt-4 bg-blue-500 hover:bg-blue-600 text-white">
                 <Plus className="w-4 h-4 mr-2" />
                 Criar primeira conexão
               </Button>
@@ -212,6 +259,7 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
                       value={connectionForm.name}
                       onChange={(e) => setConnectionForm({...connectionForm, name: e.target.value})}
                       placeholder="Ex: Banco Principal"
+                      className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
                       required
                     />
                   </div>
@@ -221,7 +269,7 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
                       value={connectionForm.connection_type}
                       onValueChange={(value) => setConnectionForm({...connectionForm, connection_type: value})}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="border-blue-200 focus:border-blue-500 focus:ring-blue-500">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -241,6 +289,7 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
                       value={connectionForm.host}
                       onChange={(e) => setConnectionForm({...connectionForm, host: e.target.value})}
                       placeholder="servidor.exemplo.com"
+                      className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
                       required
                     />
                   </div>
@@ -252,6 +301,7 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
                       value={connectionForm.port}
                       onChange={(e) => setConnectionForm({...connectionForm, port: parseInt(e.target.value) || 1433})}
                       placeholder="1433"
+                      className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
                       required
                     />
                   </div>
@@ -264,6 +314,7 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
                     value={connectionForm.database_name}
                     onChange={(e) => setConnectionForm({...connectionForm, database_name: e.target.value})}
                     placeholder="nome_do_banco"
+                    className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
                     required
                   />
                 </div>
@@ -276,6 +327,7 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
                       value={connectionForm.username}
                       onChange={(e) => setConnectionForm({...connectionForm, username: e.target.value})}
                       placeholder="usuario"
+                      className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
                       required
                     />
                   </div>
@@ -287,13 +339,18 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
                       value={connectionForm.password}
                       onChange={(e) => setConnectionForm({...connectionForm, password: e.target.value})}
                       placeholder="********"
+                      className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
                       required
                     />
                   </div>
                 </div>
                 
                 <div className="flex space-x-2">
-                  <Button type="submit" disabled={testing}>
+                  <Button 
+                    type="submit" 
+                    disabled={testing}
+                    className="bg-blue-500 hover:bg-blue-600 text-white"
+                  >
                     <Save className="w-4 h-4 mr-2" />
                     {testing ? 'Testando...' : editingConnection ? 'Atualizar' : 'Salvar'} Conexão
                   </Button>

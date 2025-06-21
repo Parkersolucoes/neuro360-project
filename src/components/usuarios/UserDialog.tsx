@@ -31,22 +31,24 @@ export function UserDialog({
 }: UserDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white">
+        <DialogHeader className="pb-4 border-b border-gray-200">
+          <DialogTitle className="text-xl font-semibold text-gray-900">
             {editingUser ? "Editar Usuário" : "Novo Usuário"}
           </DialogTitle>
         </DialogHeader>
-        <UserForm
-          editingUser={editingUser}
-          companies={companies}
-          selectedCompanies={selectedCompanies}
-          primaryCompany={primaryCompany}
-          onSelectedCompaniesChange={onSelectedCompaniesChange}
-          onPrimaryCompanyChange={onPrimaryCompanyChange}
-          onSave={onSave}
-          onCancel={onCancel}
-        />
+        <div className="py-4">
+          <UserForm
+            editingUser={editingUser}
+            companies={companies}
+            selectedCompanies={selectedCompanies}
+            primaryCompany={primaryCompany}
+            onSelectedCompaniesChange={onSelectedCompaniesChange}
+            onPrimaryCompanyChange={onPrimaryCompanyChange}
+            onSave={onSave}
+            onCancel={onCancel}
+          />
+        </div>
       </DialogContent>
     </Dialog>
   );
