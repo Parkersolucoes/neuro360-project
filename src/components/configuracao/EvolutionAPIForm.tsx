@@ -15,7 +15,7 @@ interface EvolutionAPIFormProps {
 
 export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
   const { toast } = useToast();
-  const { config: evolutionConfig, createConfig: createEvolutionConfig, updateConfig: updateEvolutionConfig } = useEvolutionConfig();
+  const { config: evolutionConfig, saveConfig, loading } = useEvolutionConfig(companyId);
 
   const [evolutionForm, setEvolutionForm] = useState({
     instance_name: "",
@@ -44,26 +44,28 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
     e.preventDefault();
     
     try {
-      if (evolutionConfig) {
-        // Atualizar configuração existente
-        await updateEvolutionConfig(evolutionConfig.id, evolutionForm);
-      } else {
-        // Criar nova configuração
-        await createEvolutionConfig({
-          ...evolutionForm,
-          company_id: companyId,
-          is_active: true
-        });
-      }
-      
-      toast({
-        title: "Sucesso",
-        description: `Configuração Evolution ${evolutionConfig ? 'atualizada' : 'criada'} com sucesso!`
+      await saveConfig({
+        ...evolutionForm,
+        company_id: companyId,
+        is_active: true
       });
     } catch (error) {
       console.error('Error saving Evolution config:', error);
     }
   };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="text-gray-600 mt-2">Carregando configurações...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
