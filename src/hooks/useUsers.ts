@@ -1,8 +1,10 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { useCompanies } from '@/hooks/useCompanies';
+import { useAuth } from '@/hooks/useAuth';
 
 export interface User {
   id: string;
@@ -24,6 +26,7 @@ export function useUsers() {
   const { toast } = useToast();
   const { isAdmin, isMasterUser } = useAdminAuth();
   const { currentCompany } = useCompanies();
+  const { userLogin } = useAuth();
 
   const fetchUsers = async () => {
     try {
@@ -147,16 +150,49 @@ export function useUsers() {
 
       console.log('Inserting user data:', userToInsert);
 
-      const { data, error } = await supabase
-        .from('users')
-        .insert([userToInsert])
-        .select()
-        .single();
+      // Usar RPC para inserir usuário como master user
+      const { data, error } = await supabase.rpc('create_user_as_master', {
+        user_data: userToInsert
+      });
 
       if (error) {
         console.error('Supabase error creating user:', error);
         
-        // Tratar erros específicos do Supabase
+        // Se o RPC não existir, tentar inserção direta
+        if (error.code === '42883') {
+          console.log('RPC not found, trying direct insert...');
+          
+          const { data: directData, error: directError } = await supabase
+            .from('users')
+            .insert([userToInsert])
+            .select()
+            .single();
+
+          if (directError) {
+            console.error('Direct insert also failed:', directError);
+            
+            if (directError.code === '23505') {
+              throw new Error('Email já está em uso por outro usuário');
+            }
+            
+            throw new Error(`Erro do banco de dados: ${directError.message}`);
+          }
+          
+          const formattedUser = {
+            ...directData,
+            status: directData.status as 'active' | 'inactive'
+          };
+          
+          setUsers(prev => [formattedUser, ...prev]);
+          toast({
+            title: "Sucesso",
+            description: "Usuário criado com sucesso!"
+          });
+          
+          return formattedUser;
+        }
+        
+        // Tratar outros erros específicos do Supabase
         if (error.code === '23505') {
           throw new Error('Email já está em uso por outro usuário');
         }
