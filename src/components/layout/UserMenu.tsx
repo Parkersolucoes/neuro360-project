@@ -34,6 +34,7 @@ export function UserMenu() {
   const [showCompanyDialog, setShowCompanyDialog] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
+  const [showUserEditDialog, setShowUserEditDialog] = useState(false);
 
   if (!userLogin) return null;
 
@@ -52,7 +53,7 @@ export function UserMenu() {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="w-full h-auto p-3 justify-start text-left bg-slate-700 hover:bg-slate-600 border border-slate-600">
+          <Button variant="ghost" className="w-full h-auto p-3 justify-start text-left bg-yellow-500 hover:bg-yellow-600 border border-yellow-600">
             <div className="flex items-center space-x-3 w-full">
               <Avatar className="h-8 w-8 flex-shrink-0">
                 <AvatarImage src="" />
@@ -61,16 +62,21 @@ export function UserMenu() {
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">{userLogin.name}</p>
-                <p className="text-xs text-gray-300 truncate">{userLogin.email}</p>
+                <p className="text-sm font-medium text-black truncate">{userLogin.name}</p>
+                <p className="text-xs text-gray-700 truncate">{userLogin.email}</p>
               </div>
-              <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" />
+              <ChevronDown className="h-4 w-4 text-gray-700 flex-shrink-0" />
             </div>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
           <DropdownMenuSeparator />
+          
+          <DropdownMenuItem onClick={() => setShowUserEditDialog(true)}>
+            <User className="mr-2 h-4 w-4" />
+            <span>Alterar Usuário</span>
+          </DropdownMenuItem>
           
           <DropdownMenuItem onClick={() => setShowProfileDialog(true)}>
             <Camera className="mr-2 h-4 w-4" />
@@ -106,6 +112,26 @@ export function UserMenu() {
           </DialogHeader>
           <div className="py-4">
             <CompanySelector />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para alterar usuário */}
+      <Dialog open={showUserEditDialog} onOpenChange={setShowUserEditDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Alterar Dados do Usuário</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-gray-600 mb-4">
+              Funcionalidade de alteração de dados do usuário será implementada em breve.
+            </p>
+            <Button 
+              onClick={() => setShowUserEditDialog(false)}
+              className="w-full"
+            >
+              Fechar
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

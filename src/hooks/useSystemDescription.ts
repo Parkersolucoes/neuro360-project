@@ -23,9 +23,16 @@ export function useSystemDescription() {
       }
 
       if (data?.config_value) {
-        const description = typeof data.config_value === 'string' 
-          ? data.config_value 
-          : (data.config_value as any)?.description || 'Soluções em Dados';
+        // O config_value pode ser uma string direta ou um objeto JSON
+        let description = 'Soluções em Dados';
+        
+        if (typeof data.config_value === 'string') {
+          description = data.config_value;
+        } else if (typeof data.config_value === 'object' && data.config_value !== null) {
+          // Se for um objeto, procura pela propriedade 'description'
+          description = (data.config_value as any)?.description || 'Soluções em Dados';
+        }
+        
         setSystemDescription(description);
       }
     } catch (error) {
