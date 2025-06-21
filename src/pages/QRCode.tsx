@@ -23,7 +23,7 @@ export default function QRCodePage() {
             <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">Configuração Evolution API necessária</h3>
             <p className="text-gray-600 mb-4">
-              Configure a Evolution API na página de empresas (Painel Avançado > Empresas > Configurações) antes de gerar QR Codes
+              Configure a Evolution API na página de empresas (Painel Avançado &gt; Empresas &gt; Configurações) antes de gerar QR Codes
             </p>
             <Button 
               onClick={() => window.location.href = '/empresas'}
