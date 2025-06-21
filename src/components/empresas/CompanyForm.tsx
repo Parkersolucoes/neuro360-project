@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface CompanyFormData {
   name: string;
@@ -10,7 +11,15 @@ interface CompanyFormData {
   email: string;
   phone: string;
   address: string;
-  plan: "basic" | "pro" | "enterprise";
+  plan_id: string;
+}
+
+interface Plan {
+  id: string;
+  name: string;
+  price: number;
+  max_sql_connections: number;
+  max_sql_queries: number;
 }
 
 interface CompanyFormProps {
@@ -19,15 +28,17 @@ interface CompanyFormProps {
   onSave: () => void;
   onCancel: () => void;
   isEditing: boolean;
+  plans: Plan[];
 }
 
-const plans = [
-  { value: "basic", label: "Básico" },
-  { value: "pro", label: "Profissional" },
-  { value: "enterprise", label: "Empresarial" }
-];
+export function CompanyForm({ formData, setFormData, onSave, onCancel, isEditing, plans }: CompanyFormProps) {
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
 
-export function CompanyForm({ formData, setFormData, onSave, onCancel, isEditing }: CompanyFormProps) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
@@ -82,24 +93,32 @@ export function CompanyForm({ formData, setFormData, onSave, onCancel, isEditing
       </div>
       <div className="space-y-2">
         <Label htmlFor="plan">Plano</Label>
-        <select
-          id="plan"
-          className="w-full p-2 border border-gray-300 rounded-md"
-          value={formData.plan}
-          onChange={(e) => setFormData({...formData, plan: e.target.value as "basic" | "pro" | "enterprise"})}
+        <Select 
+          value={formData.plan_id} 
+          onValueChange={(value) => setFormData({...formData, plan_id: value})}
         >
-          {plans.map((plan) => (
-            <option key={plan.value} value={plan.value}>
-              {plan.label}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger>
+            <SelectValue placeholder="Selecione um plano" />
+          </SelectTrigger>
+          <SelectContent>
+            {plans.map((plan) => (
+              <SelectItem key={plan.id} value={plan.id}>
+                <div className="flex justify-between items-center w-full">
+                  <span>{plan.name}</span>
+                  <span className="ml-2 text-sm text-gray-500">
+                    {formatCurrency(plan.price)} - {plan.max_sql_connections} conexões
+                  </span>
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <div className="flex justify-end space-x-2 mt-6">
         <Button variant="outline" onClick={onCancel}>
           Cancelar
         </Button>
-        <Button onClick={onSave} disabled={!formData.name || !formData.document || !formData.email}>
+        <Button onClick={onSave} disabled={!formData.name || !formData.document || !formData.email || !formData.plan_id}>
           {isEditing ? "Atualizar" : "Criar"} Empresa
         </Button>
       </div>

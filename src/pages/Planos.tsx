@@ -68,21 +68,21 @@ export default function Planos() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Gestão de Planos</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-bold text-gray-900">Gestão de Planos</h1>
+          <p className="text-gray-600">
             Gerencie os planos de assinatura e suas limitações
           </p>
         </div>
-        <Button onClick={() => setShowForm(true)}>
+        <Button onClick={() => setShowForm(true)} className="bg-blue-600 hover:bg-blue-700">
           <Plus className="w-4 h-4 mr-2" />
           Novo Plano
         </Button>
       </div>
 
       {userSubscription && (
-        <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 mb-6">
-          <h2 className="font-semibold text-primary mb-2">Seu Plano Atual</h2>
-          <p className="text-sm text-muted-foreground">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <h2 className="font-semibold text-blue-800 mb-2">Seu Plano Atual</h2>
+          <p className="text-sm text-blue-700">
             Você está no plano <strong>{userSubscription.plans?.name}</strong> - 
             {userSubscription.plans?.max_sql_connections} conexões SQL e {userSubscription.plans?.max_sql_queries} consultas por mês
           </p>
@@ -104,8 +104,8 @@ export default function Planos() {
 
       {plans.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-muted-foreground">Nenhum plano encontrado.</p>
-          <Button onClick={() => setShowForm(true)} className="mt-4">
+          <p className="text-gray-600">Nenhum plano encontrado.</p>
+          <Button onClick={() => setShowForm(true)} className="mt-4 bg-blue-600 hover:bg-blue-700">
             <Plus className="w-4 h-4 mr-2" />
             Criar Primeiro Plano
           </Button>

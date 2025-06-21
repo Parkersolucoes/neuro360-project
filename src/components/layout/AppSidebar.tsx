@@ -29,6 +29,8 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { CompanySelector } from "./CompanySelector";
+import { useCompanies } from "@/hooks/useCompanies";
 
 const menuItems = [
   {
@@ -85,19 +87,24 @@ const menuItems = [
 
 export function AppSidebar() {
   const location = useLocation();
+  const { currentCompany } = useCompanies();
 
   return (
     <Sidebar className="border-r border-gray-200">
       <SidebarHeader className="p-6">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
+        <div className="flex items-center space-x-3 mb-4">
+          <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
             <MessageSquare className="w-5 h-5 text-white" />
           </div>
           <div>
             <h1 className="text-lg font-semibold text-gray-900">WhatsApp</h1>
             <p className="text-sm text-gray-500">Automation</p>
+            {currentCompany && (
+              <p className="text-xs text-blue-600 font-medium mt-1">{currentCompany.name}</p>
+            )}
           </div>
         </div>
+        <CompanySelector />
       </SidebarHeader>
       
       <SidebarContent>
@@ -114,7 +121,7 @@ export function AppSidebar() {
                       to={item.url} 
                       className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                         location.pathname === item.url
-                          ? 'bg-primary-50 text-primary-600 border-r-2 border-primary-500'
+                          ? 'bg-blue-50 text-blue-600 border-r-2 border-blue-500'
                           : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                       }`}
                     >

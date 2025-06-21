@@ -7,11 +7,13 @@ import { QrCode, RefreshCw, CheckCircle, AlertCircle, Smartphone } from "lucide-
 import { useToast } from "@/hooks/use-toast";
 import { useEvolutionConfig } from "@/hooks/useEvolutionConfig";
 import { useQRSessions } from "@/hooks/useQRSessions";
+import { useCompanies } from "@/hooks/useCompanies";
 
 export default function QRCodePage() {
   const { toast } = useToast();
   const { config: evolutionConfig } = useEvolutionConfig();
   const { session, createSession, updateSession, disconnectSession } = useQRSessions();
+  const { currentCompany } = useCompanies();
   
   const [qrCode, setQrCode] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -28,10 +30,19 @@ export default function QRCodePage() {
       return;
     }
 
+    if (!currentCompany) {
+      toast({
+        title: "Empresa necessária",
+        description: "Selecione uma empresa para continuar",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsGenerating(true);
     
     try {
-      // Criar nova sessão
+      // Criar nova sessão vinculada à empresa
       const newSession = await createSession(evolutionConfig.id, evolutionConfig.instance_name);
       
       // Simular geração de QR code
@@ -57,7 +68,7 @@ export default function QRCodePage() {
         
         toast({
           title: "Sessão conectada!",
-          description: "WhatsApp conectado com sucesso",
+          description: `WhatsApp conectado para ${currentCompany.name}`,
         });
       }, 10000);
     } catch (error) {
@@ -98,10 +109,31 @@ export default function QRCodePage() {
             </p>
             <Button 
               onClick={() => window.location.href = '/configuracao'}
-              className="border-black"
+              className="bg-blue-600 hover:bg-blue-700"
             >
               Ir para Configurações
             </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!currentCompany) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">QR Code WhatsApp</h1>
+          <p className="text-gray-600 mt-2">Conecte sua sessão do WhatsApp</p>
+        </div>
+        
+        <Card>
+          <CardContent className="text-center py-12">
+            <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Empresa necessária</h3>
+            <p className="text-gray-600 mb-4">
+              Selecione uma empresa no seletor do menu lateral para continuar
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -112,7 +144,7 @@ export default function QRCodePage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">QR Code WhatsApp</h1>
-        <p className="text-gray-600 mt-2">Conecte sua sessão do WhatsApp</p>
+        <p className="text-gray-600 mt-2">Conecte sua sessão do WhatsApp para {currentCompany.name}</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -125,8 +157,8 @@ export default function QRCodePage() {
                 <span>Conexão WhatsApp</span>
               </div>
               <Badge className={`${
-                sessionStatus === "connected" ? "status-connected" :
-                sessionStatus === "waiting" ? "bg-yellow-100 text-yellow-800" :
+                sessionStatus === "connected" ? "bg-green-100 text-green-800" :
+                sessionStatus === "waiting" ? "bg-blue-100 text-blue-800" :
                 "bg-red-100 text-red-800"
               }`}>
                 {sessionStatus === "connected" ? "Conectado" :
@@ -148,7 +180,7 @@ export default function QRCodePage() {
                 <Button 
                   onClick={generateQRCode} 
                   disabled={isGenerating}
-                  className="w-full"
+                  className="w-full bg-blue-600 hover:bg-blue-700"
                 >
                   {isGenerating ? "Gerando..." : "Gerar QR Code"}
                 </Button>
@@ -193,6 +225,7 @@ export default function QRCodePage() {
                   <div className="text-center">
                     <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-2" />
                     <p className="text-green-700 font-medium">WhatsApp Conectado!</p>
+                    <p className="text-green-600 text-sm mt-1">{currentCompany.name}</p>
                   </div>
                 </div>
                 <Button 
@@ -220,8 +253,8 @@ export default function QRCodePage() {
               <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                 <span className="text-sm font-medium text-gray-700">Status</span>
                 <Badge className={`${
-                  sessionStatus === "connected" ? "status-connected" :
-                  sessionStatus === "waiting" ? "bg-yellow-100 text-yellow-800" :
+                  sessionStatus === "connected" ? "bg-green-100 text-green-800" :
+                  sessionStatus === "waiting" ? "bg-blue-100 text-blue-800" :
                   "bg-red-100 text-red-800"
                 }`}>
                   {sessionStatus === "connected" ? "Ativo" :
@@ -232,6 +265,11 @@ export default function QRCodePage() {
               <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                 <span className="text-sm font-medium text-gray-700">Instância</span>
                 <span className="text-sm text-gray-900">{evolutionConfig.instance_name}</span>
+              </div>
+              
+              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                <span className="text-sm font-medium text-gray-700">Empresa</span>
+                <span className="text-sm text-gray-900">{currentCompany.name}</span>
               </div>
               
               {sessionStatus === "connected" && session && (

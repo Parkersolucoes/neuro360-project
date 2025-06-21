@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,9 +7,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Database, MessageSquare, CheckCircle, AlertCircle, Plus, Edit, Trash2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Database, MessageSquare, CheckCircle, AlertCircle, Plus, Edit, Trash2, CreditCard } from "lucide-react";
 import { useSQLConnections } from "@/hooks/useSQLConnections";
 import { useEvolutionConfig } from "@/hooks/useEvolutionConfig";
+import { useAssasConfig } from "@/hooks/useAssasConfig";
 
 export default function Configuracao() {
   const { 
@@ -27,6 +28,13 @@ export default function Configuracao() {
     saveConfig: saveEvolutionConfig,
     testConnection: testEvolutionConnection
   } = useEvolutionConfig();
+
+  const {
+    config: assasConfig,
+    loading: assasLoading,
+    saveConfig: saveAssasConfig,
+    testConnection: testAssasConnection
+  } = useAssasConfig();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingConnection, setEditingConnection] = useState<any>(null);
@@ -45,6 +53,14 @@ export default function Configuracao() {
     instance_name: ""
   });
 
+  const [assasForm, setAssasForm] = useState({
+    api_url: "https://www.asaas.com/api/v3",
+    api_key: "",
+    wallet_id: "",
+    webhook_url: "",
+    is_sandbox: true
+  });
+
   useEffect(() => {
     if (evolutionConfig) {
       setEvolutionForm({
@@ -54,6 +70,18 @@ export default function Configuracao() {
       });
     }
   }, [evolutionConfig]);
+
+  useEffect(() => {
+    if (assasConfig) {
+      setAssasForm({
+        api_url: assasConfig.api_url,
+        api_key: assasConfig.api_key,
+        wallet_id: assasConfig.wallet_id || "",
+        webhook_url: assasConfig.webhook_url || "",
+        is_sandbox: assasConfig.is_sandbox
+      });
+    }
+  }, [assasConfig]);
 
   const testSqlConnection = async (connectionId: string) => {
     try {
@@ -115,7 +143,18 @@ export default function Configuracao() {
     }
   };
 
-  if (connectionsLoading || evolutionLoading) {
+  const handleSaveAssas = async () => {
+    try {
+      await saveAssasConfig({
+        ...assasForm,
+        status: "disconnected"
+      });
+    } catch (error) {
+      console.error('Error saving ASSAS config:', error);
+    }
+  };
+
+  if (connectionsLoading || evolutionLoading || assasLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
@@ -128,11 +167,11 @@ export default function Configuracao() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Configuração</h1>
-        <p className="text-gray-600 mt-2">Configure as conexões do sistema</p>
+        <p className="text-gray-600 mt-2">Configure as conexões e integrações do sistema</p>
       </div>
 
       <Tabs defaultValue="database" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="database" className="flex items-center space-x-2">
             <Database className="w-4 h-4" />
             <span>Banco de Dados</span>
@@ -140,6 +179,10 @@ export default function Configuracao() {
           <TabsTrigger value="evolution" className="flex items-center space-x-2">
             <MessageSquare className="w-4 h-4" />
             <span>Evolution API</span>
+          </TabsTrigger>
+          <TabsTrigger value="assas" className="flex items-center space-x-2">
+            <CreditCard className="w-4 h-4" />
+            <span>ASSAS</span>
           </TabsTrigger>
         </TabsList>
 
@@ -158,12 +201,12 @@ export default function Configuracao() {
                 </div>
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button className="bg-blue-600 hover:bg-blue-700 border-black">
+                    <Button className="bg-blue-600 hover:bg-blue-700">
                       <Plus className="w-4 h-4 mr-2" />
                       Nova Conexão
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="bg-white border-black">
+                  <DialogContent className="bg-white">
                     <DialogHeader>
                       <DialogTitle>
                         {editingConnection ? "Editar Conexão" : "Nova Conexão SQL"}
@@ -177,7 +220,7 @@ export default function Configuracao() {
                           placeholder="Ex: Principal, Backup"
                           value={newConnection.name}
                           onChange={(e) => setNewConnection({...newConnection, name: e.target.value})}
-                          className="bg-white border-black"
+                          className="bg-white"
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
@@ -188,7 +231,7 @@ export default function Configuracao() {
                             placeholder="localhost ou IP"
                             value={newConnection.server}
                             onChange={(e) => setNewConnection({...newConnection, server: e.target.value})}
-                            className="bg-white border-black"
+                            className="bg-white"
                           />
                         </div>
                         <div className="space-y-2">
@@ -198,7 +241,7 @@ export default function Configuracao() {
                             placeholder="1433"
                             value={newConnection.port}
                             onChange={(e) => setNewConnection({...newConnection, port: e.target.value})}
-                            className="bg-white border-black"
+                            className="bg-white"
                           />
                         </div>
                       </div>
@@ -209,7 +252,7 @@ export default function Configuracao() {
                           placeholder="Nome do banco"
                           value={newConnection.database_name}
                           onChange={(e) => setNewConnection({...newConnection, database_name: e.target.value})}
-                          className="bg-white border-black"
+                          className="bg-white"
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
@@ -220,7 +263,7 @@ export default function Configuracao() {
                             placeholder="sa"
                             value={newConnection.username}
                             onChange={(e) => setNewConnection({...newConnection, username: e.target.value})}
-                            className="bg-white border-black"
+                            className="bg-white"
                           />
                         </div>
                         <div className="space-y-2">
@@ -231,15 +274,15 @@ export default function Configuracao() {
                             placeholder="••••••••"
                             value={newConnection.password}
                             onChange={(e) => setNewConnection({...newConnection, password: e.target.value})}
-                            className="bg-white border-black"
+                            className="bg-white"
                           />
                         </div>
                       </div>
                       <div className="flex justify-end space-x-2 pt-4">
-                        <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="border-black">
+                        <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                           Cancelar
                         </Button>
-                        <Button onClick={handleSaveConnection} disabled={!newConnection.name || !newConnection.server} className="border-black">
+                        <Button onClick={handleSaveConnection} disabled={!newConnection.name || !newConnection.server}>
                           {editingConnection ? "Atualizar" : "Criar"} Conexão
                         </Button>
                       </div>
@@ -267,7 +310,7 @@ export default function Configuracao() {
                       <TableCell>{connection.database_name}</TableCell>
                       <TableCell>
                         <Badge className={`${
-                          connection.status === "connected" ? "status-connected" :
+                          connection.status === "connected" ? "bg-green-100 text-green-800" :
                           connection.status === "testing" ? "bg-blue-100 text-blue-800" :
                           "bg-red-100 text-red-800"
                         }`}>
@@ -284,7 +327,6 @@ export default function Configuracao() {
                             variant="outline"
                             onClick={() => testSqlConnection(connection.id)}
                             disabled={connection.status === "testing"}
-                            className="border-black"
                           >
                             {connection.status === "testing" ? "Testando..." : "Testar"}
                           </Button>
@@ -292,14 +334,13 @@ export default function Configuracao() {
                             size="sm"
                             variant="outline"
                             onClick={() => handleEditConnection(connection)}
-                            className="border-black"
                           >
                             <Edit className="w-3 h-3" />
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
-                            className="text-red-600 hover:text-red-700 border-black"
+                            className="text-red-600 hover:text-red-700"
                             onClick={() => handleDeleteConnection(connection.id)}
                           >
                             <Trash2 className="w-3 h-3" />
@@ -328,7 +369,7 @@ export default function Configuracao() {
                   </p>
                 </div>
                 <Badge className={`${
-                  evolutionConfig?.status === "connected" ? "status-connected" :
+                  evolutionConfig?.status === "connected" ? "bg-green-100 text-green-800" :
                   evolutionConfig?.status === "testing" ? "bg-blue-100 text-blue-800" :
                   "bg-red-100 text-red-800"
                 }`}>
@@ -347,7 +388,7 @@ export default function Configuracao() {
                   placeholder="https://api.evolution.com"
                   value={evolutionForm.api_url}
                   onChange={(e) => setEvolutionForm({...evolutionForm, api_url: e.target.value})}
-                  className="bg-white border-black"
+                  className="bg-white"
                 />
               </div>
               
@@ -359,7 +400,7 @@ export default function Configuracao() {
                   placeholder="••••••••••••••••"
                   value={evolutionForm.api_key}
                   onChange={(e) => setEvolutionForm({...evolutionForm, api_key: e.target.value})}
-                  className="bg-white border-black"
+                  className="bg-white"
                 />
               </div>
               
@@ -370,7 +411,7 @@ export default function Configuracao() {
                   placeholder="minha-instancia"
                   value={evolutionForm.instance_name}
                   onChange={(e) => setEvolutionForm({...evolutionForm, instance_name: e.target.value})}
-                  className="bg-white border-black"
+                  className="bg-white"
                 />
               </div>
 
@@ -379,11 +420,106 @@ export default function Configuracao() {
                   onClick={testEvolutionConnection}
                   disabled={evolutionConfig?.status === "testing"}
                   variant="outline"
-                  className="border-black"
                 >
                   {evolutionConfig?.status === "testing" ? "Testando..." : "Testar Conexão"}
                 </Button>
-                <Button onClick={handleSaveEvolution} className="border-black">
+                <Button onClick={handleSaveEvolution}>
+                  Salvar Configuração
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="assas">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center space-x-2">
+                    <CreditCard className="w-5 h-5 text-blue-500" />
+                    <span>Configuração ASSAS</span>
+                  </CardTitle>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Configure a integração com ASSAS para gestão financeira
+                  </p>
+                </div>
+                <Badge className={`${
+                  assasConfig?.status === "connected" ? "bg-green-100 text-green-800" :
+                  assasConfig?.status === "testing" ? "bg-blue-100 text-blue-800" :
+                  "bg-red-100 text-red-800"
+                }`}>
+                  {assasConfig?.status === "connected" ? "Conectado" :
+                   assasConfig?.status === "testing" ? "Testando..." : "Desconectado"}
+                  {assasConfig?.status === "connected" && <CheckCircle className="w-3 h-3 ml-1" />}
+                  {assasConfig?.status === "disconnected" && <AlertCircle className="w-3 h-3 ml-1" />}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="assasApiUrl">URL da API</Label>
+                <Input
+                  id="assasApiUrl"
+                  placeholder="https://www.asaas.com/api/v3"
+                  value={assasForm.api_url}
+                  onChange={(e) => setAssasForm({...assasForm, api_url: e.target.value})}
+                  className="bg-white"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="assasApiKey">Chave da API</Label>
+                <Input
+                  id="assasApiKey"
+                  type="password"
+                  placeholder="••••••••••••••••"
+                  value={assasForm.api_key}
+                  onChange={(e) => setAssasForm({...assasForm, api_key: e.target.value})}
+                  className="bg-white"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="walletId">ID da Carteira (opcional)</Label>
+                <Input
+                  id="walletId"
+                  placeholder="wallet_12345"
+                  value={assasForm.wallet_id}
+                  onChange={(e) => setAssasForm({...assasForm, wallet_id: e.target.value})}
+                  className="bg-white"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="webhookUrl">URL do Webhook (opcional)</Label>
+                <Input
+                  id="webhookUrl"
+                  placeholder="https://seusite.com/webhook"
+                  value={assasForm.webhook_url}
+                  onChange={(e) => setAssasForm({...assasForm, webhook_url: e.target.value})}
+                  className="bg-white"
+                />
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="sandbox"
+                  checked={assasForm.is_sandbox}
+                  onCheckedChange={(checked) => setAssasForm({...assasForm, is_sandbox: checked})}
+                />
+                <Label htmlFor="sandbox">Modo Sandbox (Teste)</Label>
+              </div>
+
+              <div className="flex space-x-2 pt-4">
+                <Button 
+                  onClick={testAssasConnection}
+                  disabled={assasConfig?.status === "testing"}
+                  variant="outline"
+                >
+                  {assasConfig?.status === "testing" ? "Testando..." : "Testar Conexão"}
+                </Button>
+                <Button onClick={handleSaveAssas}>
                   Salvar Configuração
                 </Button>
               </div>

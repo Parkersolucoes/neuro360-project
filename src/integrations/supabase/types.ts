@@ -9,10 +9,97 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      assas_configs: {
+        Row: {
+          api_key: string
+          api_url: string
+          created_at: string
+          id: string
+          is_sandbox: boolean
+          status: string
+          updated_at: string
+          user_id: string
+          wallet_id: string | null
+          webhook_url: string | null
+        }
+        Insert: {
+          api_key: string
+          api_url?: string
+          created_at?: string
+          id?: string
+          is_sandbox?: boolean
+          status?: string
+          updated_at?: string
+          user_id: string
+          wallet_id?: string | null
+          webhook_url?: string | null
+        }
+        Update: {
+          api_key?: string
+          api_url?: string
+          created_at?: string
+          id?: string
+          is_sandbox?: boolean
+          status?: string
+          updated_at?: string
+          user_id?: string
+          wallet_id?: string | null
+          webhook_url?: string | null
+        }
+        Relationships: []
+      }
+      companies: {
+        Row: {
+          address: string | null
+          created_at: string
+          document: string
+          email: string
+          id: string
+          name: string
+          phone: string | null
+          plan_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          document: string
+          email: string
+          id?: string
+          name: string
+          phone?: string | null
+          plan_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          document?: string
+          email?: string
+          id?: string
+          name?: string
+          phone?: string | null
+          plan_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "companies_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       evolution_configs: {
         Row: {
           api_key: string
           api_url: string
+          company_id: string | null
           created_at: string
           id: string
           instance_name: string
@@ -23,6 +110,7 @@ export type Database = {
         Insert: {
           api_key: string
           api_url: string
+          company_id?: string | null
           created_at?: string
           id?: string
           instance_name: string
@@ -33,6 +121,7 @@ export type Database = {
         Update: {
           api_key?: string
           api_url?: string
+          company_id?: string | null
           created_at?: string
           id?: string
           instance_name?: string
@@ -40,7 +129,15 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "evolution_configs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       plans: {
         Row: {
@@ -264,9 +361,40 @@ export type Database = {
           },
         ]
       }
+      user_companies: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          role?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_subscriptions: {
         Row: {
           auto_renew: boolean
+          company_id: string | null
           created_at: string
           expires_at: string | null
           id: string
@@ -278,6 +406,7 @@ export type Database = {
         }
         Insert: {
           auto_renew?: boolean
+          company_id?: string | null
           created_at?: string
           expires_at?: string | null
           id?: string
@@ -289,6 +418,7 @@ export type Database = {
         }
         Update: {
           auto_renew?: boolean
+          company_id?: string | null
           created_at?: string
           expires_at?: string | null
           id?: string
@@ -299,6 +429,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "user_subscriptions_plan_id_fkey"
             columns: ["plan_id"]
