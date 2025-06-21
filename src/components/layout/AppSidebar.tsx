@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
@@ -35,6 +36,7 @@ import { CompanySelector } from "./CompanySelector";
 import { useCompanies } from "@/hooks/useCompanies";
 import { useAuth } from "@/hooks/useAuth";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
+import { useSystemDescription } from "@/hooks/useSystemDescription";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 const menuItems = [
@@ -98,6 +100,7 @@ export function AppSidebar() {
   const { currentCompany } = useCompanies();
   const { userLogin, signOut } = useAuth();
   const { config: systemConfig } = useSystemConfig();
+  const { systemDescription } = useSystemDescription();
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
 
   const handleSignOut = () => {
@@ -116,7 +119,7 @@ export function AppSidebar() {
               {systemConfig?.system_name || "Visão 360"}
             </h1>
             <p className="text-sm text-gray-300">
-              {systemConfig?.system_description || "Soluções em Dados"}
+              {systemDescription}
             </p>
             {currentCompany && (
               <p className="text-xs text-blue-400 font-medium mt-1">{currentCompany.name}</p>

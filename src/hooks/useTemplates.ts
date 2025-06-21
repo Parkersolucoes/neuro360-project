@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { usePlanTemplates } from '@/hooks/usePlanTemplates';
 
 export interface Template {
   id: string;
@@ -23,9 +24,13 @@ export interface PlanTemplate {
 
 export function useTemplates() {
   const [templates, setTemplates] = useState<Template[]>([]);
-  const [planTemplates, setPlanTemplates] = useState<PlanTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { 
+    planTemplates, 
+    linkTemplateToPlan: linkTemplate, 
+    unlinkTemplateFromPlan: unlinkTemplate 
+  } = usePlanTemplates();
 
   const fetchTemplates = async () => {
     try {
@@ -33,7 +38,6 @@ export function useTemplates() {
       
       // Como a tabela templates não existe, retornar array vazio
       setTemplates([]);
-      setPlanTemplates([]);
     } catch (error) {
       console.error('Error fetching templates:', error);
     } finally {
@@ -99,41 +103,11 @@ export function useTemplates() {
   };
 
   const linkTemplateToPlan = async (templateId: string, planId: string) => {
-    try {
-      console.log('Templates: Cannot link template to plan - table plan_templates does not exist');
-      
-      toast({
-        title: "Erro",
-        description: "Funcionalidade de associação de templates está temporariamente indisponível",
-        variant: "destructive"
-      });
-    } catch (error) {
-      console.error('Error linking template to plan:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao associar template ao plano",
-        variant: "destructive"
-      });
-    }
+    return await linkTemplate(templateId, planId);
   };
 
   const unlinkTemplateFromPlan = async (templateId: string, planId: string) => {
-    try {
-      console.log('Templates: Cannot unlink template from plan - table plan_templates does not exist');
-      
-      toast({
-        title: "Erro",
-        description: "Funcionalidade de desassociação de templates está temporariamente indisponível",
-        variant: "destructive"
-      });
-    } catch (error) {
-      console.error('Error unlinking template from plan:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao desassociar template do plano",
-        variant: "destructive"
-      });
-    }
+    return await unlinkTemplate(templateId, planId);
   };
 
   useEffect(() => {
