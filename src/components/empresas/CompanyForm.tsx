@@ -106,7 +106,7 @@ export function CompanyForm({ formData, setFormData, onSave, onCancel, isEditing
                 <div className="flex justify-between items-center w-full">
                   <span>{plan.name}</span>
                   <span className="ml-2 text-sm text-gray-500">
-                    {formatCurrency(plan.price)} - {plan.max_sql_connections} conexões
+                    {formatCurrency(plan.price)} - {plan.max_sql_queries} consultas - {plan.max_sql_connections} conexões
                   </span>
                 </div>
               </SelectItem>
@@ -118,7 +118,7 @@ export function CompanyForm({ formData, setFormData, onSave, onCancel, isEditing
         <Button variant="outline" onClick={onCancel}>
           Cancelar
         </Button>
-        <Button onClick={onSave} disabled={!formData.name || !formData.document || !formData.email || !formData.plan_id}>
+        <Button onClick={onSave} disabled={!formData.name || !formData.document || !formData.email}>
           {isEditing ? "Atualizar" : "Criar"} Empresa
         </Button>
       </div>

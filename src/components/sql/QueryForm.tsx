@@ -43,7 +43,7 @@ export function QueryForm({ connections, queries, onSaveQuery }: QueryFormProps)
     connection => connection.company_id === currentCompany?.id
   );
 
-  // Verificar limite de consultas baseado no plano
+  // Verificar limite de consultas baseado no plano da empresa
   const checkQueryLimit = () => {
     if (!currentCompany) {
       toast({
@@ -54,17 +54,17 @@ export function QueryForm({ connections, queries, onSaveQuery }: QueryFormProps)
       return false;
     }
 
-    // Buscar plano da empresa (assumindo plano básico como padrão)
-    const basicPlan = plans.find(plan => plan.name.toLowerCase().includes('básico') || plan.name.toLowerCase().includes('basic'));
-    const maxQueries = basicPlan?.max_sql_queries || 1;
+    // Buscar plano da empresa atual
+    const currentPlan = plans.find(plan => plan.id === currentCompany.plan_id);
+    const maxQueries = currentPlan?.max_sql_queries || 1;
     
-    // Contar consultas da empresa atual
-    const companyQueries = queries.length; // As consultas já são filtradas por empresa
+    // Contar consultas da empresa atual (já filtradas)
+    const companyQueries = queries.length;
 
     if (companyQueries >= maxQueries) {
       toast({
         title: "Limite atingido",
-        description: `Seu plano permite apenas ${maxQueries} consulta(s). Faça upgrade para criar mais consultas.`,
+        description: `Seu plano ${currentPlan?.name || 'atual'} permite apenas ${maxQueries} consulta(s). Faça upgrade para criar mais consultas.`,
         variant: "destructive"
       });
       return false;
@@ -91,14 +91,14 @@ export function QueryForm({ connections, queries, onSaveQuery }: QueryFormProps)
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogTrigger asChild>
         <Button 
-          className="bg-blue-600 hover:bg-blue-700 border-black"
+          className="bg-blue-600 hover:bg-blue-700"
           disabled={isButtonDisabled}
         >
           <Plus className="w-4 h-4 mr-2" />
           Nova Consulta
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl bg-white border-black">
+      <DialogContent className="max-w-2xl bg-white">
         <DialogHeader>
           <DialogTitle>Nova Consulta SQL</DialogTitle>
         </DialogHeader>
@@ -117,6 +117,7 @@ export function QueryForm({ connections, queries, onSaveQuery }: QueryFormProps)
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
                 Configure pelo menos uma conexão SQL na empresa "{currentCompany.name}" antes de criar consultas.
+                Acesse: Empresas > Configurações > SQL Server
               </AlertDescription>
             </Alert>
           )}
@@ -129,16 +130,16 @@ export function QueryForm({ connections, queries, onSaveQuery }: QueryFormProps)
                 placeholder="Nome da consulta"
                 value={newQuery.name}
                 onChange={(e) => setNewQuery({...newQuery, name: e.target.value})}
-                className="bg-white border-black"
+                className="bg-white"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="connection">Conexão</Label>
               <Select value={newQuery.connection_id} onValueChange={(value) => setNewQuery({...newQuery, connection_id: value})}>
-                <SelectTrigger className="bg-white border-black">
+                <SelectTrigger className="bg-white">
                   <SelectValue placeholder="Selecione a conexão" />
                 </SelectTrigger>
-                <SelectContent className="bg-white border-black">
+                <SelectContent className="bg-white">
                   {companyConnections.map((connection) => (
                     <SelectItem key={connection.id} value={connection.id}>
                       {connection.name} ({connection.host})
@@ -155,7 +156,7 @@ export function QueryForm({ connections, queries, onSaveQuery }: QueryFormProps)
               placeholder="Descrição da consulta"
               value={newQuery.description}
               onChange={(e) => setNewQuery({...newQuery, description: e.target.value})}
-              className="bg-white border-black"
+              className="bg-white"
             />
           </div>
           <div className="space-y-2">
@@ -163,19 +164,18 @@ export function QueryForm({ connections, queries, onSaveQuery }: QueryFormProps)
             <Textarea
               id="query"
               placeholder="SELECT * FROM tabela WHERE..."
-              className="min-h-32 bg-white border-black font-mono"
+              className="min-h-32 bg-white font-mono"
               value={newQuery.query_text}
               onChange={(e) => setNewQuery({...newQuery, query_text: e.target.value})}
             />
           </div>
           <div className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="border-black">
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
               Cancelar
             </Button>
             <Button 
               onClick={handleSaveQuery} 
-              disabled={!newQuery.name || !newQuery.query_text || !newQuery.connection_id} 
-              className="border-black"
+              disabled={!newQuery.name || !newQuery.query_text || !newQuery.connection_id}
             >
               Salvar Consulta
             </Button>

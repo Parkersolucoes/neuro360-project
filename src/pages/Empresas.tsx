@@ -14,14 +14,16 @@ import { usePlans } from "@/hooks/usePlans";
 import type { Company as ComponentCompany } from "@/components/empresas/types";
 
 export default function Empresas() {
-  const { companies, createCompany, updateCompany, deleteCompany, loading } = useCompanies();
+  const { companies, createCompany, updateCompany, deleteCompany, loading, setCurrentCompany } = useCompanies();
   const { plans, loading: plansLoading } = usePlans();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<ComponentCompany | null>(null);
   const [selectedCompanyForConfig, setSelectedCompanyForConfig] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState("empresas");
 
   // Convert hook companies to component companies
   const componentCompanies: ComponentCompany[] = companies.map(company => {
+    const plan = plans.find(p => p.id === company.plan_id);
     return {
       id: company.id,
       name: company.name,
@@ -29,7 +31,8 @@ export default function Empresas() {
       email: company.email,
       phone: company.phone || '',
       address: company.address || '',
-      plan: 'basic' as const,
+      plan: plan?.name.toLowerCase().includes('básico') ? 'basic' as const :
+            plan?.name.toLowerCase().includes('pro') ? 'pro' as const : 'enterprise' as const,
       status: company.status === 'active' ? 'active' as const : 
               company.status === 'suspended' ? 'suspended' as const : 'inactive' as const,
       createdAt: company.created_at,
@@ -55,6 +58,7 @@ export default function Empresas() {
         email: formData.email,
         phone: formData.phone,
         address: formData.address,
+        plan_id: formData.plan_id || null,
         status: 'active' as const
       };
 
@@ -80,6 +84,7 @@ export default function Empresas() {
   };
 
   const handleEditCompany = (company: ComponentCompany) => {
+    const fullCompany = companies.find(c => c.id === company.id);
     setEditingCompany(company);
     setFormData({
       name: company.name,
@@ -87,7 +92,7 @@ export default function Empresas() {
       email: company.email,
       phone: company.phone,
       address: company.address,
-      plan_id: ''
+      plan_id: fullCompany?.plan_id || ''
     });
     setIsDialogOpen(true);
   };
@@ -103,6 +108,8 @@ export default function Empresas() {
   const handleConfigureCompany = (company: ComponentCompany) => {
     const fullCompany = companies.find(c => c.id === company.id);
     setSelectedCompanyForConfig(fullCompany);
+    setCurrentCompany(fullCompany);
+    setActiveTab("configuracoes");
   };
 
   if (loading || plansLoading) {
@@ -158,7 +165,7 @@ export default function Empresas() {
 
       <CompanyStats companies={componentCompanies} />
 
-      <Tabs defaultValue="empresas" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="empresas" className="flex items-center space-x-2">
             <Building2 className="w-4 h-4" />
