@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Database } from "lucide-react";
 import { useCompanies } from "@/hooks/useCompanies";
 import { useSQLConnections } from "@/hooks/useSQLConnections";
 import { useToast } from "@/hooks/use-toast";
@@ -36,6 +36,8 @@ export function QueryForm({ query, onSubmit, onCancel }: QueryFormProps) {
     connection => connection.company_id === currentCompany?.id
   ) || [];
 
+  const selectedConnection = companyConnections.find(conn => conn.id === formData.connection_id);
+
   const handleSubmit = async () => {
     if (!currentCompany?.id) {
       toast({
@@ -46,8 +48,23 @@ export function QueryForm({ query, onSubmit, onCancel }: QueryFormProps) {
       return;
     }
 
+    if (!formData.connection_id) {
+      toast({
+        title: "Erro",
+        description: "Selecione uma conexão de banco de dados",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
-      await onSubmit(formData);
+      await onSubmit({
+        name: formData.name,
+        description: formData.description,
+        query_text: formData.query_text,
+        connection_id: formData.connection_id,
+        status: formData.status
+      });
     } catch (error) {
       console.error('Error submitting query:', error);
     }
@@ -76,60 +93,89 @@ export function QueryForm({ query, onSubmit, onCancel }: QueryFormProps) {
         </Alert>
       )}
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="name">Nome</Label>
+          <Label htmlFor="name">Nome da Consulta</Label>
           <Input
             id="name"
-            placeholder="Nome da consulta"
+            placeholder="Nome descritivo para a consulta"
             value={formData.name}
             onChange={(e) => setFormData({...formData, name: e.target.value})}
             className="bg-white"
           />
         </div>
+        
         <div className="space-y-2">
-          <Label htmlFor="connection">Conexão</Label>
+          <Label htmlFor="connection">Conexão de Banco de Dados</Label>
           <Select value={formData.connection_id} onValueChange={(value) => setFormData({...formData, connection_id: value})}>
             <SelectTrigger className="bg-white">
-              <SelectValue placeholder="Selecione a conexão" />
+              <SelectValue placeholder="Selecione qual conexão utilizar" />
             </SelectTrigger>
             <SelectContent className="bg-white">
               {companyConnections.map((connection) => (
                 <SelectItem key={connection.id} value={connection.id}>
-                  {connection.name} ({connection.host})
+                  <div className="flex items-center space-x-2">
+                    <Database className="w-4 h-4 text-blue-600" />
+                    <div className="flex flex-col">
+                      <span className="font-medium">{connection.name}</span>
+                      <span className="text-xs text-gray-500">{connection.host}:{connection.port} - {connection.database_name}</span>
+                    </div>
+                  </div>
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
+          
+          {selectedConnection && (
+            <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="flex items-center space-x-2 mb-2">
+                <Database className="w-4 h-4 text-blue-600" />
+                <span className="text-sm font-medium text-blue-800">Conexão Selecionada:</span>
+              </div>
+              <div className="text-sm text-blue-700">
+                <p><strong>{selectedConnection.name}</strong></p>
+                <p>Servidor: {selectedConnection.host}:{selectedConnection.port}</p>
+                <p>Database: {selectedConnection.database_name}</p>
+                <p>Usuário: {selectedConnection.username}</p>
+              </div>
+            </div>
+          )}
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="description">Descrição</Label>
+          <Input
+            id="description"
+            placeholder="Descrição do que a consulta faz"
+            value={formData.description}
+            onChange={(e) => setFormData({...formData, description: e.target.value})}
+            className="bg-white"
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="query">Consulta SQL</Label>
+          <Textarea
+            id="query"
+            placeholder="SELECT * FROM tabela WHERE..."
+            className="min-h-32 bg-white font-mono text-sm"
+            value={formData.query_text}
+            onChange={(e) => setFormData({...formData, query_text: e.target.value})}
+          />
+          <p className="text-xs text-gray-500">
+            Dica: Use consultas SELECT para visualizar dados. Evite comandos que modifiquem dados (INSERT, UPDATE, DELETE).
+          </p>
         </div>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="description">Descrição</Label>
-        <Input
-          id="description"
-          placeholder="Descrição da consulta"
-          value={formData.description}
-          onChange={(e) => setFormData({...formData, description: e.target.value})}
-          className="bg-white"
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="query">Consulta SQL</Label>
-        <Textarea
-          id="query"
-          placeholder="SELECT * FROM tabela WHERE..."
-          className="min-h-32 bg-white font-mono"
-          value={formData.query_text}
-          onChange={(e) => setFormData({...formData, query_text: e.target.value})}
-        />
-      </div>
-      <div className="flex justify-end space-x-2">
+      
+      <div className="flex justify-end space-x-2 pt-4 border-t">
         <Button variant="outline" onClick={onCancel}>
           Cancelar
         </Button>
         <Button 
           onClick={handleSubmit} 
           disabled={!formData.name || !formData.query_text || !formData.connection_id || isButtonDisabled}
+          className="bg-blue-600 hover:bg-blue-700"
         >
           {query ? "Atualizar" : "Salvar"} Consulta
         </Button>
