@@ -5,116 +5,91 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Calendar, Edit, Trash2, Clock } from "lucide-react";
+import { Plus, Calendar, Edit, Trash2, Clock, Phone, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-interface Schedule {
-  id: string;
-  title: string;
-  description: string;
-  scheduledDate: string;
-  scheduledTime: string;
-  status: "pending" | "sent" | "failed";
-  recipients: string;
-  message: string;
-  createdAt: string;
-}
+import { useScheduling, Scheduling } from "@/hooks/useScheduling";
+import { useTemplates } from "@/hooks/useTemplates";
+import { useCompanies } from "@/hooks/useCompanies";
 
 export default function Agendamento() {
   const { toast } = useToast();
-  const [schedules, setSchedules] = useState<Schedule[]>([
-    {
-      id: "1",
-      title: "Promoção Black Friday",
-      description: "Envio de mensagem promocional para clientes",
-      scheduledDate: "2024-11-29",
-      scheduledTime: "09:00",
-      status: "pending",
-      recipients: "Lista VIP",
-      message: "🔥 BLACK FRIDAY! 50% OFF em todos os produtos! Aproveite!",
-      createdAt: "2024-01-15"
-    }
-  ]);
+  const { schedulings, loading, createScheduling, updateScheduling, deleteScheduling } = useScheduling();
+  const { templates } = useTemplates();
+  const { currentCompany } = useCompanies();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
-  const [newSchedule, setNewSchedule] = useState({
+  const [editingScheduling, setEditingScheduling] = useState<Scheduling | null>(null);
+  const [newScheduling, setNewScheduling] = useState({
     title: "",
     description: "",
-    scheduledDate: "",
-    scheduledTime: "",
-    recipients: "",
-    message: ""
+    scheduled_date: "",
+    scheduled_time: "",
+    recipient_phone: "",
+    message_content: "",
+    template_id: "",
+    company_id: currentCompany?.id || "",
+    status: "pending" as const
   });
 
-  const saveSchedule = () => {
-    if (editingSchedule) {
-      setSchedules(schedules.map(schedule => 
-        schedule.id === editingSchedule.id 
-          ? { ...editingSchedule, ...newSchedule }
-          : schedule
-      ));
-      toast({
-        title: "Agendamento atualizado",
-        description: "O agendamento foi atualizado com sucesso!",
+  const saveScheduling = async () => {
+    try {
+      if (editingScheduling) {
+        await updateScheduling(editingScheduling.id, newScheduling);
+      } else {
+        await createScheduling(newScheduling);
+      }
+      
+      setNewScheduling({ 
+        title: "",
+        description: "",
+        scheduled_date: "",
+        scheduled_time: "",
+        recipient_phone: "",
+        message_content: "",
+        template_id: "",
+        company_id: currentCompany?.id || "",
+        status: "pending"
       });
-    } else {
-      const schedule: Schedule = {
-        id: Date.now().toString(),
-        ...newSchedule,
-        status: "pending",
-        createdAt: new Date().toISOString().split('T')[0]
-      };
-      setSchedules([...schedules, schedule]);
-      toast({
-        title: "Agendamento criado",
-        description: "O novo agendamento foi criado com sucesso!",
-      });
+      setEditingScheduling(null);
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error('Error saving scheduling:', error);
     }
-    
-    setNewSchedule({ 
-      title: "", 
-      description: "", 
-      scheduledDate: "", 
-      scheduledTime: "", 
-      recipients: "", 
-      message: "" 
-    });
-    setEditingSchedule(null);
-    setIsDialogOpen(false);
   };
 
-  const editSchedule = (schedule: Schedule) => {
-    setEditingSchedule(schedule);
-    setNewSchedule({
-      title: schedule.title,
-      description: schedule.description,
-      scheduledDate: schedule.scheduledDate,
-      scheduledTime: schedule.scheduledTime,
-      recipients: schedule.recipients,
-      message: schedule.message
+  const editScheduling = (scheduling: Scheduling) => {
+    setEditingScheduling(scheduling);
+    setNewScheduling({
+      title: scheduling.title,
+      description: scheduling.description || "",
+      scheduled_date: scheduling.scheduled_date,
+      scheduled_time: scheduling.scheduled_time,
+      recipient_phone: scheduling.recipient_phone,
+      message_content: scheduling.message_content,
+      template_id: scheduling.template_id || "",
+      company_id: scheduling.company_id || "",
+      status: scheduling.status
     });
     setIsDialogOpen(true);
   };
 
-  const deleteSchedule = (scheduleId: string) => {
-    setSchedules(schedules.filter(schedule => schedule.id !== scheduleId));
-    toast({
-      title: "Agendamento removido",
-      description: "O agendamento foi removido com sucesso!",
-    });
+  const handleDeleteScheduling = async (schedulingId: string) => {
+    if (confirm("Tem certeza que deseja remover este agendamento?")) {
+      await deleteScheduling(schedulingId);
+    }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "pending":
-        return "bg-blue-100 text-blue-800";
-      case "sent":
+      case 'pending':
+        return "bg-yellow-100 text-yellow-800";
+      case 'sent':
         return "bg-green-100 text-green-800";
-      case "failed":
+      case 'failed':
         return "bg-red-100 text-red-800";
       default:
         return "bg-gray-100 text-gray-800";
@@ -123,23 +98,34 @@ export default function Agendamento() {
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case "pending":
+      case 'pending':
         return "Pendente";
-      case "sent":
+      case 'sent':
         return "Enviado";
-      case "failed":
+      case 'failed':
         return "Falhou";
       default:
         return status;
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="text-gray-600 mt-2">Carregando agendamentos...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Agendamento</h1>
-          <p className="text-gray-600 mt-2">Gerencie o envio programado de mensagens</p>
+          <h1 className="text-3xl font-bold text-gray-900">Agendamentos</h1>
+          <p className="text-gray-600 mt-2">Gerencie os agendamentos de mensagens</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -151,7 +137,7 @@ export default function Agendamento() {
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>
-                {editingSchedule ? "Editar Agendamento" : "Novo Agendamento"}
+                {editingScheduling ? "Editar Agendamento" : "Novo Agendamento"}
               </DialogTitle>
             </DialogHeader>
             <div className="grid grid-cols-2 gap-4">
@@ -160,83 +146,106 @@ export default function Agendamento() {
                 <Input
                   id="title"
                   placeholder="Título do agendamento"
-                  value={newSchedule.title}
-                  onChange={(e) => setNewSchedule({...newSchedule, title: e.target.value})}
+                  value={newScheduling.title}
+                  onChange={(e) => setNewScheduling({...newScheduling, title: e.target.value})}
                   className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="recipients">Destinatários</Label>
+                <Label htmlFor="recipient_phone">Telefone do Destinatário</Label>
                 <Input
-                  id="recipients"
-                  placeholder="Lista ou grupo de destinatários"
-                  value={newSchedule.recipients}
-                  onChange={(e) => setNewSchedule({...newSchedule, recipients: e.target.value})}
+                  id="recipient_phone"
+                  placeholder="(11) 99999-9999"
+                  value={newScheduling.recipient_phone}
+                  onChange={(e) => setNewScheduling({...newScheduling, recipient_phone: e.target.value})}
                   className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="scheduledDate">Data</Label>
+                <Label htmlFor="scheduled_date">Data</Label>
                 <Input
-                  id="scheduledDate"
+                  id="scheduled_date"
                   type="date"
-                  value={newSchedule.scheduledDate}
-                  onChange={(e) => setNewSchedule({...newSchedule, scheduledDate: e.target.value})}
+                  value={newScheduling.scheduled_date}
+                  onChange={(e) => setNewScheduling({...newScheduling, scheduled_date: e.target.value})}
                   className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="scheduledTime">Horário</Label>
+                <Label htmlFor="scheduled_time">Horário</Label>
                 <Input
-                  id="scheduledTime"
+                  id="scheduled_time"
                   type="time"
-                  value={newSchedule.scheduledTime}
-                  onChange={(e) => setNewSchedule({...newSchedule, scheduledTime: e.target.value})}
+                  value={newScheduling.scheduled_time}
+                  onChange={(e) => setNewScheduling({...newScheduling, scheduled_time: e.target.value})}
                   className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
               <div className="space-y-2 col-span-2">
-                <Label htmlFor="description">Descrição</Label>
-                <Input
+                <Label htmlFor="template">Template (Opcional)</Label>
+                <Select 
+                  value={newScheduling.template_id} 
+                  onValueChange={(value) => setNewScheduling({...newScheduling, template_id: value})}
+                >
+                  <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                    <SelectValue placeholder="Selecione um template" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Nenhum template</SelectItem>
+                    {templates.map((template) => (
+                      <SelectItem key={template.id} value={template.id}>
+                        {template.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="description">Descrição (Opcional)</Label>
+                <Textarea
                   id="description"
                   placeholder="Descrição do agendamento"
-                  value={newSchedule.description}
-                  onChange={(e) => setNewSchedule({...newSchedule, description: e.target.value})}
+                  value={newScheduling.description}
+                  onChange={(e) => setNewScheduling({...newScheduling, description: e.target.value})}
                   className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
               <div className="space-y-2 col-span-2">
-                <Label htmlFor="message">Mensagem</Label>
+                <Label htmlFor="message_content">Mensagem</Label>
                 <Textarea
-                  id="message"
-                  placeholder="Digite a mensagem que será enviada..."
-                  value={newSchedule.message}
-                  onChange={(e) => setNewSchedule({...newSchedule, message: e.target.value})}
-                  className="min-h-24 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  id="message_content"
+                  placeholder="Conteúdo da mensagem"
+                  value={newScheduling.message_content}
+                  onChange={(e) => setNewScheduling({...newScheduling, message_content: e.target.value})}
+                  className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  rows={4}
                 />
               </div>
             </div>
             <div className="flex justify-end space-x-2 mt-6">
               <Button variant="outline" onClick={() => {
                 setIsDialogOpen(false);
-                setEditingSchedule(null);
-                setNewSchedule({ 
-                  title: "", 
-                  description: "", 
-                  scheduledDate: "", 
-                  scheduledTime: "", 
-                  recipients: "", 
-                  message: "" 
+                setEditingScheduling(null);
+                setNewScheduling({ 
+                  title: "",
+                  description: "",
+                  scheduled_date: "",
+                  scheduled_time: "",
+                  recipient_phone: "",
+                  message_content: "",
+                  template_id: "",
+                  company_id: currentCompany?.id || "",
+                  status: "pending"
                 });
               }}>
                 Cancelar
               </Button>
               <Button 
-                onClick={saveSchedule} 
-                disabled={!newSchedule.title || !newSchedule.scheduledDate || !newSchedule.scheduledTime || !newSchedule.message}
+                onClick={saveScheduling} 
+                disabled={!newScheduling.title || !newScheduling.recipient_phone || !newScheduling.scheduled_date || !newScheduling.scheduled_time || !newScheduling.message_content}
                 className="bg-blue-600 hover:bg-blue-700"
               >
-                {editingSchedule ? "Atualizar" : "Criar"} Agendamento
+                {editingScheduling ? "Atualizar" : "Criar"} Agendamento
               </Button>
             </div>
           </DialogContent>
@@ -247,7 +256,7 @@ export default function Agendamento() {
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Calendar className="w-5 h-5 text-blue-500" />
-            <span>Agendamentos</span>
+            <span>Lista de Agendamentos</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -255,44 +264,59 @@ export default function Agendamento() {
             <TableHeader>
               <TableRow>
                 <TableHead>Título</TableHead>
+                <TableHead>Destinatário</TableHead>
                 <TableHead>Data/Hora</TableHead>
-                <TableHead>Destinatários</TableHead>
+                <TableHead>Mensagem</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Criado em</TableHead>
                 <TableHead>Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {schedules.map((schedule) => (
-                <TableRow key={schedule.id}>
+              {schedulings.map((scheduling) => (
+                <TableRow key={scheduling.id}>
                   <TableCell>
                     <div>
-                      <div className="font-medium">{schedule.title}</div>
-                      <div className="text-sm text-gray-500">{schedule.description}</div>
+                      <div className="font-medium">{scheduling.title}</div>
+                      {scheduling.description && (
+                        <div className="text-sm text-gray-500">{scheduling.description}</div>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-2">
-                      <Clock className="w-4 h-4 text-gray-400" />
-                      <div>
-                        <div className="font-medium">{new Date(schedule.scheduledDate).toLocaleDateString()}</div>
-                        <div className="text-sm text-gray-500">{schedule.scheduledTime}</div>
+                      <Phone className="w-4 h-4 text-gray-400" />
+                      <span>{scheduling.recipient_phone}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2">
+                        <Calendar className="w-3 h-3 text-gray-400" />
+                        <span className="text-sm">{new Date(scheduling.scheduled_date).toLocaleDateString()}</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Clock className="w-3 h-3 text-gray-400" />
+                        <span className="text-sm">{scheduling.scheduled_time}</span>
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>{schedule.recipients}</TableCell>
                   <TableCell>
-                    <Badge className={getStatusColor(schedule.status)}>
-                      {getStatusLabel(schedule.status)}
+                    <div className="flex items-center space-x-2">
+                      <MessageSquare className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm truncate max-w-32">{scheduling.message_content}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={getStatusColor(scheduling.status)}>
+                      {getStatusLabel(scheduling.status)}
                     </Badge>
                   </TableCell>
-                  <TableCell>{schedule.createdAt}</TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => editSchedule(schedule)}
+                        onClick={() => editScheduling(scheduling)}
                       >
                         <Edit className="w-3 h-3" />
                       </Button>
@@ -300,7 +324,7 @@ export default function Agendamento() {
                         size="sm"
                         variant="outline"
                         className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        onClick={() => deleteSchedule(schedule.id)}
+                        onClick={() => handleDeleteScheduling(scheduling.id)}
                       >
                         <Trash2 className="w-3 h-3" />
                       </Button>
@@ -308,6 +332,13 @@ export default function Agendamento() {
                   </TableCell>
                 </TableRow>
               ))}
+              {schedulings.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-gray-500 py-8">
+                    Nenhum agendamento encontrado
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>

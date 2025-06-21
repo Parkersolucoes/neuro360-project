@@ -14,13 +14,11 @@ import { Plus, Package, Edit, Trash2, Database, MessageSquare, Zap } from "lucid
 import { useToast } from "@/hooks/use-toast";
 import { usePlans } from "@/hooks/usePlans";
 import { useTemplates } from "@/hooks/useTemplates";
-import { useAdminAuth } from "@/hooks/useAdminAuth";
 
 export default function Planos() {
   const { toast } = useToast();
   const { plans, loading, createPlan, updatePlan, deletePlan } = usePlans();
   const { templates, planTemplates, linkTemplateToPlan, unlinkTemplateFromPlan } = useTemplates();
-  const { isAdmin } = useAdminAuth();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<any>(null);
@@ -100,20 +98,6 @@ export default function Planos() {
   const isTemplateLinkedToPlan = (planId: string, templateId: string) => {
     return planTemplates.some(pt => pt.plan_id === planId && pt.template_id === templateId);
   };
-
-  if (!isAdmin) {
-    return (
-      <div className="flex items-center justify-center min-h-96">
-        <div className="text-center">
-          <Package className="w-16 h-16 text-blue-600 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Acesso Restrito</h2>
-          <p className="text-gray-600">
-            Esta página é exclusiva para administradores do sistema.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   if (loading) {
     return (

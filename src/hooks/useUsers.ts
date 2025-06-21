@@ -32,7 +32,6 @@ export function useUsers() {
 
       if (error) throw error;
       
-      // Type assertion para garantir que o status seja do tipo correto
       const typedUsers = (data || []).map(user => ({
         ...user,
         status: user.status as 'active' | 'inactive'
@@ -61,7 +60,6 @@ export function useUsers() {
 
       if (error) throw error;
       
-      // Type assertion para garantir que o status seja do tipo correto
       const typedUser = {
         ...data,
         status: data.status as 'active' | 'inactive'
@@ -96,7 +94,6 @@ export function useUsers() {
 
       if (error) throw error;
       
-      // Type assertion para garantir que o status seja do tipo correto
       const typedUser = {
         ...data,
         status: data.status as 'active' | 'inactive'
