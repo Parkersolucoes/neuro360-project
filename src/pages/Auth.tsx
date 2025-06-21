@@ -6,14 +6,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageSquare, Mail, Lock, User } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { MessageSquare, Mail, Lock, User, Package, Calendar } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useSystemUpdates } from "@/hooks/useSystemUpdates";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 export default function Auth() {
   const navigate = useNavigate();
   const { signIn, signUp, user, loading } = useAuth();
   const { toast } = useToast();
+  const { updates, loading: updatesLoading } = useSystemUpdates();
 
   const [loginForm, setLoginForm] = useState({
     email: "",
@@ -102,152 +107,201 @@ export default function Auth() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-800"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <div className="flex justify-center">
-            <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
-              <MessageSquare className="w-6 h-6 text-white" />
+    <div className="min-h-screen flex bg-gray-50">
+      {/* Painel esquerdo - Login */}
+      <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-8">
+          <div className="text-center">
+            <div className="flex justify-center">
+              <div className="w-12 h-12 bg-slate-800 rounded-lg flex items-center justify-center">
+                <MessageSquare className="w-6 h-6 text-white" />
+              </div>
             </div>
+            <h2 className="mt-6 text-3xl font-bold text-gray-900">
+              WhatsApp Automation
+            </h2>
+            <p className="mt-2 text-sm text-gray-600">
+              Faça login em sua conta ou crie uma nova
+            </p>
           </div>
-          <h2 className="mt-6 text-3xl font-bold text-gray-900">
-            WhatsApp Automation
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Faça login em sua conta ou crie uma nova
-          </p>
-        </div>
 
-        <Card>
-          <CardContent className="p-6">
-            <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Login</TabsTrigger>
-                <TabsTrigger value="register">Registrar</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="login">
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="login-email">E-mail</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="login-email"
-                        type="email"
-                        placeholder="seu@email.com"
-                        value={loginForm.email}
-                        onChange={(e) => setLoginForm({...loginForm, email: e.target.value})}
-                        className="pl-10"
-                        required
-                      />
+          <Card>
+            <CardContent className="p-6">
+              <Tabs defaultValue="login" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="login">Login</TabsTrigger>
+                  <TabsTrigger value="register">Registrar</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="login">
+                  <form onSubmit={handleLogin} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="login-email">E-mail</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                        <Input
+                          id="login-email"
+                          type="email"
+                          placeholder="seu@email.com"
+                          value={loginForm.email}
+                          onChange={(e) => setLoginForm({...loginForm, email: e.target.value})}
+                          className="pl-10"
+                          required
+                        />
+                      </div>
                     </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="login-password">Senha</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="login-password"
-                        type="password"
-                        placeholder="Digite sua senha"
-                        value={loginForm.password}
-                        onChange={(e) => setLoginForm({...loginForm, password: e.target.value})}
-                        className="pl-10"
-                        required
-                      />
+                    <div className="space-y-2">
+                      <Label htmlFor="login-password">Senha</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                        <Input
+                          id="login-password"
+                          type="password"
+                          placeholder="Digite sua senha"
+                          value={loginForm.password}
+                          onChange={(e) => setLoginForm({...loginForm, password: e.target.value})}
+                          className="pl-10"
+                          required
+                        />
+                      </div>
                     </div>
-                  </div>
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-blue-600 hover:bg-blue-700"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? 'Entrando...' : 'Entrar'}
-                  </Button>
-                </form>
-              </TabsContent>
-              
-              <TabsContent value="register">
-                <form onSubmit={handleRegister} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="register-name">Nome Completo</Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="register-name"
-                        type="text"
-                        placeholder="Seu nome completo"
-                        value={registerForm.name}
-                        onChange={(e) => setRegisterForm({...registerForm, name: e.target.value})}
-                        className="pl-10"
-                        required
-                      />
+                    <Button 
+                      type="submit" 
+                      className="w-full bg-slate-800 hover:bg-slate-900"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? 'Entrando...' : 'Entrar'}
+                    </Button>
+                  </form>
+                </TabsContent>
+                
+                <TabsContent value="register">
+                  <form onSubmit={handleRegister} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="register-name">Nome Completo</Label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                        <Input
+                          id="register-name"
+                          type="text"
+                          placeholder="Seu nome completo"
+                          value={registerForm.name}
+                          onChange={(e) => setRegisterForm({...registerForm, name: e.target.value})}
+                          className="pl-10"
+                          required
+                        />
+                      </div>
                     </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="register-email">E-mail</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="register-email"
-                        type="email"
-                        placeholder="seu@email.com"
-                        value={registerForm.email}
-                        onChange={(e) => setRegisterForm({...registerForm, email: e.target.value})}
-                        className="pl-10"
-                        required
-                      />
+                    <div className="space-y-2">
+                      <Label htmlFor="register-email">E-mail</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                        <Input
+                          id="register-email"
+                          type="email"
+                          placeholder="seu@email.com"
+                          value={registerForm.email}
+                          onChange={(e) => setRegisterForm({...registerForm, email: e.target.value})}
+                          className="pl-10"
+                          required
+                        />
+                      </div>
                     </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="register-password">Senha</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="register-password"
-                        type="password"
-                        placeholder="Pelo menos 6 caracteres"
-                        value={registerForm.password}
-                        onChange={(e) => setRegisterForm({...registerForm, password: e.target.value})}
-                        className="pl-10"
-                        required
-                      />
+                    <div className="space-y-2">
+                      <Label htmlFor="register-password">Senha</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                        <Input
+                          id="register-password"
+                          type="password"
+                          placeholder="Pelo menos 6 caracteres"
+                          value={registerForm.password}
+                          onChange={(e) => setRegisterForm({...registerForm, password: e.target.value})}
+                          className="pl-10"
+                          required
+                        />
+                      </div>
                     </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="register-confirm">Confirmar Senha</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="register-confirm"
-                        type="password"
-                        placeholder="Repita sua senha"
-                        value={registerForm.confirmPassword}
-                        onChange={(e) => setRegisterForm({...registerForm, confirmPassword: e.target.value})}
-                        className="pl-10"
-                        required
-                      />
+                    <div className="space-y-2">
+                      <Label htmlFor="register-confirm">Confirmar Senha</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                        <Input
+                          id="register-confirm"
+                          type="password"
+                          placeholder="Repita sua senha"
+                          value={registerForm.confirmPassword}
+                          onChange={(e) => setRegisterForm({...registerForm, confirmPassword: e.target.value})}
+                          className="pl-10"
+                          required
+                        />
+                      </div>
                     </div>
+                    <Button 
+                      type="submit" 
+                      className="w-full bg-slate-800 hover:bg-slate-900"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? 'Criando...' : 'Criar Conta'}
+                    </Button>
+                  </form>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Painel direito - Atualizações */}
+      <div className="hidden lg:block lg:w-96 bg-slate-800 text-white">
+        <div className="p-8 h-full overflow-y-auto">
+          <div className="mb-8">
+            <h3 className="text-xl font-bold mb-2">Atualizações Recentes</h3>
+            <p className="text-slate-300 text-sm">
+              Confira as últimas melhorias e novidades da plataforma
+            </p>
+          </div>
+
+          {updatesLoading ? (
+            <div className="flex items-center justify-center p-8">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+            </div>
+          ) : updates.length > 0 ? (
+            <div className="space-y-6">
+              {updates.map((update) => (
+                <div key={update.id} className="border-b border-slate-700 pb-6 last:border-b-0">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <h4 className="font-semibold text-white">{update.title}</h4>
+                    {update.version && (
+                      <Badge variant="outline" className="text-xs bg-slate-700 border-slate-600 text-slate-200">
+                        <Package className="w-3 h-3 mr-1" />
+                        {update.version}
+                      </Badge>
+                    )}
                   </div>
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-blue-600 hover:bg-blue-700"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? 'Criando...' : 'Criar Conta'}
-                  </Button>
-                </form>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+                  <p className="text-slate-300 text-sm mb-3 leading-relaxed">
+                    {update.description}
+                  </p>
+                  <div className="flex items-center text-xs text-slate-400">
+                    <Calendar className="w-3 h-3 mr-1" />
+                    {format(new Date(update.update_date), "dd/MM/yyyy", { locale: ptBR })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <Package className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+              <p className="text-slate-300">Nenhuma atualização disponível</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

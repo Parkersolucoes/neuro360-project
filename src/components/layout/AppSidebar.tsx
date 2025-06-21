@@ -9,7 +9,6 @@ import {
   MessageSquare,
   Calendar,
   Users,
-  Building2,
   LogOut,
   Menu,
   X,
@@ -74,11 +73,6 @@ const menuItems = [
     title: "Usuários",
     url: "/usuarios",
     icon: Users,
-  },
-  {
-    title: "Empresas",
-    url: "/empresas",
-    icon: Building2,
   },
 ];
 

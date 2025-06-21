@@ -404,6 +404,42 @@ export type Database = {
           },
         ]
       }
+      system_updates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string
+          id: string
+          is_active: boolean
+          title: string
+          update_date: string
+          updated_at: string
+          version: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description: string
+          id?: string
+          is_active?: boolean
+          title: string
+          update_date?: string
+          updated_at?: string
+          version?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          is_active?: boolean
+          title?: string
+          update_date?: string
+          updated_at?: string
+          version?: string | null
+        }
+        Relationships: []
+      }
       templates: {
         Row: {
           content: string
