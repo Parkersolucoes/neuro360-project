@@ -41,7 +41,11 @@ export function useMessageTemplates() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setTemplates(data || []);
+      setTemplates((data || []).map(item => ({
+        ...item,
+        variables: Array.isArray(item.variables) ? item.variables : [],
+        status: item.status as 'active' | 'inactive'
+      })));
     } catch (error) {
       console.error('Error fetching message templates:', error);
       toast({

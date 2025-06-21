@@ -38,7 +38,10 @@ export function useEvolutionConfigs() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setConfigs(data || []);
+      setConfigs((data || []).map(item => ({
+        ...item,
+        status: item.status as 'connected' | 'disconnected' | 'testing'
+      })));
     } catch (error) {
       console.error('Error fetching evolution configs:', error);
       toast({

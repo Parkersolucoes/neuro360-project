@@ -104,11 +104,11 @@ export function UserForm({
     }
   };
 
-  const isFormValid = formData.name.trim() && 
+  const isFormValid = Boolean(formData.name.trim() && 
                      formData.email.trim() && 
                      formData.phone.trim() && 
                      formData.whatsapp.trim() && 
-                     formData.department.trim();
+                     formData.department.trim());
 
   return (
     <div className="space-y-6 bg-white">

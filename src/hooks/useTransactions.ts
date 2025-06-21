@@ -47,7 +47,11 @@ export function useTransactions() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setTransactions(data || []);
+      setTransactions((data || []).map(item => ({
+        ...item,
+        type: item.type as 'payment' | 'refund' | 'subscription',
+        status: item.status as 'pending' | 'completed' | 'failed' | 'cancelled'
+      })));
     } catch (error) {
       console.error('Error fetching transactions:', error);
       toast({

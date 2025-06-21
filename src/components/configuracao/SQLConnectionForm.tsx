@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -50,7 +49,7 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
         port: editingConnection.port,
         database_name: editingConnection.database_name,
         username: editingConnection.username,
-        password: editingConnection.password,
+        password_encrypted: editingConnection.password,
         connection_type: editingConnection.connection_type
       });
       setIsFormVisible(true);
@@ -81,9 +80,15 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
     
     try {
       const connectionData = {
-        ...connectionForm,
+        name: connectionForm.name,
+        host: connectionForm.host,
+        port: connectionForm.port,
+        database_name: connectionForm.database_name,
+        username: connectionForm.username,
+        password_encrypted: connectionForm.password,
+        connection_type: connectionForm.connection_type,
         company_id: effectiveCompanyId,
-        is_active: true
+        status: 'active'
       };
 
       console.log('Salvando conexão SQL:', connectionData);
@@ -220,8 +225,8 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
                         {connection.host}:{connection.port} - {connection.database_name}
                       </p>
                       <div className="flex items-center space-x-2 mt-1">
-                        <Badge className={connection.is_active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
-                          {connection.is_active ? 'Ativa' : 'Inativa'}
+                        <Badge className={connection.status === 'active' ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+                          {connection.status === 'active' ? 'Ativa' : 'Inativa'}
                         </Badge>
                         <Badge variant="outline">{connection.connection_type}</Badge>
                       </div>
