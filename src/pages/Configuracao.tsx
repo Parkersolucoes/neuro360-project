@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,19 +10,16 @@ import {
   Database, 
   MessageSquare, 
   Settings,
-  Shield,
   Save
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSQLConnections } from "@/hooks/useSQLConnections";
 import { useEvolutionConfig } from "@/hooks/useEvolutionConfig";
-import { useAdminAuth } from "@/hooks/useAdminAuth";
 
 export default function Configuracao() {
   const { toast } = useToast();
   const { connections, createConnection } = useSQLConnections();
-  const { config: evolutionConfig, saveConfig: saveEvolutionConfig } = useEvolutionConfig();
-  const { isAdmin } = useAdminAuth();
+  const { config: evolutionConfig, createConfig: createEvolutionConfig } = useEvolutionConfig();
 
   // Estados para formulários
   const [sqlForm, setSqlForm] = useState({
@@ -69,7 +66,7 @@ export default function Configuracao() {
   const handleEvolutionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await saveEvolutionConfig({
+      await createEvolutionConfig({
         ...evolutionForm,
         company_id: null,
         is_active: true
@@ -87,20 +84,6 @@ export default function Configuracao() {
       console.error('Error creating Evolution config:', error);
     }
   };
-
-  if (!isAdmin) {
-    return (
-      <div className="flex items-center justify-center min-h-96">
-        <div className="text-center">
-          <Shield className="w-16 h-16 text-blue-600 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Acesso Restrito</h2>
-          <p className="text-gray-600">
-            Esta página é restrita para administradores do sistema.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">

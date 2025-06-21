@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,13 +13,11 @@ import { Plus, Users, Edit, Trash2, Phone, Mail, Shield, MessageSquare } from "l
 import { useToast } from "@/hooks/use-toast";
 import { useUsers, User } from "@/hooks/useUsers";
 import { useCompanies } from "@/hooks/useCompanies";
-import { useAdminAuth } from "@/hooks/useAdminAuth";
 
 export default function Usuarios() {
   const { toast } = useToast();
   const { users, loading, createUser, updateUser, deleteUser } = useUsers();
   const { companies } = useCompanies();
-  const { isAdmin } = useAdminAuth();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -105,20 +104,6 @@ export default function Usuarios() {
     const company = companies.find(c => c.id === companyId);
     return company ? company.name : "Sem empresa";
   };
-
-  if (!isAdmin) {
-    return (
-      <div className="flex items-center justify-center min-h-96">
-        <div className="text-center">
-          <Shield className="w-16 h-16 text-blue-600 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Acesso Restrito</h2>
-          <p className="text-gray-600">
-            Esta página é exclusiva para administradores do sistema.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   if (loading) {
     return (

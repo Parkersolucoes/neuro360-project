@@ -10,7 +10,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Settings,
   CreditCard,
-  Shield,
   Save,
   Webhook,
   Package,
@@ -18,7 +17,6 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAssasConfig } from "@/hooks/useAssasConfig";
-import { useAuth } from "@/hooks/useAuth";
 import { WebhookConfiguration } from "@/components/webhook/WebhookConfiguration";
 import { SystemUpdatesManager } from "@/components/admin/SystemUpdatesManager";
 import { SystemAppearanceManager } from "@/components/admin/SystemAppearanceManager";
@@ -26,7 +24,6 @@ import { SystemAppearanceManager } from "@/components/admin/SystemAppearanceMana
 export default function ConfiguracaoSistema() {
   const { toast } = useToast();
   const { config: assasConfig, saveConfig: saveAssasConfig } = useAssasConfig();
-  const { profile } = useAuth();
 
   const [assasForm, setAssasForm] = useState({
     api_key: "",
@@ -38,15 +35,7 @@ export default function ConfiguracaoSistema() {
 
   const handleAssasSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile?.is_admin) {
-      toast({
-        title: "Erro",
-        description: "Acesso restrito para administradores",
-        variant: "destructive"
-      });
-      return;
-    }
-
+    
     try {
       await saveAssasConfig({
         ...assasForm,
@@ -68,20 +57,6 @@ export default function ConfiguracaoSistema() {
     }
   };
 
-  if (!profile?.is_admin) {
-    return (
-      <div className="flex items-center justify-center min-h-96">
-        <div className="text-center">
-          <Shield className="w-16 h-16 text-blue-600 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Acesso Restrito</h2>
-          <p className="text-gray-600">
-            Esta página é exclusiva para administradores do sistema.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div>
@@ -89,7 +64,7 @@ export default function ConfiguracaoSistema() {
           <Settings className="w-8 h-8 text-blue-600" />
           <span>Configuração do Sistema</span>
         </h1>
-        <p className="text-gray-600 mt-2">Configurações avançadas exclusivas para administradores</p>
+        <p className="text-gray-600 mt-2">Configurações avançadas do sistema</p>
       </div>
 
       <Tabs defaultValue="appearance" className="space-y-6">
@@ -115,11 +90,11 @@ export default function ConfiguracaoSistema() {
                 </div>
                 {assasConfig && (
                   <Badge className={
-                    assasConfig.status === 'connected' 
+                    assasConfig.is_active 
                       ? "bg-green-100 text-green-800" 
                       : "bg-red-100 text-red-800"
                   }>
-                    {assasConfig.status === 'connected' ? 'Conectado' : 'Desconectado'}
+                    {assasConfig.is_active ? 'Conectado' : 'Desconectado'}
                   </Badge>
                 )}
               </CardTitle>
