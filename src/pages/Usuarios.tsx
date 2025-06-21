@@ -11,63 +11,28 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Users, Edit, Trash2, Phone, Mail, Shield, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  whatsapp: string;
-  role: string;
-  department: string;
-  company: string;
-  is_admin: boolean;
-  status: "active" | "inactive";
-  createdAt: string;
-}
+import { useUsers } from "@/hooks/useUsers";
+import { useCompanies } from "@/hooks/useCompanies";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
 
 export default function Usuarios() {
   const { toast } = useToast();
-  const [users, setUsers] = useState<User[]>([
-    {
-      id: "1",
-      name: "João Silva",
-      email: "joao@empresa.com",
-      phone: "(11) 99999-9999",
-      whatsapp: "(11) 99999-9999",
-      role: "admin",
-      department: "TI",
-      company: "Empresa A",
-      is_admin: true,
-      status: "active",
-      createdAt: "2024-01-10"
-    },
-    {
-      id: "2",
-      name: "Maria Santos",
-      email: "maria@empresa.com",
-      phone: "(11) 88888-8888",
-      whatsapp: "(11) 88888-8888",
-      role: "user",
-      department: "Vendas",
-      company: "Empresa A",
-      is_admin: false,
-      status: "active",
-      createdAt: "2024-01-12"
-    }
-  ]);
+  const { users, loading, createUser, updateUser, deleteUser } = useUsers();
+  const { companies } = useCompanies();
+  const { isAdmin } = useAdminAuth();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editingUser, setEditingUser] = useState<any>(null);
   const [newUser, setNewUser] = useState({
     name: "",
     email: "",
     phone: "",
     whatsapp: "",
-    role: "",
+    role: "user",
     department: "",
-    company: "",
-    is_admin: false
+    company_id: "",
+    is_admin: false,
+    status: "active" as const
   });
 
   const roles = [
@@ -84,43 +49,33 @@ export default function Usuarios() {
     { value: "rh", label: "Recursos Humanos" }
   ];
 
-  const companies = [
-    { value: "empresa_a", label: "Empresa A" },
-    { value: "empresa_b", label: "Empresa B" },
-    { value: "empresa_c", label: "Empresa C" }
-  ];
-
-  const saveUser = () => {
-    if (editingUser) {
-      setUsers(users.map(user => 
-        user.id === editingUser.id 
-          ? { ...editingUser, ...newUser }
-          : user
-      ));
-      toast({
-        title: "Usuário atualizado",
-        description: "As informações do usuário foram atualizadas com sucesso!",
+  const saveUser = async () => {
+    try {
+      if (editingUser) {
+        await updateUser(editingUser.id, newUser);
+      } else {
+        await createUser(newUser);
+      }
+      
+      setNewUser({ 
+        name: "", 
+        email: "", 
+        phone: "", 
+        whatsapp: "", 
+        role: "user", 
+        department: "", 
+        company_id: "", 
+        is_admin: false,
+        status: "active"
       });
-    } else {
-      const user: User = {
-        id: Date.now().toString(),
-        ...newUser,
-        status: "active",
-        createdAt: new Date().toISOString().split('T')[0]
-      };
-      setUsers([...users, user]);
-      toast({
-        title: "Usuário criado",
-        description: "O novo usuário foi criado com sucesso!",
-      });
+      setEditingUser(null);
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error('Error saving user:', error);
     }
-    
-    setNewUser({ name: "", email: "", phone: "", whatsapp: "", role: "", department: "", company: "", is_admin: false });
-    setEditingUser(null);
-    setIsDialogOpen(false);
   };
 
-  const editUser = (user: User) => {
+  const editUser = (user: any) => {
     setEditingUser(user);
     setNewUser({
       name: user.name,
@@ -129,24 +84,53 @@ export default function Usuarios() {
       whatsapp: user.whatsapp,
       role: user.role,
       department: user.department,
-      company: user.company,
-      is_admin: user.is_admin
+      company_id: user.company_id || "",
+      is_admin: user.is_admin,
+      status: user.status
     });
     setIsDialogOpen(true);
   };
 
-  const deleteUser = (userId: string) => {
-    setUsers(users.filter(user => user.id !== userId));
-    toast({
-      title: "Usuário removido",
-      description: "O usuário foi removido com sucesso!",
-    });
+  const handleDeleteUser = async (userId: string) => {
+    if (confirm("Tem certeza que deseja remover este usuário?")) {
+      await deleteUser(userId);
+    }
   };
 
   const getRoleLabel = (role: string) => {
     const roleObj = roles.find(r => r.value === role);
     return roleObj ? roleObj.label : role;
   };
+
+  const getCompanyName = (companyId: string) => {
+    const company = companies.find(c => c.id === companyId);
+    return company ? company.name : "Sem empresa";
+  };
+
+  if (!isAdmin) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="text-center">
+          <Shield className="w-16 h-16 text-blue-600 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Acesso Restrito</h2>
+          <p className="text-gray-600">
+            Esta página é exclusiva para administradores do sistema.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="text-gray-600 mt-2">Carregando usuários...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -176,6 +160,7 @@ export default function Usuarios() {
                   placeholder="Nome do usuário"
                   value={newUser.name}
                   onChange={(e) => setNewUser({...newUser, name: e.target.value})}
+                  className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
               <div className="space-y-2">
@@ -186,6 +171,7 @@ export default function Usuarios() {
                   placeholder="email@empresa.com"
                   value={newUser.email}
                   onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                  className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
               <div className="space-y-2">
@@ -195,6 +181,7 @@ export default function Usuarios() {
                   placeholder="(11) 99999-9999"
                   value={newUser.phone}
                   onChange={(e) => setNewUser({...newUser, phone: e.target.value})}
+                  className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
               <div className="space-y-2">
@@ -204,12 +191,13 @@ export default function Usuarios() {
                   placeholder="(11) 99999-9999"
                   value={newUser.whatsapp}
                   onChange={(e) => setNewUser({...newUser, whatsapp: e.target.value})}
+                  className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="role">Função</Label>
                 <Select value={newUser.role} onValueChange={(value) => setNewUser({...newUser, role: value})}>
-                  <SelectTrigger>
+                  <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                     <SelectValue placeholder="Selecione a função" />
                   </SelectTrigger>
                   <SelectContent>
@@ -224,7 +212,7 @@ export default function Usuarios() {
               <div className="space-y-2">
                 <Label htmlFor="department">Departamento</Label>
                 <Select value={newUser.department} onValueChange={(value) => setNewUser({...newUser, department: value})}>
-                  <SelectTrigger>
+                  <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                     <SelectValue placeholder="Selecione o departamento" />
                   </SelectTrigger>
                   <SelectContent>
@@ -238,16 +226,28 @@ export default function Usuarios() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="company">Empresa</Label>
-                <Select value={newUser.company} onValueChange={(value) => setNewUser({...newUser, company: value})}>
-                  <SelectTrigger>
+                <Select value={newUser.company_id} onValueChange={(value) => setNewUser({...newUser, company_id: value})}>
+                  <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                     <SelectValue placeholder="Selecione a empresa" />
                   </SelectTrigger>
                   <SelectContent>
                     {companies.map((company) => (
-                      <SelectItem key={company.value} value={company.value}>
-                        {company.label}
+                      <SelectItem key={company.id} value={company.id}>
+                        {company.name}
                       </SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Select value={newUser.status} onValueChange={(value) => setNewUser({...newUser, status: value as 'active' | 'inactive'})}>
+                  <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                    <SelectValue placeholder="Selecione o status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Ativo</SelectItem>
+                    <SelectItem value="inactive">Inativo</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -267,11 +267,25 @@ export default function Usuarios() {
               <Button variant="outline" onClick={() => {
                 setIsDialogOpen(false);
                 setEditingUser(null);
-                setNewUser({ name: "", email: "", phone: "", whatsapp: "", role: "", department: "", company: "", is_admin: false });
+                setNewUser({ 
+                  name: "", 
+                  email: "", 
+                  phone: "", 
+                  whatsapp: "", 
+                  role: "user", 
+                  department: "", 
+                  company_id: "", 
+                  is_admin: false,
+                  status: "active"
+                });
               }}>
                 Cancelar
               </Button>
-              <Button onClick={saveUser} disabled={!newUser.name || !newUser.email || !newUser.phone || !newUser.whatsapp}>
+              <Button 
+                onClick={saveUser} 
+                disabled={!newUser.name || !newUser.email || !newUser.phone || !newUser.whatsapp || !newUser.department}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
                 {editingUser ? "Atualizar" : "Criar"} Usuário
               </Button>
             </div>
@@ -311,7 +325,7 @@ export default function Usuarios() {
                             <Shield className="w-4 h-4 text-blue-500" />
                           )}
                         </div>
-                        <div className="text-sm text-gray-500">Criado em {user.createdAt}</div>
+                        <div className="text-sm text-gray-500">Criado em {new Date(user.created_at).toLocaleDateString()}</div>
                       </div>
                     </div>
                   </TableCell>
@@ -337,7 +351,7 @@ export default function Usuarios() {
                     </Badge>
                   </TableCell>
                   <TableCell>{user.department}</TableCell>
-                  <TableCell>{user.company}</TableCell>
+                  <TableCell>{getCompanyName(user.company_id!)}</TableCell>
                   <TableCell>
                     <Badge className={
                       user.status === "active" 
@@ -360,7 +374,7 @@ export default function Usuarios() {
                         size="sm"
                         variant="outline"
                         className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        onClick={() => deleteUser(user.id)}
+                        onClick={() => handleDeleteUser(user.id)}
                       >
                         <Trash2 className="w-3 h-3" />
                       </Button>

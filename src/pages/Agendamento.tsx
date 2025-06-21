@@ -4,25 +4,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Calendar, Clock, Play, Pause, Trash2 } from "lucide-react";
+import { Plus, Calendar, Edit, Trash2, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Schedule {
   id: string;
-  name: string;
-  query: string;
-  template: string;
-  frequency: string;
-  time: string;
+  title: string;
+  description: string;
+  scheduledDate: string;
+  scheduledTime: string;
+  status: "pending" | "sent" | "failed";
   recipients: string;
-  company: string;
-  status: "active" | "paused" | "completed";
-  nextExecution: string;
-  lastExecution: string;
+  message: string;
+  createdAt: string;
 }
 
 export default function Agendamento() {
@@ -30,95 +28,76 @@ export default function Agendamento() {
   const [schedules, setSchedules] = useState<Schedule[]>([
     {
       id: "1",
-      name: "Relatório Diário de Vendas",
-      query: "Vendas Diárias",
-      template: "Relatório de Vendas",
-      frequency: "daily",
-      time: "08:00",
-      recipients: "Vendas",
-      company: "Empresa A",
-      status: "active",
-      nextExecution: "2024-01-22 08:00",
-      lastExecution: "2024-01-21 08:00"
-    },
-    {
-      id: "2",
-      name: "Cobrança Semanal",
-      query: "Clientes Inadimplentes",
-      template: "Cobrança Amigável",
-      frequency: "weekly",
-      time: "09:00",
-      recipients: "Financeiro",
-      company: "Empresa A",
-      status: "active",
-      nextExecution: "2024-01-29 09:00",
-      lastExecution: "2024-01-22 09:00"
+      title: "Promoção Black Friday",
+      description: "Envio de mensagem promocional para clientes",
+      scheduledDate: "2024-11-29",
+      scheduledTime: "09:00",
+      status: "pending",
+      recipients: "Lista VIP",
+      message: "🔥 BLACK FRIDAY! 50% OFF em todos os produtos! Aproveite!",
+      createdAt: "2024-01-15"
     }
   ]);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
   const [newSchedule, setNewSchedule] = useState({
-    name: "",
-    query: "",
-    template: "",
-    frequency: "",
-    time: "",
+    title: "",
+    description: "",
+    scheduledDate: "",
+    scheduledTime: "",
     recipients: "",
-    company: ""
+    message: ""
   });
 
-  const frequencies = [
-    { value: "daily", label: "Diário" },
-    { value: "weekly", label: "Semanal" },
-    { value: "monthly", label: "Mensal" }
-  ];
-
-  const queries = [
-    { value: "vendas_diarias", label: "Vendas Diárias" },
-    { value: "clientes_inadimplentes", label: "Clientes Inadimplentes" }
-  ];
-
-  const templates = [
-    { value: "relatorio_vendas", label: "Relatório de Vendas" },
-    { value: "cobranca_amigavel", label: "Cobrança Amigável" }
-  ];
-
-  const recipients = [
-    { value: "vendas", label: "Vendas" },
-    { value: "financeiro", label: "Financeiro" },
-    { value: "gerencia", label: "Gerência" }
-  ];
-
-  const companies = [
-    { value: "empresa_a", label: "Empresa A" },
-    { value: "empresa_b", label: "Empresa B" }
-  ];
-
   const saveSchedule = () => {
-    const schedule: Schedule = {
-      id: Date.now().toString(),
-      ...newSchedule,
-      status: "active",
-      nextExecution: "2024-01-22 " + newSchedule.time,
-      lastExecution: ""
-    };
+    if (editingSchedule) {
+      setSchedules(schedules.map(schedule => 
+        schedule.id === editingSchedule.id 
+          ? { ...editingSchedule, ...newSchedule }
+          : schedule
+      ));
+      toast({
+        title: "Agendamento atualizado",
+        description: "O agendamento foi atualizado com sucesso!",
+      });
+    } else {
+      const schedule: Schedule = {
+        id: Date.now().toString(),
+        ...newSchedule,
+        status: "pending",
+        createdAt: new Date().toISOString().split('T')[0]
+      };
+      setSchedules([...schedules, schedule]);
+      toast({
+        title: "Agendamento criado",
+        description: "O novo agendamento foi criado com sucesso!",
+      });
+    }
     
-    setSchedules([...schedules, schedule]);
-    setNewSchedule({ name: "", query: "", template: "", frequency: "", time: "", recipients: "", company: "" });
-    setIsDialogOpen(false);
-    
-    toast({
-      title: "Agendamento criado",
-      description: "O novo agendamento foi criado com sucesso!",
+    setNewSchedule({ 
+      title: "", 
+      description: "", 
+      scheduledDate: "", 
+      scheduledTime: "", 
+      recipients: "", 
+      message: "" 
     });
+    setEditingSchedule(null);
+    setIsDialogOpen(false);
   };
 
-  const toggleSchedule = (scheduleId: string) => {
-    setSchedules(schedules.map(schedule => 
-      schedule.id === scheduleId 
-        ? { ...schedule, status: schedule.status === "active" ? "paused" : "active" }
-        : schedule
-    ));
+  const editSchedule = (schedule: Schedule) => {
+    setEditingSchedule(schedule);
+    setNewSchedule({
+      title: schedule.title,
+      description: schedule.description,
+      scheduledDate: schedule.scheduledDate,
+      scheduledTime: schedule.scheduledTime,
+      recipients: schedule.recipients,
+      message: schedule.message
+    });
+    setIsDialogOpen(true);
   };
 
   const deleteSchedule = (scheduleId: string) => {
@@ -129,9 +108,30 @@ export default function Agendamento() {
     });
   };
 
-  const getFrequencyLabel = (frequency: string) => {
-    const freq = frequencies.find(f => f.value === frequency);
-    return freq ? freq.label : frequency;
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "pending":
+        return "bg-blue-100 text-blue-800";
+      case "sent":
+        return "bg-green-100 text-green-800";
+      case "failed":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "pending":
+        return "Pendente";
+      case "sent":
+        return "Enviado";
+      case "failed":
+        return "Falhou";
+      default:
+        return status;
+    }
   };
 
   return (
@@ -139,7 +139,7 @@ export default function Agendamento() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Agendamento</h1>
-          <p className="text-gray-600 mt-2">Gerencie os envios automáticos de mensagens</p>
+          <p className="text-gray-600 mt-2">Gerencie o envio programado de mensagens</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -150,115 +150,93 @@ export default function Agendamento() {
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Novo Agendamento</DialogTitle>
+              <DialogTitle>
+                {editingSchedule ? "Editar Agendamento" : "Novo Agendamento"}
+              </DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Nome do Agendamento</Label>
+                <Label htmlFor="title">Título</Label>
                 <Input
-                  id="name"
-                  placeholder="Nome descritivo do agendamento"
-                  value={newSchedule.name}
-                  onChange={(e) => setNewSchedule({...newSchedule, name: e.target.value})}
+                  id="title"
+                  placeholder="Título do agendamento"
+                  value={newSchedule.title}
+                  onChange={(e) => setNewSchedule({...newSchedule, title: e.target.value})}
+                  className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="query">Consulta SQL</Label>
-                  <Select value={newSchedule.query} onValueChange={(value) => setNewSchedule({...newSchedule, query: value})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a consulta" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {queries.map((query) => (
-                        <SelectItem key={query.value} value={query.value}>
-                          {query.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="template">Template</Label>
-                  <Select value={newSchedule.template} onValueChange={(value) => setNewSchedule({...newSchedule, template: value})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o template" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {templates.map((template) => (
-                        <SelectItem key={template.value} value={template.value}>
-                          {template.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="recipients">Destinatários</Label>
+                <Input
+                  id="recipients"
+                  placeholder="Lista ou grupo de destinatários"
+                  value={newSchedule.recipients}
+                  onChange={(e) => setNewSchedule({...newSchedule, recipients: e.target.value})}
+                  className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="frequency">Frequência</Label>
-                  <Select value={newSchedule.frequency} onValueChange={(value) => setNewSchedule({...newSchedule, frequency: value})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a frequência" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {frequencies.map((freq) => (
-                        <SelectItem key={freq.value} value={freq.value}>
-                          {freq.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="time">Horário</Label>
-                  <Input
-                    id="time"
-                    type="time"
-                    value={newSchedule.time}
-                    onChange={(e) => setNewSchedule({...newSchedule, time: e.target.value})}
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="scheduledDate">Data</Label>
+                <Input
+                  id="scheduledDate"
+                  type="date"
+                  value={newSchedule.scheduledDate}
+                  onChange={(e) => setNewSchedule({...newSchedule, scheduledDate: e.target.value})}
+                  className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="recipients">Destinatários</Label>
-                  <Select value={newSchedule.recipients} onValueChange={(value) => setNewSchedule({...newSchedule, recipients: value})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione os destinatários" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {recipients.map((recipient) => (
-                        <SelectItem key={recipient.value} value={recipient.value}>
-                          {recipient.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="company">Empresa</Label>
-                  <Select value={newSchedule.company} onValueChange={(value) => setNewSchedule({...newSchedule, company: value})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a empresa" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {companies.map((company) => (
-                        <SelectItem key={company.value} value={company.value}>
-                          {company.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="scheduledTime">Horário</Label>
+                <Input
+                  id="scheduledTime"
+                  type="time"
+                  value={newSchedule.scheduledTime}
+                  onChange={(e) => setNewSchedule({...newSchedule, scheduledTime: e.target.value})}
+                  className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="description">Descrição</Label>
+                <Input
+                  id="description"
+                  placeholder="Descrição do agendamento"
+                  value={newSchedule.description}
+                  onChange={(e) => setNewSchedule({...newSchedule, description: e.target.value})}
+                  className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="message">Mensagem</Label>
+                <Textarea
+                  id="message"
+                  placeholder="Digite a mensagem que será enviada..."
+                  value={newSchedule.message}
+                  onChange={(e) => setNewSchedule({...newSchedule, message: e.target.value})}
+                  className="min-h-24 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                />
               </div>
             </div>
             <div className="flex justify-end space-x-2 mt-6">
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+              <Button variant="outline" onClick={() => {
+                setIsDialogOpen(false);
+                setEditingSchedule(null);
+                setNewSchedule({ 
+                  title: "", 
+                  description: "", 
+                  scheduledDate: "", 
+                  scheduledTime: "", 
+                  recipients: "", 
+                  message: "" 
+                });
+              }}>
                 Cancelar
               </Button>
-              <Button onClick={saveSchedule} disabled={!newSchedule.name || !newSchedule.query || !newSchedule.template}>
-                Criar Agendamento
+              <Button 
+                onClick={saveSchedule} 
+                disabled={!newSchedule.title || !newSchedule.scheduledDate || !newSchedule.scheduledTime || !newSchedule.message}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {editingSchedule ? "Atualizar" : "Criar"} Agendamento
               </Button>
             </div>
           </DialogContent>
@@ -269,18 +247,18 @@ export default function Agendamento() {
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Calendar className="w-5 h-5 text-blue-500" />
-            <span>Agendamentos Ativos</span>
+            <span>Agendamentos</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Configuração</TableHead>
-                <TableHead>Frequência</TableHead>
-                <TableHead>Próxima Execução</TableHead>
+                <TableHead>Título</TableHead>
+                <TableHead>Data/Hora</TableHead>
+                <TableHead>Destinatários</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Criado em</TableHead>
                 <TableHead>Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -289,57 +267,34 @@ export default function Agendamento() {
                 <TableRow key={schedule.id}>
                   <TableCell>
                     <div>
-                      <div className="font-medium">{schedule.name}</div>
-                      <div className="text-sm text-gray-500">{schedule.company}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <div className="text-sm">
-                        <span className="font-medium">Consulta:</span> {schedule.query}
-                      </div>
-                      <div className="text-sm">
-                        <span className="font-medium">Template:</span> {schedule.template}
-                      </div>
-                      <div className="text-sm">
-                        <span className="font-medium">Destinatários:</span> {schedule.recipients}
-                      </div>
+                      <div className="font-medium">{schedule.title}</div>
+                      <div className="text-sm text-gray-500">{schedule.description}</div>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-2">
                       <Clock className="w-4 h-4 text-gray-400" />
-                      <span>{getFrequencyLabel(schedule.frequency)} às {schedule.time}</span>
+                      <div>
+                        <div className="font-medium">{new Date(schedule.scheduledDate).toLocaleDateString()}</div>
+                        <div className="text-sm text-gray-500">{schedule.scheduledTime}</div>
+                      </div>
                     </div>
                   </TableCell>
+                  <TableCell>{schedule.recipients}</TableCell>
                   <TableCell>
-                    <div className="text-sm">
-                      {schedule.nextExecution}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={
-                      schedule.status === "active" 
-                        ? "bg-green-100 text-green-800" 
-                        : schedule.status === "paused"
-                        ? "bg-orange-100 text-orange-800"
-                        : "bg-gray-100 text-gray-800"
-                    }>
-                      {schedule.status === "active" ? "Ativo" : 
-                       schedule.status === "paused" ? "Pausado" : "Concluído"}
+                    <Badge className={getStatusColor(schedule.status)}>
+                      {getStatusLabel(schedule.status)}
                     </Badge>
                   </TableCell>
+                  <TableCell>{schedule.createdAt}</TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => toggleSchedule(schedule.id)}
+                        onClick={() => editSchedule(schedule)}
                       >
-                        {schedule.status === "active" ? 
-                          <Pause className="w-3 h-3" /> : 
-                          <Play className="w-3 h-3" />
-                        }
+                        <Edit className="w-3 h-3" />
                       </Button>
                       <Button
                         size="sm"

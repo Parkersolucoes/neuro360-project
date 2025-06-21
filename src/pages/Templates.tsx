@@ -5,91 +5,148 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, MessageSquare, Eye, Trash2, Edit } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus, MessageSquare, Edit, Trash2, FileText, LinkIcon, Unlink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-interface Template {
-  id: string;
-  name: string;
-  description: string;
-  message: string;
-  variables: string[];
-  category: string;
-  status: "active" | "inactive";
-}
+import { useTemplates } from "@/hooks/useTemplates";
+import { usePlans } from "@/hooks/usePlans";
 
 export default function Templates() {
   const { toast } = useToast();
-  const [templates, setTemplates] = useState<Template[]>([
-    {
-      id: "1",
-      name: "Cobrança Amigável",
-      description: "Template para cobrança de clientes em atraso",
-      message: "Olá {nome}, temos uma pendência financeira em aberto no valor de R$ {valor}. Por favor, entre em contato para regularizar.",
-      variables: ["nome", "valor"],
-      category: "cobranca",
-      status: "active"
-    },
-    {
-      id: "2",
-      name: "Relatório de Vendas",
-      description: "Template para envio de relatório diário de vendas",
-      message: "📊 Relatório de Vendas do dia {data}:\n\nTotal de vendas: R$ {total_vendas}\nQuantidade de pedidos: {quantidade_pedidos}\n\nObrigado!",
-      variables: ["data", "total_vendas", "quantidade_pedidos"],
-      category: "relatorio",
-      status: "active"
-    }
-  ]);
+  const { templates, planTemplates, loading, createTemplate, updateTemplate, deleteTemplate, linkTemplateToPlan, unlinkTemplateFromPlan } = useTemplates();
+  const { plans } = usePlans();
 
-  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<any>(null);
   const [newTemplate, setNewTemplate] = useState({
     name: "",
     description: "",
-    message: "",
-    category: ""
+    content: "",
+    type: "message",
+    is_active: true
   });
 
-  const extractVariables = (message: string): string[] => {
-    const matches = message.match(/\{([^}]+)\}/g);
-    return matches ? matches.map(match => match.slice(1, -1)) : [];
+  const [selectedPlans, setSelectedPlans] = useState<string[]>([]);
+
+  const templateTypes = [
+    { value: "message", label: "Mensagem" },
+    { value: "welcome", label: "Boas-vindas" },
+    { value: "followup", label: "Follow-up" },
+    { value: "notification", label: "Notificação" }
+  ];
+
+  const saveTemplate = async () => {
+    try {
+      let template;
+      if (editingTemplate) {
+        template = await updateTemplate(editingTemplate.id, newTemplate);
+      } else {
+        template = await createTemplate(newTemplate);
+      }
+
+      // Gerenciar associações com planos
+      if (template) {
+        const currentAssociations = planTemplates.filter(pt => pt.template_id === template.id);
+        const currentPlanIds = currentAssociations.map(ca => ca.plan_id);
+
+        // Remover associações que não estão mais selecionadas
+        for (const planId of currentPlanIds) {
+          if (!selectedPlans.includes(planId)) {
+            await unlinkTemplateFromPlan(template.id, planId);
+          }
+        }
+
+        // Adicionar novas associações
+        for (const planId of selectedPlans) {
+          if (!currentPlanIds.includes(planId)) {
+            await linkTemplateToPlan(template.id, planId);
+          }
+        }
+      }
+      
+      setNewTemplate({ 
+        name: "", 
+        description: "", 
+        content: "", 
+        type: "message", 
+        is_active: true 
+      });
+      setSelectedPlans([]);
+      setEditingTemplate(null);
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error('Error saving template:', error);
+    }
   };
 
-  const saveTemplate = () => {
-    const variables = extractVariables(newTemplate.message);
-    const template: Template = {
-      id: Date.now().toString(),
-      ...newTemplate,
-      variables,
-      status: "active"
-    };
-    
-    setTemplates([...templates, template]);
-    setNewTemplate({ name: "", description: "", message: "", category: "" });
-    setIsDialogOpen(false);
-    
-    toast({
-      title: "Template salvo",
-      description: "O novo template foi criado com sucesso!",
+  const editTemplate = (template: any) => {
+    setEditingTemplate(template);
+    setNewTemplate({
+      name: template.name,
+      description: template.description || "",
+      content: template.content,
+      type: template.type,
+      is_active: template.is_active
     });
+    
+    // Carregar planos associados
+    const associatedPlans = planTemplates
+      .filter(pt => pt.template_id === template.id)
+      .map(pt => pt.plan_id);
+    setSelectedPlans(associatedPlans);
+    
+    setIsDialogOpen(true);
   };
 
-  const previewTemplate = (template: Template) => {
-    setSelectedTemplate(template);
+  const handleDeleteTemplate = async (templateId: string) => {
+    if (confirm("Tem certeza que deseja remover este template?")) {
+      await deleteTemplate(templateId);
+    }
   };
+
+  const getTypeLabel = (type: string) => {
+    const typeObj = templateTypes.find(t => t.value === type);
+    return typeObj ? typeObj.label : type;
+  };
+
+  const getAssociatedPlans = (templateId: string) => {
+    const associatedPlanIds = planTemplates
+      .filter(pt => pt.template_id === templateId)
+      .map(pt => pt.plan_id);
+    
+    return plans.filter(plan => associatedPlanIds.includes(plan.id));
+  };
+
+  const handlePlanSelection = (planId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedPlans(prev => [...prev, planId]);
+    } else {
+      setSelectedPlans(prev => prev.filter(id => id !== planId));
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="text-gray-600 mt-2">Carregando templates...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center space-x-2">
-            <MessageSquare className="w-8 h-8 text-blue-600" />
-            <span>Templates de Mensagem</span>
-          </h1>
-          <p className="text-gray-600 mt-2">Gerencie templates para envio automático via WhatsApp</p>
+          <h1 className="text-3xl font-bold text-gray-900">Templates</h1>
+          <p className="text-gray-600 mt-2">Gerencie os templates de mensagens</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -98,14 +155,16 @@ export default function Templates() {
               Novo Template
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Novo Template de Mensagem</DialogTitle>
+              <DialogTitle>
+                {editingTemplate ? "Editar Template" : "Novo Template"}
+              </DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Nome</Label>
+                  <Label htmlFor="name">Nome do Template</Label>
                   <Input
                     id="name"
                     placeholder="Nome do template"
@@ -114,205 +173,196 @@ export default function Templates() {
                     className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
+                
                 <div className="space-y-2">
-                  <Label htmlFor="category">Categoria</Label>
-                  <Select value={newTemplate.category} onValueChange={(value) => setNewTemplate({...newTemplate, category: value})}>
+                  <Label htmlFor="description">Descrição (Opcional)</Label>
+                  <Input
+                    id="description"
+                    placeholder="Descrição do template"
+                    value={newTemplate.description}
+                    onChange={(e) => setNewTemplate({...newTemplate, description: e.target.value})}
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="type">Tipo</Label>
+                  <Select value={newTemplate.type} onValueChange={(value) => setNewTemplate({...newTemplate, type: value})}>
                     <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
-                      <SelectValue placeholder="Selecione a categoria" />
+                      <SelectValue placeholder="Selecione o tipo" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="cobranca">Cobrança</SelectItem>
-                      <SelectItem value="relatorio">Relatório</SelectItem>
-                      <SelectItem value="promocao">Promoção</SelectItem>
-                      <SelectItem value="notificacao">Notificação</SelectItem>
+                      {templateTypes.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Descrição</Label>
-                <Input
-                  id="description"
-                  placeholder="Descrição do template"
-                  value={newTemplate.description}
-                  onChange={(e) => setNewTemplate({...newTemplate, description: e.target.value})}
-                  className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="message">Mensagem</Label>
-                <Textarea
-                  id="message"
-                  placeholder="Digite sua mensagem aqui. Use {variavel} para inserir dados dinâmicos..."
-                  className="min-h-32 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  value={newTemplate.message}
-                  onChange={(e) => setNewTemplate({...newTemplate, message: e.target.value})}
-                />
-                <p className="text-xs text-gray-500">
-                  Use {"{variavel}"} para inserir dados dinâmicos. Ex: {"{nome}, {valor}, {data}"}
-                </p>
-              </div>
-              {newTemplate.message && (
+
                 <div className="space-y-2">
-                  <Label>Variáveis Detectadas</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {extractVariables(newTemplate.message).map((variable, index) => (
-                      <Badge key={index} className="bg-blue-100 text-blue-800">
-                        {variable}
-                      </Badge>
+                  <Label htmlFor="content">Conteúdo</Label>
+                  <Textarea
+                    id="content"
+                    placeholder="Digite o conteúdo do template..."
+                    value={newTemplate.content}
+                    onChange={(e) => setNewTemplate({...newTemplate, content: e.target.value})}
+                    className="min-h-32 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="is_active"
+                    checked={newTemplate.is_active}
+                    onCheckedChange={(checked) => setNewTemplate({...newTemplate, is_active: checked})}
+                  />
+                  <Label htmlFor="is_active">Template Ativo</Label>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-base font-medium mb-3 block">Planos Associados</Label>
+                  <p className="text-sm text-gray-600 mb-4">Selecione os planos que terão acesso a este template:</p>
+                  <div className="space-y-3 border border-gray-200 rounded-lg p-4 max-h-64 overflow-y-auto">
+                    {plans.map((plan) => (
+                      <div key={plan.id} className="flex items-center space-x-3">
+                        <Checkbox
+                          id={`plan-${plan.id}`}
+                          checked={selectedPlans.includes(plan.id)}
+                          onCheckedChange={(checked) => handlePlanSelection(plan.id, checked as boolean)}
+                        />
+                        <Label htmlFor={`plan-${plan.id}`} className="flex-1 cursor-pointer">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium">{plan.name}</span>
+                            <Badge variant="outline" className="text-xs">
+                              R$ {plan.price.toFixed(2)}
+                            </Badge>
+                          </div>
+                          {plan.description && (
+                            <p className="text-sm text-gray-500 mt-1">{plan.description}</p>
+                          )}
+                        </Label>
+                      </div>
                     ))}
                   </div>
                 </div>
-              )}
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button 
-                  onClick={saveTemplate} 
-                  disabled={!newTemplate.name || !newTemplate.message}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  Salvar Template
-                </Button>
               </div>
+            </div>
+            
+            <div className="flex justify-end space-x-2 mt-6">
+              <Button variant="outline" onClick={() => {
+                setIsDialogOpen(false);
+                setEditingTemplate(null);
+                setSelectedPlans([]);
+                setNewTemplate({ 
+                  name: "", 
+                  description: "", 
+                  content: "", 
+                  type: "message", 
+                  is_active: true 
+                });
+              }}>
+                Cancelar
+              </Button>
+              <Button 
+                onClick={saveTemplate} 
+                disabled={!newTemplate.name || !newTemplate.content}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {editingTemplate ? "Atualizar" : "Criar"} Template
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <MessageSquare className="w-5 h-5 text-blue-600" />
-              <span>Templates Salvos</span>
-            </CardTitle>
-            <p className="text-sm text-gray-600">Lista de todos os templates de mensagem</p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {templates.map((template) => (
-              <div
-                key={template.id}
-                className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
-                  selectedTemplate?.id === template.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
-                }`}
-                onClick={() => previewTemplate(template)}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2">
-                      <h3 className="font-medium text-gray-900">{template.name}</h3>
-                      <Badge className="bg-blue-100 text-blue-800">{template.category}</Badge>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <MessageSquare className="w-5 h-5 text-blue-500" />
+            <span>Lista de Templates</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nome</TableHead>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Planos Associados</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Criado em</TableHead>
+                <TableHead>Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {templates.map((template) => (
+                <TableRow key={template.id}>
+                  <TableCell>
+                    <div>
+                      <div className="font-medium">{template.name}</div>
+                      {template.description && (
+                        <div className="text-sm text-gray-500">{template.description}</div>
+                      )}
                     </div>
-                    <p className="text-sm text-gray-600 mt-1">{template.description}</p>
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {template.variables.map((variable, index) => (
-                        <Badge key={index} className="text-xs bg-blue-100 text-blue-800">
-                          {variable}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">
+                      {getTypeLabel(template.type)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {getAssociatedPlans(template.id).map((plan) => (
+                        <Badge key={plan.id} variant="outline" className="text-xs">
+                          {plan.name}
                         </Badge>
                       ))}
+                      {getAssociatedPlans(template.id).length === 0 && (
+                        <span className="text-sm text-gray-500">Nenhum plano</span>
+                      )}
                     </div>
-                  </div>
-                  <Badge className={
-                    template.status === "active" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
-                  }>
-                    {template.status === "active" ? "Ativo" : "Inativo"}
-                  </Badge>
-                </div>
-                <div className="flex items-center space-x-2 mt-3">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      previewTemplate(template);
-                    }}
-                    className="border-blue-200 text-blue-600 hover:bg-blue-50"
-                  >
-                    <Eye className="w-3 h-3 mr-1" />
-                    Visualizar
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                    }}
-                    className="border-blue-200 text-blue-600 hover:bg-blue-50"
-                  >
-                    <Edit className="w-3 h-3 mr-1" />
-                    Editar
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setTemplates(templates.filter(t => t.id !== template.id));
-                    }}
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Eye className="w-5 h-5 text-blue-600" />
-              <span>Preview do Template</span>
-            </CardTitle>
-            <p className="text-sm text-gray-600">Visualize como ficará a mensagem</p>
-          </CardHeader>
-          <CardContent>
-            {selectedTemplate ? (
-              <div className="space-y-4">
-                <div>
-                  <h3 className="font-medium text-gray-900">{selectedTemplate.name}</h3>
-                  <p className="text-sm text-gray-600">{selectedTemplate.description}</p>
-                </div>
-                <div className="space-y-2">
-                  <Label>Categoria</Label>
-                  <Badge className="bg-blue-100 text-blue-800">{selectedTemplate.category}</Badge>
-                </div>
-                <div className="space-y-2">
-                  <Label>Variáveis</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedTemplate.variables.map((variable, index) => (
-                      <Badge key={index} className="bg-blue-100 text-blue-800">
-                        {variable}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Mensagem</Label>
-                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="flex items-start space-x-3">
-                      <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                        <MessageSquare className="w-4 h-4 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm whitespace-pre-wrap">{selectedTemplate.message}</p>
-                      </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={
+                      template.is_active 
+                        ? "bg-green-100 text-green-800" 
+                        : "bg-gray-100 text-gray-800"
+                    }>
+                      {template.is_active ? "Ativo" : "Inativo"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {new Date(template.created_at).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex space-x-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => editTemplate(template)}
+                      >
+                        <Edit className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => handleDeleteTemplate(template.id)}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
                     </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-                <MessageSquare className="w-16 h-16 mb-4 text-gray-300" />
-                <p>Selecione um template para visualizar</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }

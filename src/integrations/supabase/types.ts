@@ -166,6 +166,42 @@ export type Database = {
           },
         ]
       }
+      plan_templates: {
+        Row: {
+          created_at: string
+          id: string
+          plan_id: string
+          template_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          plan_id: string
+          template_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          plan_id?: string
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_templates_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_templates_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plans: {
         Row: {
           created_at: string
@@ -338,6 +374,39 @@ export type Database = {
           },
         ]
       }
+      templates: {
+        Row: {
+          content: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           amount: number
@@ -468,6 +537,59 @@ export type Database = {
             columns: ["plan_id"]
             isOneToOne: false
             referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          department: string
+          email: string
+          id: string
+          is_admin: boolean
+          name: string
+          phone: string
+          role: string
+          status: string
+          updated_at: string
+          whatsapp: string
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          department: string
+          email: string
+          id?: string
+          is_admin?: boolean
+          name: string
+          phone: string
+          role?: string
+          status?: string
+          updated_at?: string
+          whatsapp: string
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          department?: string
+          email?: string
+          id?: string
+          is_admin?: boolean
+          name?: string
+          phone?: string
+          role?: string
+          status?: string
+          updated_at?: string
+          whatsapp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "users_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
