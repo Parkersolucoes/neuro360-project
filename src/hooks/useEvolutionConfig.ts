@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useCompanies } from '@/hooks/useCompanies';
 
 export interface EvolutionConfig {
   id: string;
@@ -18,16 +19,18 @@ export function useEvolutionConfig() {
   const [config, setConfig] = useState<EvolutionConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { currentCompany } = useCompanies();
 
-  const fetchConfig = async (companyId?: string) => {
+  const fetchConfig = async () => {
     try {
       let query = supabase
         .from('evolution_configs')
         .select('*')
         .eq('is_active', true);
 
-      if (companyId) {
-        query = query.eq('company_id', companyId);
+      // Filtrar por empresa se houver uma empresa selecionada
+      if (currentCompany?.id) {
+        query = query.eq('company_id', currentCompany.id);
       }
 
       const { data, error } = await query.order('created_at', { ascending: false }).limit(1);
@@ -39,6 +42,8 @@ export function useEvolutionConfig() {
 
       if (data && data.length > 0) {
         setConfig(data[0]);
+      } else {
+        setConfig(null);
       }
     } catch (error) {
       console.error('Error fetching Evolution config:', error);
@@ -49,9 +54,15 @@ export function useEvolutionConfig() {
 
   const createConfig = async (configData: Omit<EvolutionConfig, 'id' | 'created_at' | 'updated_at'>) => {
     try {
+      // Garantir que a configuração seja associada à empresa atual
+      const dataWithCompany = {
+        ...configData,
+        company_id: currentCompany?.id || null
+      };
+
       const { data, error } = await supabase
         .from('evolution_configs')
-        .insert([configData])
+        .insert([dataWithCompany])
         .select()
         .single();
 
@@ -125,7 +136,7 @@ export function useEvolutionConfig() {
 
   useEffect(() => {
     fetchConfig();
-  }, []);
+  }, [currentCompany?.id]);
 
   return {
     config,

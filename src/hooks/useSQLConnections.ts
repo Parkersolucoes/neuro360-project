@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useCompanies } from '@/hooks/useCompanies';
 
 export interface SQLConnection {
   id: string;
@@ -22,13 +23,21 @@ export function useSQLConnections() {
   const [connections, setConnections] = useState<SQLConnection[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { currentCompany } = useCompanies();
 
   const fetchConnections = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('sql_connections')
         .select('*')
         .order('created_at', { ascending: false });
+
+      // Filtrar por empresa se houver uma empresa selecionada
+      if (currentCompany?.id) {
+        query = query.eq('company_id', currentCompany.id);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching SQL connections:', error);
@@ -50,9 +59,15 @@ export function useSQLConnections() {
 
   const createConnection = async (connectionData: Omit<SQLConnection, 'id' | 'created_at' | 'updated_at'>) => {
     try {
+      // Garantir que a conexão seja associada à empresa atual
+      const dataWithCompany = {
+        ...connectionData,
+        company_id: currentCompany?.id || null
+      };
+
       const { data, error } = await supabase
         .from('sql_connections')
-        .insert([connectionData])
+        .insert([dataWithCompany])
         .select()
         .single();
 
@@ -144,7 +159,7 @@ export function useSQLConnections() {
 
   useEffect(() => {
     fetchConnections();
-  }, []);
+  }, [currentCompany?.id]);
 
   return {
     connections,

@@ -1,25 +1,30 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
   Database, 
   MessageSquare, 
   Settings,
-  Save
+  Save,
+  Building2,
+  AlertCircle
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSQLConnections } from "@/hooks/useSQLConnections";
 import { useEvolutionConfig } from "@/hooks/useEvolutionConfig";
+import { useCompanies } from "@/hooks/useCompanies";
 
 export default function Configuracao() {
   const { toast } = useToast();
   const { connections, createConnection } = useSQLConnections();
-  const { config: evolutionConfig, createConfig: createEvolutionConfig } = useEvolutionConfig();
+  const { config: evolutionConfig, createConfig: createEvolutionConfig, updateConfig: updateEvolutionConfig } = useEvolutionConfig();
+  const { currentCompany } = useCompanies();
 
   // Estados para formulários
   const [sqlForm, setSqlForm] = useState({
@@ -37,12 +42,39 @@ export default function Configuracao() {
     api_key: ""
   });
 
+  // Preencher o formulário da Evolution com dados existentes
+  useEffect(() => {
+    if (evolutionConfig) {
+      setEvolutionForm({
+        instance_name: evolutionConfig.instance_name,
+        api_url: evolutionConfig.api_url,
+        api_key: evolutionConfig.api_key
+      });
+    } else {
+      setEvolutionForm({
+        instance_name: "",
+        api_url: "",
+        api_key: ""
+      });
+    }
+  }, [evolutionConfig]);
+
   const handleSQLSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!currentCompany) {
+      toast({
+        title: "Erro",
+        description: "Selecione uma empresa para configurar as conexões SQL",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       await createConnection({
         ...sqlForm,
-        company_id: null,
+        company_id: currentCompany.id,
         connection_type: 'postgresql',
         is_active: true
       });
@@ -54,10 +86,6 @@ export default function Configuracao() {
         password: "",
         port: 5432
       });
-      toast({
-        title: "Sucesso",
-        description: "Conexão SQL criada com sucesso!"
-      });
     } catch (error) {
       console.error('Error creating SQL connection:', error);
     }
@@ -65,25 +93,53 @@ export default function Configuracao() {
 
   const handleEvolutionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!currentCompany) {
+      toast({
+        title: "Erro",
+        description: "Selecione uma empresa para configurar a Evolution API",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
-      await createEvolutionConfig({
-        ...evolutionForm,
-        company_id: null,
-        is_active: true
-      });
-      setEvolutionForm({
-        instance_name: "",
-        api_url: "",
-        api_key: ""
-      });
+      if (evolutionConfig) {
+        // Atualizar configuração existente
+        await updateEvolutionConfig(evolutionConfig.id, evolutionForm);
+      } else {
+        // Criar nova configuração
+        await createEvolutionConfig({
+          ...evolutionForm,
+          company_id: currentCompany.id,
+          is_active: true
+        });
+      }
+      
       toast({
         title: "Sucesso",
-        description: "Configuração Evolution criada com sucesso!"
+        description: `Configuração Evolution ${evolutionConfig ? 'atualizada' : 'criada'} com sucesso!`
       });
     } catch (error) {
-      console.error('Error creating Evolution config:', error);
+      console.error('Error saving Evolution config:', error);
     }
   };
+
+  const CompanyAlert = () => (
+    <Alert className="mb-6">
+      <Building2 className="h-4 w-4" />
+      <AlertDescription>
+        {currentCompany ? (
+          <span>Configurações para: <strong>{currentCompany.name}</strong></span>
+        ) : (
+          <span className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 text-amber-500" />
+            Selecione uma empresa para gerenciar as configurações
+          </span>
+        )}
+      </AlertDescription>
+    </Alert>
+  );
 
   return (
     <div className="space-y-6">
@@ -92,8 +148,10 @@ export default function Configuracao() {
           <Settings className="w-8 h-8 text-blue-600" />
           <span>Configurações</span>
         </h1>
-        <p className="text-gray-600 mt-2">Configure as integrações do sistema</p>
+        <p className="text-gray-600 mt-2">Configure as integrações do sistema por empresa</p>
       </div>
+
+      <CompanyAlert />
 
       <Tabs defaultValue="sql" className="space-y-6">
         <TabsList className="grid w-full grid-cols-2">
@@ -161,6 +219,7 @@ export default function Configuracao() {
                       placeholder="Ex: Banco Principal"
                       className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                       required
+                      disabled={!currentCompany}
                     />
                   </div>
                   <div className="space-y-2">
@@ -172,6 +231,7 @@ export default function Configuracao() {
                       placeholder="Ex: localhost"
                       className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                       required
+                      disabled={!currentCompany}
                     />
                   </div>
                   <div className="space-y-2">
@@ -183,6 +243,7 @@ export default function Configuracao() {
                       placeholder="Nome do banco"
                       className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                       required
+                      disabled={!currentCompany}
                     />
                   </div>
                   <div className="space-y-2">
@@ -195,6 +256,7 @@ export default function Configuracao() {
                       placeholder="5432"
                       className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                       required
+                      disabled={!currentCompany}
                     />
                   </div>
                   <div className="space-y-2">
@@ -206,6 +268,7 @@ export default function Configuracao() {
                       placeholder="Usuário do banco"
                       className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                       required
+                      disabled={!currentCompany}
                     />
                   </div>
                   <div className="space-y-2">
@@ -218,10 +281,15 @@ export default function Configuracao() {
                       placeholder="Senha do banco"
                       className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                       required
+                      disabled={!currentCompany}
                     />
                   </div>
                 </div>
-                <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+                <Button 
+                  type="submit" 
+                  className="bg-blue-600 hover:bg-blue-700"
+                  disabled={!currentCompany}
+                >
                   <Save className="w-4 h-4 mr-2" />
                   Salvar Conexão
                 </Button>
@@ -260,6 +328,7 @@ export default function Configuracao() {
                     placeholder="Ex: minha-instancia"
                     className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                     required
+                    disabled={!currentCompany}
                   />
                 </div>
                 <div className="space-y-2">
@@ -271,6 +340,7 @@ export default function Configuracao() {
                     placeholder="https://api.evolution.com"
                     className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                     required
+                    disabled={!currentCompany}
                   />
                 </div>
                 <div className="space-y-2">
@@ -283,11 +353,16 @@ export default function Configuracao() {
                     placeholder="Sua chave da API Evolution"
                     className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                     required
+                    disabled={!currentCompany}
                   />
                 </div>
-                <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+                <Button 
+                  type="submit" 
+                  className="bg-blue-600 hover:bg-blue-700"
+                  disabled={!currentCompany}
+                >
                   <Save className="w-4 h-4 mr-2" />
-                  Salvar Configuração
+                  {evolutionConfig ? 'Atualizar' : 'Salvar'} Configuração
                 </Button>
               </form>
             </CardContent>
