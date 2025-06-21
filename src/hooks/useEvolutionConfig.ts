@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 
 export interface EvolutionConfig {
   id: string;
@@ -21,30 +20,10 @@ export function useEvolutionConfig(companyId?: string) {
 
   const fetchConfig = async () => {
     try {
-      if (!companyId) {
-        setConfig(null);
-        setLoading(false);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('evolution_configs')
-        .select('*')
-        .eq('company_id', companyId)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      if (error) {
-        console.error('Error fetching Evolution config:', error);
-        return;
-      }
-
-      if (data && data.length > 0) {
-        setConfig(data[0]);
-      } else {
-        setConfig(null);
-      }
+      console.log('EvolutionConfig: Table evolution_configs does not exist in current database schema');
+      
+      // Como a tabela evolution_configs não existe mais, retornar null
+      setConfig(null);
     } catch (error) {
       console.error('Error fetching Evolution config:', error);
     } finally {
@@ -54,35 +33,15 @@ export function useEvolutionConfig(companyId?: string) {
 
   const createConfig = async (configData: Omit<EvolutionConfig, 'id' | 'created_at' | 'updated_at'>) => {
     try {
-      // Garantir que a configuração seja associada à empresa especificada
-      const dataWithCompany = {
-        ...configData,
-        company_id: companyId || null
-      };
-
-      const { data, error } = await supabase
-        .from('evolution_configs')
-        .insert([dataWithCompany])
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error creating Evolution config:', error);
-        toast({
-          title: "Erro",
-          description: "Erro ao criar configuração da Evolution API",
-          variant: "destructive"
-        });
-        throw error;
-      }
-
-      setConfig(data);
+      console.log('EvolutionConfig: Cannot create config - table evolution_configs does not exist');
+      
       toast({
-        title: "Sucesso",
-        description: "Configuração da Evolution API criada com sucesso!"
+        title: "Erro",
+        description: "Tabela de configurações da Evolution API não existe no banco de dados atual",
+        variant: "destructive"
       });
-
-      return data;
+      
+      throw new Error('evolution_configs table does not exist');
     } catch (error) {
       console.error('Error creating Evolution config:', error);
       throw error;
@@ -91,30 +50,15 @@ export function useEvolutionConfig(companyId?: string) {
 
   const updateConfig = async (id: string, updates: Partial<EvolutionConfig>) => {
     try {
-      const { data, error } = await supabase
-        .from('evolution_configs')
-        .update({ ...updates, updated_at: new Date().toISOString() })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error updating Evolution config:', error);
-        toast({
-          title: "Erro",
-          description: "Erro ao atualizar configuração da Evolution API",
-          variant: "destructive"
-        });
-        throw error;
-      }
-
-      setConfig(data);
+      console.log('EvolutionConfig: Cannot update config - table evolution_configs does not exist');
+      
       toast({
-        title: "Sucesso",
-        description: "Configuração da Evolution API atualizada com sucesso!"
+        title: "Erro",
+        description: "Tabela de configurações da Evolution API não existe no banco de dados atual",
+        variant: "destructive"
       });
-
-      return data;
+      
+      throw new Error('evolution_configs table does not exist');
     } catch (error) {
       console.error('Error updating Evolution config:', error);
       throw error;

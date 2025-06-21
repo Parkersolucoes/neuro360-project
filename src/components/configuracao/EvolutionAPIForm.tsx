@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, Save } from "lucide-react";
+import { MessageSquare, Save, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useEvolutionConfig } from "@/hooks/useEvolutionConfig";
 
@@ -75,19 +75,24 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
             <MessageSquare className="w-5 h-5 text-blue-600" />
             <span>Evolution API</span>
           </div>
-          {evolutionConfig && (
-            <Badge className={
-              evolutionConfig.is_active 
-                ? "bg-green-100 text-green-800" 
-                : "bg-red-100 text-red-800"
-            }>
-              {evolutionConfig.is_active ? 'Ativo' : 'Inativo'}
-            </Badge>
-          )}
+          <Badge className="bg-yellow-100 text-yellow-800">
+            <AlertTriangle className="w-3 h-3 mr-1" />
+            Indisponível
+          </Badge>
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleEvolutionSubmit} className="space-y-4">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+          <div className="flex items-center space-x-2">
+            <AlertTriangle className="w-5 h-5 text-yellow-600" />
+            <p className="text-sm text-yellow-800">
+              A funcionalidade Evolution API está temporariamente indisponível. 
+              A tabela de configurações precisa ser recriada no banco de dados.
+            </p>
+          </div>
+        </div>
+        
+        <form onSubmit={handleEvolutionSubmit} className="space-y-4 opacity-50">
           <div className="space-y-2">
             <Label htmlFor="evolution_instance">Nome da Instância</Label>
             <Input
@@ -96,7 +101,7 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
               onChange={(e) => setEvolutionForm({...evolutionForm, instance_name: e.target.value})}
               placeholder="Ex: minha-instancia"
               className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-              required
+              disabled
             />
           </div>
           <div className="space-y-2">
@@ -107,7 +112,7 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
               onChange={(e) => setEvolutionForm({...evolutionForm, api_url: e.target.value})}
               placeholder="https://api.evolution.com"
               className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-              required
+              disabled
             />
           </div>
           <div className="space-y-2">
@@ -119,12 +124,12 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
               onChange={(e) => setEvolutionForm({...evolutionForm, api_key: e.target.value})}
               placeholder="Sua chave da API Evolution"
               className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-              required
+              disabled
             />
           </div>
-          <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+          <Button type="button" className="bg-gray-400 cursor-not-allowed" disabled>
             <Save className="w-4 h-4 mr-2" />
-            {evolutionConfig ? 'Atualizar' : 'Salvar'} Configuração
+            Funcionalidade Indisponível
           </Button>
         </form>
       </CardContent>

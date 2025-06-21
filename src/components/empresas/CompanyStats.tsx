@@ -40,9 +40,9 @@ export function CompanyStats({ companies }: CompanyStatsProps) {
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Total de Usuários</p>
+              <p className="text-sm text-gray-600">Usuários Cadastrados</p>
               <p className="text-2xl font-bold text-blue-600">
-                {companies.length * 5}
+                {companies.length > 0 ? companies.length : 0}
               </p>
             </div>
             <Users className="w-8 h-8 text-blue-500" />
