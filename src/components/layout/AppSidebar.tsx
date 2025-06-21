@@ -90,26 +90,26 @@ export function AppSidebar() {
   const { currentCompany } = useCompanies();
 
   return (
-    <Sidebar className="border-r border-gray-200">
-      <SidebarHeader className="p-6">
+    <Sidebar className="border-r border-gray-700 bg-slate-900">
+      <SidebarHeader className="p-6 bg-slate-900">
         <div className="flex items-center space-x-3 mb-4">
           <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
             <MessageSquare className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">WhatsApp</h1>
-            <p className="text-sm text-gray-500">Automation</p>
+            <h1 className="text-lg font-semibold text-white">WhatsApp</h1>
+            <p className="text-sm text-gray-300">Automation</p>
             {currentCompany && (
-              <p className="text-xs text-blue-600 font-medium mt-1">{currentCompany.name}</p>
+              <p className="text-xs text-blue-400 font-medium mt-1">{currentCompany.name}</p>
             )}
           </div>
         </div>
         <CompanySelector />
       </SidebarHeader>
       
-      <SidebarContent>
+      <SidebarContent className="bg-slate-900">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-medium text-gray-500 uppercase tracking-wider px-3 py-2">
+          <SidebarGroupLabel className="text-xs font-medium text-gray-400 uppercase tracking-wider px-3 py-2">
             Navegação
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -121,8 +121,8 @@ export function AppSidebar() {
                       to={item.url} 
                       className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                         location.pathname === item.url
-                          ? 'bg-blue-50 text-blue-600 border-r-2 border-blue-500'
-                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                          ? 'bg-blue-600 text-white border-r-2 border-blue-400'
+                          : 'text-gray-300 hover:bg-slate-800 hover:text-white'
                       }`}
                     >
                       <item.icon className="w-5 h-5" />
@@ -136,10 +136,10 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4">
+      <SidebarFooter className="p-4 bg-slate-900">
         <Button 
           variant="ghost" 
-          className="w-full justify-start text-gray-700 hover:text-red-600 hover:bg-red-50"
+          className="w-full justify-start text-gray-300 hover:text-red-400 hover:bg-slate-800"
         >
           <LogOut className="w-4 h-4 mr-2" />
           Sair

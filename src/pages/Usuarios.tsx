@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Users, Edit, Trash2, Phone, Mail } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus, Users, Edit, Trash2, Phone, Mail, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface User {
@@ -16,9 +17,11 @@ interface User {
   name: string;
   email: string;
   phone: string;
+  whatsapp: string;
   role: string;
   department: string;
   company: string;
+  is_admin: boolean;
   status: "active" | "inactive";
   createdAt: string;
 }
@@ -31,9 +34,11 @@ export default function Usuarios() {
       name: "João Silva",
       email: "joao@empresa.com",
       phone: "(11) 99999-9999",
+      whatsapp: "(11) 99999-9999",
       role: "admin",
       department: "TI",
       company: "Empresa A",
+      is_admin: true,
       status: "active",
       createdAt: "2024-01-10"
     },
@@ -42,9 +47,11 @@ export default function Usuarios() {
       name: "Maria Santos",
       email: "maria@empresa.com",
       phone: "(11) 88888-8888",
+      whatsapp: "(11) 88888-8888",
       role: "user",
       department: "Vendas",
       company: "Empresa A",
+      is_admin: false,
       status: "active",
       createdAt: "2024-01-12"
     }
@@ -56,9 +63,11 @@ export default function Usuarios() {
     name: "",
     email: "",
     phone: "",
+    whatsapp: "",
     role: "",
     department: "",
-    company: ""
+    company: "",
+    is_admin: false
   });
 
   const roles = [
@@ -106,7 +115,7 @@ export default function Usuarios() {
       });
     }
     
-    setNewUser({ name: "", email: "", phone: "", role: "", department: "", company: "" });
+    setNewUser({ name: "", email: "", phone: "", whatsapp: "", role: "", department: "", company: "", is_admin: false });
     setEditingUser(null);
     setIsDialogOpen(false);
   };
@@ -117,9 +126,11 @@ export default function Usuarios() {
       name: user.name,
       email: user.email,
       phone: user.phone,
+      whatsapp: user.whatsapp,
       role: user.role,
       department: user.department,
-      company: user.company
+      company: user.company,
+      is_admin: user.is_admin
     });
     setIsDialogOpen(true);
   };
@@ -187,6 +198,15 @@ export default function Usuarios() {
                 />
               </div>
               <div className="space-y-2">
+                <Label htmlFor="whatsapp">WhatsApp</Label>
+                <Input
+                  id="whatsapp"
+                  placeholder="(11) 99999-9999"
+                  value={newUser.whatsapp}
+                  onChange={(e) => setNewUser({...newUser, whatsapp: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="role">Função</Label>
                 <Select value={newUser.role} onValueChange={(value) => setNewUser({...newUser, role: value})}>
                   <SelectTrigger>
@@ -231,16 +251,27 @@ export default function Usuarios() {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2 flex items-center space-x-2 col-span-2">
+                <Checkbox
+                  id="is_admin"
+                  checked={newUser.is_admin}
+                  onCheckedChange={(checked) => setNewUser({...newUser, is_admin: checked as boolean})}
+                />
+                <Label htmlFor="is_admin" className="flex items-center space-x-2">
+                  <Shield className="w-4 h-4" />
+                  <span>Usuário Administrador (recebe alertas de erro)</span>
+                </Label>
+              </div>
             </div>
             <div className="flex justify-end space-x-2 mt-6">
               <Button variant="outline" onClick={() => {
                 setIsDialogOpen(false);
                 setEditingUser(null);
-                setNewUser({ name: "", email: "", phone: "", role: "", department: "", company: "" });
+                setNewUser({ name: "", email: "", phone: "", whatsapp: "", role: "", department: "", company: "", is_admin: false });
               }}>
                 Cancelar
               </Button>
-              <Button onClick={saveUser} disabled={!newUser.name || !newUser.email || !newUser.phone}>
+              <Button onClick={saveUser} disabled={!newUser.name || !newUser.email || !newUser.phone || !newUser.whatsapp}>
                 {editingUser ? "Atualizar" : "Criar"} Usuário
               </Button>
             </div>
@@ -272,9 +303,16 @@ export default function Usuarios() {
               {users.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell>
-                    <div>
-                      <div className="font-medium">{user.name}</div>
-                      <div className="text-sm text-gray-500">Criado em {user.createdAt}</div>
+                    <div className="flex items-center space-x-2">
+                      <div>
+                        <div className="font-medium flex items-center space-x-2">
+                          <span>{user.name}</span>
+                          {user.is_admin && (
+                            <Shield className="w-4 h-4 text-blue-500" title="Administrador" />
+                          )}
+                        </div>
+                        <div className="text-sm text-gray-500">Criado em {user.createdAt}</div>
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -286,6 +324,10 @@ export default function Usuarios() {
                       <div className="flex items-center space-x-2">
                         <Phone className="w-3 h-3 text-gray-400" />
                         <span className="text-sm">{user.phone}</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <MessageSquare className="w-3 h-3 text-green-500" />
+                        <span className="text-sm">{user.whatsapp}</span>
                       </div>
                     </div>
                   </TableCell>

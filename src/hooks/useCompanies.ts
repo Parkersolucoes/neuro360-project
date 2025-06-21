@@ -49,9 +49,9 @@ export function useCompanies() {
         .from('user_companies')
         .select(`
           *,
-          companies(
+          companies:company_id(
             *,
-            plans(name, price, max_sql_connections, max_sql_queries)
+            plans:plan_id(name, price, max_sql_connections, max_sql_queries)
           )
         `)
         .eq('user_id', user.id)
@@ -61,6 +61,7 @@ export function useCompanies() {
       
       const typedData = (data || []).map(item => ({
         ...item,
+        role: item.role as 'admin' | 'user' | 'manager',
         companies: item.companies ? {
           ...item.companies,
           status: item.companies.status as 'active' | 'inactive' | 'suspended'
@@ -93,7 +94,7 @@ export function useCompanies() {
         }])
         .select(`
           *,
-          plans(name, price, max_sql_connections, max_sql_queries)
+          plans:plan_id(name, price, max_sql_connections, max_sql_queries)
         `)
         .single();
 
@@ -143,7 +144,7 @@ export function useCompanies() {
         .eq('id', id)
         .select(`
           *,
-          plans(name, price, max_sql_connections, max_sql_queries)
+          plans:plan_id(name, price, max_sql_connections, max_sql_queries)
         `)
         .single();
 
