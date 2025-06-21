@@ -6,7 +6,7 @@ export interface Company {
   email: string;
   phone?: string;
   address?: string;
-  status: string;
+  status: "active" | "inactive" | "suspended";
   plan_id?: string;
   created_at: string;
   updated_at: string;
