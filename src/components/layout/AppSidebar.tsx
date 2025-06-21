@@ -12,7 +12,9 @@ import {
   Building2,
   LogOut,
   Menu,
-  X
+  X,
+  CreditCard,
+  Package
 } from "lucide-react";
 import {
   Sidebar,
@@ -58,6 +60,16 @@ const menuItems = [
     title: "Agendamento",
     url: "/agendamento",
     icon: Calendar,
+  },
+  {
+    title: "Planos",
+    url: "/planos",
+    icon: Package,
+  },
+  {
+    title: "Financeiro",
+    url: "/financeiro",
+    icon: CreditCard,
   },
   {
     title: "Usuários",
