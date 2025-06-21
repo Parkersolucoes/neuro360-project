@@ -14,6 +14,7 @@ export interface User {
   role: string;
   department: string;
   is_admin: boolean;
+  is_master: boolean;
   status: 'active' | 'inactive';
   created_at: string;
   updated_at: string;
@@ -72,7 +73,8 @@ export function useUsers() {
       
       const formattedUsers = (data || []).map(user => ({
         ...user,
-        status: user.status as 'active' | 'inactive'
+        status: user.status as 'active' | 'inactive',
+        is_master: Boolean(user.is_master)
       }));
       
       setUsers(formattedUsers);
@@ -139,6 +141,7 @@ export function useUsers() {
         role: userData.role || 'user',
         department: userData.department.trim(),
         is_admin: Boolean(userData.is_admin),
+        is_master: Boolean(userData.is_master),
         status: userData.status || 'active'
       };
 
@@ -165,7 +168,8 @@ export function useUsers() {
       
       const formattedUser = {
         ...data,
-        status: data.status as 'active' | 'inactive'
+        status: data.status as 'active' | 'inactive',
+        is_master: Boolean(data.is_master)
       };
       
       setUsers(prev => [formattedUser, ...prev]);
@@ -237,6 +241,10 @@ export function useUsers() {
         updateData.is_admin = Boolean(updateData.is_admin);
       }
 
+      if (typeof updateData.is_master !== 'undefined') {
+        updateData.is_master = Boolean(updateData.is_master);
+      }
+
       const { data, error } = await supabase
         .from('users')
         .update(updateData)
@@ -256,7 +264,8 @@ export function useUsers() {
       
       const formattedUser = {
         ...data,
-        status: data.status as 'active' | 'inactive'
+        status: data.status as 'active' | 'inactive',
+        is_master: Boolean(data.is_master)
       };
       
       setUsers(prev => prev.map(user => 

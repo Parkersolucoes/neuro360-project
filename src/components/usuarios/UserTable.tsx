@@ -2,8 +2,9 @@
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2, Phone, Mail, Shield, MessageSquare, Building2 } from "lucide-react";
+import { Edit, Trash2, Phone, Mail, Shield, MessageSquare, Building2, Crown } from "lucide-react";
 import { User } from "@/hooks/useUsers";
+import { useAuth } from "@/hooks/useAuth";
 
 interface UserTableProps {
   users: User[];
@@ -20,10 +21,14 @@ export function UserTable({
   onManageCompanies,
   getUserCompanyNames 
 }: UserTableProps) {
+  const { profile } = useAuth();
+  const isMasterUser = profile?.is_master_user || false;
+
   const roles = [
     { value: "admin", label: "Administrador" },
     { value: "manager", label: "Gerente" },
-    { value: "user", label: "Usuário" }
+    { value: "user", label: "Usuário" },
+    { value: "master", label: "Master" }
   ];
 
   const getRoleLabel = (role: string) => {
@@ -58,7 +63,10 @@ export function UserTable({
                 <div>
                   <div className="font-medium flex items-center space-x-2">
                     <span>{user.name}</span>
-                    {user.is_admin && (
+                    {user.is_master && (
+                      <Crown className="w-4 h-4 text-yellow-500" />
+                    )}
+                    {user.is_admin && !user.is_master && (
                       <Shield className="w-4 h-4 text-blue-500" />
                     )}
                   </div>
@@ -83,14 +91,14 @@ export function UserTable({
               </div>
             </TableCell>
             <TableCell>
-              <Badge variant="secondary">
+              <Badge variant={user.is_master ? "default" : "secondary"} className={user.is_master ? "bg-yellow-500 text-white" : ""}>
                 {getRoleLabel(user.role)}
               </Badge>
             </TableCell>
             <TableCell>{user.department}</TableCell>
             <TableCell>
               <div className="text-sm max-w-48">
-                {getUserCompanyNames(user.id)}
+                {user.is_master ? "Todas as empresas" : getUserCompanyNames(user.id)}
               </div>
             </TableCell>
             <TableCell>
@@ -104,15 +112,18 @@ export function UserTable({
             </TableCell>
             <TableCell>
               <div className="flex space-x-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => onManageCompanies(user)}
-                  title="Gerenciar Empresas"
-                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                >
-                  <Building2 className="w-3 h-3" />
-                </Button>
+                {/* Apenas usuários master podem gerenciar empresas */}
+                {isMasterUser && !user.is_master && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => onManageCompanies(user)}
+                    title="Gerenciar Empresas"
+                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                  >
+                    <Building2 className="w-3 h-3" />
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   variant="outline"
@@ -121,15 +132,18 @@ export function UserTable({
                 >
                   <Edit className="w-3 h-3" />
                 </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                  onClick={() => handleDeleteUser(user.id)}
-                  title="Excluir"
-                >
-                  <Trash2 className="w-3 h-3" />
-                </Button>
+                {/* Não permitir deletar usuário master */}
+                {!user.is_master && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    onClick={() => handleDeleteUser(user.id)}
+                    title="Excluir"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                )}
               </div>
             </TableCell>
           </TableRow>

@@ -659,6 +659,7 @@ export type Database = {
           email: string
           id: string
           is_admin: boolean
+          is_master: boolean
           name: string
           phone: string
           role: string
@@ -672,6 +673,7 @@ export type Database = {
           email: string
           id?: string
           is_admin?: boolean
+          is_master?: boolean
           name: string
           phone: string
           role?: string
@@ -685,6 +687,7 @@ export type Database = {
           email?: string
           id?: string
           is_admin?: boolean
+          is_master?: boolean
           name?: string
           phone?: string
           role?: string
@@ -745,6 +748,10 @@ export type Database = {
         Returns: boolean
       }
       is_master_user: {
+        Args: { user_uuid?: string }
+        Returns: boolean
+      }
+      is_master_user_check: {
         Args: { user_uuid?: string }
         Returns: boolean
       }

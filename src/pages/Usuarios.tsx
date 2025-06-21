@@ -6,6 +6,7 @@ import { Plus, Users } from "lucide-react";
 import { useUsers, User } from "@/hooks/useUsers";
 import { useCompanies } from "@/hooks/useCompanies";
 import { useUserCompanies } from "@/hooks/useUserCompanies";
+import { useAuth } from "@/hooks/useAuth";
 import { UserDialog } from "@/components/usuarios/UserDialog";
 import { UserCompaniesDialog } from "@/components/usuarios/UserCompaniesDialog";
 import { UserTable } from "@/components/usuarios/UserTable";
@@ -14,6 +15,7 @@ export default function Usuarios() {
   const { users, loading, createUser, updateUser, deleteUser } = useUsers();
   const { companies } = useCompanies();
   const { createUserCompanies, getUserCompanies, getUserCompanyNames } = useUserCompanies();
+  const { profile } = useAuth();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCompaniesDialogOpen, setIsCompaniesDialogOpen] = useState(false);
@@ -21,6 +23,8 @@ export default function Usuarios() {
   const [managingUser, setManagingUser] = useState<User | null>(null);
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
   const [primaryCompany, setPrimaryCompany] = useState<string>('');
+
+  const isMasterUser = profile?.is_master_user || false;
 
   const saveUser = async (userData: Omit<User, 'id' | 'created_at' | 'updated_at'>) => {
     try {
@@ -65,6 +69,11 @@ export default function Usuarios() {
   };
 
   const manageUserCompanies = (user: User) => {
+    // Apenas usuários master podem gerenciar empresas
+    if (!isMasterUser) {
+      return;
+    }
+
     console.log('Managing companies for user:', user.id);
     setManagingUser(user);
     
@@ -120,17 +129,20 @@ export default function Usuarios() {
         onCancel={resetForm}
       />
 
-      <UserCompaniesDialog
-        isOpen={isCompaniesDialogOpen}
-        onOpenChange={setIsCompaniesDialogOpen}
-        user={managingUser}
-        companies={companies}
-        selectedCompanies={selectedCompanies}
-        primaryCompany={primaryCompany}
-        onSelectedCompaniesChange={setSelectedCompanies}
-        onPrimaryCompanyChange={setPrimaryCompany}
-        onSave={saveUserCompanies}
-      />
+      {/* Apenas usuários master veem o diálogo de empresas */}
+      {isMasterUser && (
+        <UserCompaniesDialog
+          isOpen={isCompaniesDialogOpen}
+          onOpenChange={setIsCompaniesDialogOpen}
+          user={managingUser}
+          companies={companies}
+          selectedCompanies={selectedCompanies}
+          primaryCompany={primaryCompany}
+          onSelectedCompaniesChange={setSelectedCompanies}
+          onPrimaryCompanyChange={setPrimaryCompany}
+          onSave={saveUserCompanies}
+        />
+      )}
 
       <Card>
         <CardHeader>

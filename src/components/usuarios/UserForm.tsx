@@ -24,6 +24,7 @@ export function UserForm({
     role: "user",
     department: "",
     is_admin: false,
+    is_master: false,
     status: "active" as 'active' | 'inactive'
   });
 
@@ -39,6 +40,7 @@ export function UserForm({
         role: editingUser.role,
         department: editingUser.department,
         is_admin: Boolean(editingUser.is_admin),
+        is_master: Boolean(editingUser.is_master),
         status: editingUser.status
       });
     } else {
@@ -50,6 +52,7 @@ export function UserForm({
         role: "user",
         department: "",
         is_admin: false,
+        is_master: false,
         status: "active"
       });
     }
@@ -63,6 +66,8 @@ export function UserForm({
       
       if (field === 'is_admin') {
         newData.is_admin = Boolean(value);
+      } else if (field === 'is_master') {
+        newData.is_master = Boolean(value);
       } else if (field === 'status') {
         newData.status = value as 'active' | 'inactive';
       } else if (field === 'name') {
@@ -98,6 +103,7 @@ export function UserForm({
         role: formData.role,
         department: formData.department.trim(),
         is_admin: formData.is_admin,
+        is_master: formData.is_master,
         status: formData.status
       };
       
