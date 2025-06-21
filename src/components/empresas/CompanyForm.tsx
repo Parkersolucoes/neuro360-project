@@ -4,34 +4,65 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-interface CompanyFormData {
-  name: string;
-  document: string;
-  email: string;
-  phone: string;
-  address: string;
-  plan_id: string;
-}
-
-interface Plan {
-  id: string;
-  name: string;
-  price: number;
-  max_sql_connections: number;
-  max_sql_queries: number;
-}
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Company } from "@/hooks/useCompanies";
+import { usePlans } from "@/hooks/usePlans";
+import { useState, useEffect } from "react";
 
 interface CompanyFormProps {
-  formData: CompanyFormData;
-  setFormData: (data: CompanyFormData) => void;
-  onSave: () => void;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  editingCompany: Company | null;
+  onSave: (companyData: Omit<Company, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
   onCancel: () => void;
-  isEditing: boolean;
-  plans: Plan[];
 }
 
-export function CompanyForm({ formData, setFormData, onSave, onCancel, isEditing, plans }: CompanyFormProps) {
+export function CompanyForm({ isOpen, onOpenChange, editingCompany, onSave, onCancel }: CompanyFormProps) {
+  const { plans, loading: plansLoading } = usePlans();
+  
+  const [formData, setFormData] = useState({
+    name: "",
+    document: "",
+    email: "",
+    phone: "",
+    address: "",
+    plan_id: "",
+    status: "active" as "active" | "inactive" | "suspended"
+  });
+
+  useEffect(() => {
+    if (editingCompany) {
+      setFormData({
+        name: editingCompany.name || "",
+        document: editingCompany.document || "",
+        email: editingCompany.email || "",
+        phone: editingCompany.phone || "",
+        address: editingCompany.address || "",
+        plan_id: editingCompany.plan_id || "",
+        status: editingCompany.status || "active"
+      });
+    } else {
+      setFormData({
+        name: "",
+        document: "",
+        email: "",
+        phone: "",
+        address: "",
+        plan_id: "",
+        status: "active"
+      });
+    }
+  }, [editingCompany, isOpen]);
+
+  const handleSave = async () => {
+    try {
+      await onSave(formData);
+      onCancel();
+    } catch (error) {
+      console.error('Error saving company:', error);
+    }
+  };
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -40,88 +71,103 @@ export function CompanyForm({ formData, setFormData, onSave, onCancel, isEditing
   };
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="name">Razão Social</Label>
-          <Input
-            id="name"
-            placeholder="Nome da empresa"
-            value={formData.name}
-            onChange={(e) => setFormData({...formData, name: e.target.value})}
-          />
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>
+            {editingCompany ? "Editar Empresa" : "Nova Empresa"}
+          </DialogTitle>
+        </DialogHeader>
+        
+        <div className="space-y-4 mt-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Razão Social</Label>
+              <Input
+                id="name"
+                placeholder="Nome da empresa"
+                value={formData.name}
+                onChange={(e) => setFormData({...formData, name: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="document">CNPJ</Label>
+              <Input
+                id="document"
+                placeholder="XX.XXX.XXX/XXXX-XX"
+                value={formData.document}
+                onChange={(e) => setFormData({...formData, document: e.target.value})}
+              />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">E-mail</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="contato@empresa.com"
+                value={formData.email}
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Telefone</Label>
+              <Input
+                id="phone"
+                placeholder="(11) 3333-4444"
+                value={formData.phone}
+                onChange={(e) => setFormData({...formData, phone: e.target.value})}
+              />
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="address">Endereço</Label>
+            <Textarea
+              id="address"
+              placeholder="Endereço completo da empresa"
+              value={formData.address}
+              onChange={(e) => setFormData({...formData, address: e.target.value})}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="plan">Plano</Label>
+            <Select 
+              value={formData.plan_id} 
+              onValueChange={(value) => setFormData({...formData, plan_id: value})}
+              disabled={plansLoading}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={plansLoading ? "Carregando planos..." : "Selecione um plano"} />
+              </SelectTrigger>
+              <SelectContent>
+                {plans.map((plan) => (
+                  <SelectItem key={plan.id} value={plan.id}>
+                    <div className="flex justify-between items-center w-full">
+                      <span>{plan.name}</span>
+                      <span className="ml-2 text-sm text-gray-500">
+                        {formatCurrency(plan.price)} - {plan.max_sql_queries} consultas - {plan.max_sql_connections} conexões
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="flex justify-end space-x-2 mt-6">
+            <Button variant="outline" onClick={onCancel}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSave} disabled={!formData.name || !formData.document || !formData.email}>
+              {editingCompany ? "Atualizar" : "Criar"} Empresa
+            </Button>
+          </div>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="document">CNPJ</Label>
-          <Input
-            id="document"
-            placeholder="XX.XXX.XXX/XXXX-XX"
-            value={formData.document}
-            onChange={(e) => setFormData({...formData, document: e.target.value})}
-          />
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="email">E-mail</Label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="contato@empresa.com"
-            value={formData.email}
-            onChange={(e) => setFormData({...formData, email: e.target.value})}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="phone">Telefone</Label>
-          <Input
-            id="phone"
-            placeholder="(11) 3333-4444"
-            value={formData.phone}
-            onChange={(e) => setFormData({...formData, phone: e.target.value})}
-          />
-        </div>
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="address">Endereço</Label>
-        <Textarea
-          id="address"
-          placeholder="Endereço completo da empresa"
-          value={formData.address}
-          onChange={(e) => setFormData({...formData, address: e.target.value})}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="plan">Plano</Label>
-        <Select 
-          value={formData.plan_id} 
-          onValueChange={(value) => setFormData({...formData, plan_id: value})}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Selecione um plano" />
-          </SelectTrigger>
-          <SelectContent>
-            {plans.map((plan) => (
-              <SelectItem key={plan.id} value={plan.id}>
-                <div className="flex justify-between items-center w-full">
-                  <span>{plan.name}</span>
-                  <span className="ml-2 text-sm text-gray-500">
-                    {formatCurrency(plan.price)} - {plan.max_sql_queries} consultas - {plan.max_sql_connections} conexões
-                  </span>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="flex justify-end space-x-2 mt-6">
-        <Button variant="outline" onClick={onCancel}>
-          Cancelar
-        </Button>
-        <Button onClick={onSave} disabled={!formData.name || !formData.document || !formData.email}>
-          {isEditing ? "Atualizar" : "Criar"} Empresa
-        </Button>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

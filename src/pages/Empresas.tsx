@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Building2, Settings } from "lucide-react";
 import { useCompanies, Company } from "@/hooks/useCompanies";
 import { CompanyForm } from "@/components/empresas/CompanyForm";
@@ -87,17 +86,13 @@ export default function Empresas() {
           <h1 className="text-3xl font-bold text-gray-900">Empresas</h1>
           <p className="text-gray-600 mt-2">Gerencie as empresas do sistema</p>
         </div>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button 
-              className="bg-blue-600 hover:bg-blue-700"
-              onClick={openNewCompanyDialog}
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Nova Empresa
-            </Button>
-          </DialogTrigger>
-        </Dialog>
+        <Button 
+          className="bg-blue-600 hover:bg-blue-700"
+          onClick={openNewCompanyDialog}
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Nova Empresa
+        </Button>
       </div>
 
       <CompanyStats companies={companies} />
