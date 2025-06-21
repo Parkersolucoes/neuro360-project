@@ -50,121 +50,128 @@ export default function Auth() {
       {/* Grid pattern overlay */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:50px_50px]"></div>
 
-      <div className="relative z-10 w-full max-w-6xl mx-auto px-4 flex items-center justify-between">
-        {/* Left side - Feature showcase */}
-        <div className="hidden lg:flex flex-col space-y-8 flex-1 mr-16">
-          <div className="space-y-6">
-            <h1 className="text-5xl font-bold text-white leading-tight">
-              {config?.system_name || 'Visão 360'}
-              <span className="block text-blue-400 text-3xl font-normal mt-2">
-                Soluções em Dados
-              </span>
-            </h1>
-            <p className="text-xl text-gray-300 leading-relaxed max-w-lg">
-              {config?.system_description || 'Plataforma completa para análise e gestão de dados empresariais com tecnologia avançada'}
-            </p>
-          </div>
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4">
+        <div className="grid lg:grid-cols-2 gap-8 items-center">
+          {/* Left side - Feature showcase with dark blue background */}
+          <div className="hidden lg:block">
+            <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-8 rounded-2xl border border-slate-700/50 shadow-2xl backdrop-blur-xl">
+              <div className="space-y-6">
+                <h1 className="text-5xl font-bold text-white leading-tight">
+                  {config?.system_name || 'Visão 360'}
+                  <span className="block text-yellow-400 text-3xl font-normal mt-2">
+                    Soluções em Dados
+                  </span>
+                </h1>
+                <p className="text-xl text-gray-300 leading-relaxed">
+                  {config?.system_description || 'Plataforma completa para análise e gestão de dados empresariais com tecnologia avançada'}
+                </p>
+              </div>
 
-          <div className="space-y-6">
-            <div className="flex items-center space-x-4 p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
-              <div className="p-3 bg-blue-500/20 rounded-lg">
-                <Database className="w-6 h-6 text-blue-400" />
-              </div>
-              <div>
-                <h3 className="text-white font-semibold">Consultas SQL Avançadas</h3>
-                <p className="text-gray-400 text-sm">Execute consultas complexas com facilidade</p>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-4 p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
-              <div className="p-3 bg-indigo-500/20 rounded-lg">
-                <BarChart3 className="w-6 h-6 text-indigo-400" />
-              </div>
-              <div>
-                <h3 className="text-white font-semibold">Análise de Dados</h3>
-                <p className="text-gray-400 text-sm">Insights poderosos para seu negócio</p>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-4 p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
-              <div className="p-3 bg-purple-500/20 rounded-lg">
-                <TrendingUp className="w-6 h-6 text-purple-400" />
-              </div>
-              <div>
-                <h3 className="text-white font-semibold">Gestão Inteligente</h3>
-                <p className="text-gray-400 text-sm">Automatize processos e otimize resultados</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right side - Login form */}
-        <div className="w-full max-w-md">
-          <Card className="bg-white/10 backdrop-blur-xl border-white/20 shadow-2xl">
-            <CardHeader className="text-center pb-8">
-              <CardTitle className="text-3xl font-bold text-white mb-2">
-                Bem-vindo
-              </CardTitle>
-              <p className="text-gray-300">
-                Faça login para acessar sua plataforma
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div className="space-y-2">
-                  <Input
-                    type="email"
-                    placeholder="Seu email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    disabled={loading}
-                    className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-blue-400 focus:ring-blue-400/20 h-12"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Input
-                    type="password"
-                    placeholder="Sua senha"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    disabled={loading}
-                    className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-blue-400 focus:ring-blue-400/20 h-12"
-                  />
-                </div>
-                {error && (
-                  <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
-                    <p className="text-red-300 text-sm text-center">{error}</p>
+              <div className="space-y-6 mt-8">
+                <div className="flex items-center space-x-4 p-4 bg-gradient-to-r from-blue-500/20 to-yellow-500/20 backdrop-blur-sm rounded-xl border border-yellow-500/20">
+                  <div className="p-3 bg-yellow-500/20 rounded-lg">
+                    <Database className="w-6 h-6 text-yellow-400" />
                   </div>
-                )}
-                <Button 
-                  type="submit" 
-                  className="w-full h-12 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-semibold transition-all duration-200 transform hover:scale-[1.02]"
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      <span>Entrando...</span>
+                  <div>
+                    <h3 className="text-white font-semibold">Consultas SQL Avançadas</h3>
+                    <p className="text-gray-400 text-sm">Execute consultas complexas com facilidade</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-4 p-4 bg-gradient-to-r from-blue-500/20 to-yellow-500/20 backdrop-blur-sm rounded-xl border border-yellow-500/20">
+                  <div className="p-3 bg-yellow-500/20 rounded-lg">
+                    <BarChart3 className="w-6 h-6 text-yellow-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-white font-semibold">Análise de Dados</h3>
+                    <p className="text-gray-400 text-sm">Insights poderosos para seu negócio</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-4 p-4 bg-gradient-to-r from-blue-500/20 to-yellow-500/20 backdrop-blur-sm rounded-xl border border-yellow-500/20">
+                  <div className="p-3 bg-yellow-500/20 rounded-lg">
+                    <TrendingUp className="w-6 h-6 text-yellow-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-white font-semibold">Gestão Inteligente</h3>
+                    <p className="text-gray-400 text-sm">Automatize processos e otimize resultados</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right side - Login form with vertical separator */}
+          <div className="relative">
+            {/* Separator line for large screens */}
+            <div className="hidden lg:block absolute -left-4 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-yellow-500/50 to-transparent"></div>
+            
+            <Card className="bg-white/10 backdrop-blur-xl border-white/20 shadow-2xl">
+              <CardHeader className="text-center pb-8">
+                <CardTitle className="text-3xl font-bold text-white mb-2">
+                  Bem-vindo
+                </CardTitle>
+                <p className="text-gray-300">
+                  Faça login para acessar sua plataforma
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  <div className="space-y-2">
+                    <Input
+                      type="email"
+                      placeholder="Seu email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      disabled={loading}
+                      className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-blue-400 focus:ring-blue-400/20 h-12"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Input
+                      type="password"
+                      placeholder="Sua senha"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      disabled={loading}
+                      className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-blue-400 focus:ring-blue-400/20 h-12"
+                    />
+                  </div>
+                  {error && (
+                    <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
+                      <p className="text-red-300 text-sm text-center">{error}</p>
                     </div>
-                  ) : (
-                    'Entrar na Plataforma'
                   )}
-                </Button>
-              </form>
-              
-              <div className="pt-4 border-t border-white/10">
-                <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
-                  <p className="text-sm text-blue-300 font-medium mb-2">Dados para teste:</p>
-                  <div className="space-y-1 text-sm text-gray-300">
-                    <p><span className="text-blue-400">Email:</span> admin@visao360.com.br</p>
-                    <p><span className="text-blue-400">Senha:</span> 123456</p>
+                  <Button 
+                    type="submit" 
+                    className="w-full h-12 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-semibold transition-all duration-200 transform hover:scale-[1.02]"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        <span>Entrando...</span>
+                      </div>
+                    ) : (
+                      'Entrar na Plataforma'
+                    )}
+                  </Button>
+                </form>
+                
+                <div className="pt-4 border-t border-white/10">
+                  <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                    <p className="text-sm text-blue-300 font-medium mb-2">Dados para teste:</p>
+                    <div className="space-y-1 text-sm text-gray-300">
+                      <p><span className="text-blue-400">Email:</span> admin@visao360.com.br</p>
+                      <p><span className="text-blue-400">Senha:</span> 123456</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>

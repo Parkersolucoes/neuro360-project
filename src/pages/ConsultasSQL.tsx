@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -145,16 +144,16 @@ export default function ConsultasSQL() {
         </Alert>
       )}
 
-      {/* Linha discreta com informações de limites */}
+      {/* Linha com background azul escuro */}
       {currentCompany && currentPlan && (
-        <div className="flex items-center justify-between text-sm text-gray-600 bg-gray-50 px-4 py-2 rounded-lg border">
+        <div className="flex items-center justify-between text-sm bg-slate-900 text-white px-4 py-3 rounded-lg border border-slate-700">
           <span className="font-medium">{currentCompany.name}</span>
           <div className="flex items-center space-x-6">
             <span>
-              Conexões: <span className={connectionsCount >= maxConnections ? "text-red-600 font-medium" : "text-gray-900"}>{connectionsCount}/{maxConnections}</span>
+              Conexões: <span className={connectionsCount >= maxConnections ? "text-red-400 font-medium" : "text-white"}>{connectionsCount}/{maxConnections}</span>
             </span>
             <span>
-              Consultas: <span className={queriesCount >= maxQueries ? "text-red-600 font-medium" : "text-gray-900"}>{queriesCount}/{maxQueries}</span>
+              Consultas: <span className={queriesCount >= maxQueries ? "text-red-400 font-medium" : "text-white"}>{queriesCount}/{maxQueries}</span>
             </span>
             {(queriesCount >= maxQueries || connectionsCount >= maxConnections) && (
               <Badge variant="destructive" className="text-xs">

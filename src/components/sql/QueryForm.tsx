@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -101,17 +100,17 @@ export function QueryForm({ query, onSubmit, onCancel }: QueryFormProps) {
             placeholder="Nome descritivo para a consulta"
             value={formData.name}
             onChange={(e) => setFormData({...formData, name: e.target.value})}
-            className="bg-white"
+            className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
           />
         </div>
         
         <div className="space-y-2">
           <Label htmlFor="connection">Conexão de Banco de Dados</Label>
           <Select value={formData.connection_id} onValueChange={(value) => setFormData({...formData, connection_id: value})}>
-            <SelectTrigger className="bg-white">
+            <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
               <SelectValue placeholder="Selecione qual conexão utilizar" />
             </SelectTrigger>
-            <SelectContent className="bg-white">
+            <SelectContent>
               {companyConnections.map((connection) => (
                 <SelectItem key={connection.id} value={connection.id}>
                   <div className="flex items-center space-x-2">
@@ -149,7 +148,7 @@ export function QueryForm({ query, onSubmit, onCancel }: QueryFormProps) {
             placeholder="Descrição do que a consulta faz"
             value={formData.description}
             onChange={(e) => setFormData({...formData, description: e.target.value})}
-            className="bg-white"
+            className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
           />
         </div>
         
@@ -158,7 +157,7 @@ export function QueryForm({ query, onSubmit, onCancel }: QueryFormProps) {
           <Textarea
             id="query"
             placeholder="SELECT * FROM tabela WHERE..."
-            className="min-h-32 bg-white font-mono text-sm"
+            className="min-h-32 font-mono text-sm border-gray-300 focus:border-blue-500 focus:ring-blue-500"
             value={formData.query_text}
             onChange={(e) => setFormData({...formData, query_text: e.target.value})}
           />
