@@ -70,14 +70,14 @@ export function UserForm({
         if (typeof value === 'boolean') {
           newData.is_admin = value;
         } else {
-          newData.is_admin = value === 'true' || value === true;
+          newData.is_admin = value === 'true';
         }
       } else if (field === 'is_master') {
         // Converter corretamente para boolean
         if (typeof value === 'boolean') {
           newData.is_master = value;
         } else {
-          newData.is_master = value === 'true' || value === true;
+          newData.is_master = value === 'true';
         }
       } else if (field === 'status') {
         newData.status = String(value) as 'active' | 'inactive';
