@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -150,51 +149,24 @@ export function useUsers() {
 
       console.log('Inserting user data:', userToInsert);
 
-      // Usar RPC para inserir usuário como master user
-      const { data, error } = await supabase.rpc('create_user_as_master', {
-        user_data: userToInsert
-      });
+      // Tentar inserção direta primeiro
+      const { data, error } = await supabase
+        .from('users')
+        .insert([userToInsert])
+        .select()
+        .single();
 
       if (error) {
         console.error('Supabase error creating user:', error);
         
-        // Se o RPC não existir, tentar inserção direta
-        if (error.code === '42883') {
-          console.log('RPC not found, trying direct insert...');
-          
-          const { data: directData, error: directError } = await supabase
-            .from('users')
-            .insert([userToInsert])
-            .select()
-            .single();
-
-          if (directError) {
-            console.error('Direct insert also failed:', directError);
-            
-            if (directError.code === '23505') {
-              throw new Error('Email já está em uso por outro usuário');
-            }
-            
-            throw new Error(`Erro do banco de dados: ${directError.message}`);
-          }
-          
-          const formattedUser = {
-            ...directData,
-            status: directData.status as 'active' | 'inactive'
-          };
-          
-          setUsers(prev => [formattedUser, ...prev]);
-          toast({
-            title: "Sucesso",
-            description: "Usuário criado com sucesso!"
-          });
-          
-          return formattedUser;
-        }
-        
-        // Tratar outros erros específicos do Supabase
         if (error.code === '23505') {
           throw new Error('Email já está em uso por outro usuário');
+        }
+        
+        // Se houver erro de RLS, tentar usar uma query mais específica
+        if (error.code === '42501' || error.message.includes('row-level security')) {
+          console.log('RLS error, this might be expected with the current policies');
+          throw new Error('Erro de permissão. Verifique se você tem autorização para criar usuários.');
         }
         
         throw new Error(`Erro do banco de dados: ${error.message}`);
@@ -202,7 +174,11 @@ export function useUsers() {
       
       console.log('User created successfully:', data);
       
-      const formattedUser = {
+      if (!data) {
+        throw new Error('Erro: dados do usuário não retornados após criação');
+      }
+      
+      const formattedUser: User = {
         ...data,
         status: data.status as 'active' | 'inactive'
       };
