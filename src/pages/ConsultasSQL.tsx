@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -144,10 +145,10 @@ export default function ConsultasSQL() {
         </Alert>
       )}
 
-      {/* Linha com background azul escuro */}
+      {/* Linha discreta com informações do plano */}
       {currentCompany && currentPlan && (
         <div className="flex items-center justify-between text-sm bg-slate-900 text-white px-4 py-3 rounded-lg border border-slate-700">
-          <span className="font-medium">{currentCompany.name}</span>
+          <span className="font-medium text-yellow-400">Plano: {currentPlan.name}</span>
           <div className="flex items-center space-x-6">
             <span>
               Conexões: <span className={connectionsCount >= maxConnections ? "text-red-400 font-medium" : "text-white"}>{connectionsCount}/{maxConnections}</span>

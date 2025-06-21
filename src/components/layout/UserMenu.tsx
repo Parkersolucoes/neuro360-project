@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -62,7 +61,7 @@ export function UserMenu() {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="w-full h-auto p-3 justify-start text-left bg-yellow-500 hover:bg-yellow-600 border border-yellow-600">
+          <Button variant="ghost" className="w-full h-auto p-3 justify-start text-left bg-yellow-400 hover:bg-yellow-500 border border-yellow-500">
             <div className="flex items-center space-x-3 w-full">
               <Avatar className="h-8 w-8 flex-shrink-0">
                 <AvatarImage src="" />

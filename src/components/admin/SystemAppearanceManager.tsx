@@ -15,8 +15,7 @@ export function SystemAppearanceManager() {
   const [formData, setFormData] = useState({
     system_name: "360 Solutions",
     system_description: "Automação WhatsApp Inteligente",
-    login_background_image: "",
-    primary_color: "#1e293b"
+    login_background_image: ""
   });
 
   const [isUploading, setIsUploading] = useState(false);
@@ -28,8 +27,7 @@ export function SystemAppearanceManager() {
       setFormData({
         system_name: config.system_name || "360 Solutions",
         system_description: config.system_description || "Automação WhatsApp Inteligente",
-        login_background_image: config.login_background_image || "",
-        primary_color: config.primary_color || "#1e293b"
+        login_background_image: config.login_background_image || ""
       });
     }
   }, [config]);
@@ -120,10 +118,8 @@ export function SystemAppearanceManager() {
             <SystemInfoForm
               systemName={formData.system_name}
               systemDescription={formData.system_description}
-              primaryColor={formData.primary_color}
               onSystemNameChange={(value) => setFormData(prev => ({ ...prev, system_name: value }))}
               onSystemDescriptionChange={(value) => setFormData(prev => ({ ...prev, system_description: value }))}
-              onPrimaryColorChange={(value) => setFormData(prev => ({ ...prev, primary_color: value }))}
             />
 
             <ImageUploadSection
