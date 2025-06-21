@@ -8,6 +8,7 @@ import { SQLQueryService } from '@/services/sqlQueryService';
 export function useSQLQueries() {
   const [queries, setQueries] = useState<SQLQuery[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentPlan, setCurrentPlan] = useState(null);
   const { toast } = useToast();
   const { currentCompany } = useCompanies();
   const { plans } = usePlans();
@@ -16,6 +17,7 @@ export function useSQLQueries() {
     try {
       if (!currentCompany?.id) {
         setQueries([]);
+        setCurrentPlan(null);
         setLoading(false);
         return;
       }
@@ -34,11 +36,15 @@ export function useSQLQueries() {
     }
   };
 
-  // Função para obter o plano atual da empresa
-  const getCurrentPlan = () => {
-    if (!currentCompany?.plan_id) return null;
-    return plans.find(plan => plan.id === currentCompany.plan_id) || null;
-  };
+  // Atualizar o plano atual sempre que a empresa ou planos mudarem
+  useEffect(() => {
+    if (currentCompany?.plan_id && plans.length > 0) {
+      const plan = plans.find(plan => plan.id === currentCompany.plan_id) || null;
+      setCurrentPlan(plan);
+    } else {
+      setCurrentPlan(null);
+    }
+  }, [currentCompany?.plan_id, plans]);
 
   const validatePlanLimits = (): boolean => {
     if (!currentCompany?.plan_id) {
@@ -50,7 +56,6 @@ export function useSQLQueries() {
       return false;
     }
 
-    const currentPlan = getCurrentPlan();
     if (!currentPlan) {
       toast({
         title: "Erro",
@@ -152,12 +157,16 @@ export function useSQLQueries() {
     }
   };
 
-  // Recarregar dados quando a empresa ou planos mudarem
+  // Recarregar dados quando a empresa mudar
   useEffect(() => {
-    if (plans.length > 0) {
+    if (currentCompany?.id) {
       fetchQueries();
+    } else {
+      setQueries([]);
+      setCurrentPlan(null);
+      setLoading(false);
     }
-  }, [currentCompany?.id, plans]);
+  }, [currentCompany?.id]);
 
   return {
     queries,
@@ -167,7 +176,7 @@ export function useSQLQueries() {
     deleteQuery,
     refetch: fetchQueries,
     validatePlanLimits,
-    currentPlan: getCurrentPlan()
+    currentPlan
   };
 }
 
