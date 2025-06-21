@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { User } from "@/hooks/useUsers";
 import { Company } from "@/hooks/useCompanies";
@@ -69,20 +68,24 @@ export function UserForm({
 
   const handleFieldChange = (field: string, value: string | boolean) => {
     console.log('Field changed:', field, 'Value:', value, 'Type:', typeof value);
-    setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Garantir que is_admin seja sempre boolean
+    if (field === 'is_admin') {
+      setFormData(prev => ({ ...prev, [field]: Boolean(value) }));
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    }
   };
 
   const handleCompanyToggle = (companyId: string, checked: boolean) => {
     let newSelected: string[];
     if (checked) {
       newSelected = [...selectedCompanies, companyId];
-      // Se é a primeira empresa selecionada, torna ela principal
       if (selectedCompanies.length === 0) {
         onPrimaryCompanyChange(companyId);
       }
     } else {
       newSelected = selectedCompanies.filter(id => id !== companyId);
-      // Se removeu a empresa principal, define a primeira restante como principal
       if (primaryCompany === companyId) {
         onPrimaryCompanyChange(newSelected.length > 0 ? newSelected[0] : '');
       }
