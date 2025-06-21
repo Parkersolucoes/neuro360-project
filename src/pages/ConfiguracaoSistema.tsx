@@ -13,13 +13,15 @@ import {
   Save,
   Webhook,
   Package,
-  Palette
+  Palette,
+  FileText
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAssasConfig } from "@/hooks/useAssasConfig";
 import { WebhookConfiguration } from "@/components/webhook/WebhookConfiguration";
 import { SystemUpdatesManager } from "@/components/admin/SystemUpdatesManager";
 import { SystemAppearanceManager } from "@/components/admin/SystemAppearanceManager";
+import { SystemLogsViewer } from "@/components/admin/SystemLogsViewer";
 
 export default function ConfiguracaoSistema() {
   const { toast } = useToast();
@@ -69,11 +71,12 @@ export default function ConfiguracaoSistema() {
       </div>
 
       <Tabs defaultValue="appearance" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="appearance">Aparência</TabsTrigger>
           <TabsTrigger value="payments">Gateway de Pagamento</TabsTrigger>
           <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
           <TabsTrigger value="updates">Atualizações</TabsTrigger>
+          <TabsTrigger value="logs">Logs do Sistema</TabsTrigger>
         </TabsList>
 
         <TabsContent value="appearance">
@@ -167,6 +170,10 @@ export default function ConfiguracaoSistema() {
 
         <TabsContent value="updates">
           <SystemUpdatesManager />
+        </TabsContent>
+
+        <TabsContent value="logs">
+          <SystemLogsViewer />
         </TabsContent>
       </Tabs>
     </div>

@@ -9,6 +9,7 @@ import { MessageSquare, Save, TestTube } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useEvolutionConfig } from "@/hooks/useEvolutionConfig";
 import { EvolutionApiService } from "@/services/evolutionApiService";
+import { useSystemLogs } from "@/hooks/useSystemLogs";
 
 interface EvolutionAPIFormProps {
   companyId: string;
@@ -16,6 +17,7 @@ interface EvolutionAPIFormProps {
 
 export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
   const { toast } = useToast();
+  const { logError, logInfo } = useSystemLogs();
   const { config: evolutionConfig, saveConfig, loading } = useEvolutionConfig(companyId);
 
   const [evolutionForm, setEvolutionForm] = useState({
@@ -30,6 +32,7 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
   // Preencher o formulário da Evolution com dados existentes
   useEffect(() => {
     if (evolutionConfig) {
+      console.log('EvolutionAPIForm: Loading existing config:', evolutionConfig);
       setEvolutionForm({
         instance_name: evolutionConfig.instance_name || "",
         api_url: evolutionConfig.api_url || "https://api.evolution.com",
@@ -37,6 +40,7 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
         webhook_url: evolutionConfig.webhook_url || ""
       });
     } else {
+      console.log('EvolutionAPIForm: No existing config, using defaults');
       setEvolutionForm({
         instance_name: "",
         api_url: "https://api.evolution.com",
@@ -50,40 +54,69 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
     e.preventDefault();
     
     if (!evolutionForm.instance_name.trim()) {
+      const errorMsg = "Nome da instância é obrigatório";
+      logError(errorMsg, 'EvolutionAPIForm');
       toast({
         title: "Erro",
-        description: "Nome da instância é obrigatório",
+        description: errorMsg,
         variant: "destructive"
       });
       return;
     }
 
     if (!evolutionForm.api_key.trim()) {
+      const errorMsg = "Chave da API é obrigatória";
+      logError(errorMsg, 'EvolutionAPIForm');
       toast({
         title: "Erro",
-        description: "Chave da API é obrigatória",
+        description: errorMsg,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!companyId) {
+      const errorMsg = "ID da empresa não encontrado";
+      logError(errorMsg, 'EvolutionAPIForm', { companyId });
+      toast({
+        title: "Erro",
+        description: errorMsg,
         variant: "destructive"
       });
       return;
     }
 
     try {
+      console.log('EvolutionAPIForm: Saving config with data:', {
+        ...evolutionForm,
+        company_id: companyId
+      });
+
       await saveConfig({
         ...evolutionForm,
         company_id: companyId,
         is_active: true,
         status: 'disconnected' as const
       });
+
+      logInfo('Configuração Evolution API salva com sucesso', 'EvolutionAPIForm', {
+        companyId,
+        instanceName: evolutionForm.instance_name
+      });
+
     } catch (error) {
-      console.error('Error saving Evolution config:', error);
+      console.error('EvolutionAPIForm: Error saving Evolution config:', error);
+      logError(`Erro ao salvar configuração Evolution API: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'EvolutionAPIForm', error);
     }
   };
 
   const handleTestConnection = async () => {
     if (!evolutionForm.api_url || !evolutionForm.api_key) {
+      const errorMsg = "URL da API e chave são obrigatórias para o teste";
+      logError(errorMsg, 'EvolutionAPIForm');
       toast({
         title: "Erro",
-        description: "URL da API e chave são obrigatórias para o teste",
+        description: errorMsg,
         variant: "destructive"
       });
       return;
@@ -92,6 +125,10 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
     setIsTesting(true);
     
     try {
+      logInfo('Testando conexão com Evolution API', 'EvolutionAPIForm', {
+        api_url: evolutionForm.api_url
+      });
+
       const isConnected = await EvolutionApiService.testConnection({
         api_url: evolutionForm.api_url,
         api_key: evolutionForm.api_key
@@ -103,6 +140,8 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
           description: "Conexão com a Evolution API estabelecida com sucesso!",
         });
         
+        logInfo('Conexão com Evolution API estabelecida com sucesso', 'EvolutionAPIForm');
+        
         // Atualizar status no banco se a configuração já existe
         if (evolutionConfig) {
           await saveConfig({
@@ -113,14 +152,17 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
           });
         }
       } else {
+        const errorMsg = "Não foi possível conectar com a Evolution API. Verifique a URL e a chave da API.";
+        logError(errorMsg, 'EvolutionAPIForm');
         toast({
           title: "Erro de Conexão",
-          description: "Não foi possível conectar com a Evolution API. Verifique a URL e a chave da API.",
+          description: errorMsg,
           variant: "destructive"
         });
       }
     } catch (error) {
-      console.error('Connection test failed:', error);
+      console.error('EvolutionAPIForm: Connection test failed:', error);
+      logError(`Erro ao testar conexão com Evolution API: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'EvolutionAPIForm', error);
       toast({
         title: "Erro",
         description: "Erro ao testar conexão com a Evolution API",
