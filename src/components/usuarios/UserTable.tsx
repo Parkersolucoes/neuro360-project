@@ -21,8 +21,8 @@ export function UserTable({
   onManageCompanies,
   getUserCompanyNames 
 }: UserTableProps) {
-  const { profile } = useAuth();
-  const isMasterUser = profile?.is_master_user || false;
+  const { userLogin } = useAuth();
+  const isMasterUser = userLogin?.is_master || false;
 
   const roles = [
     { value: "admin", label: "Administrador" },

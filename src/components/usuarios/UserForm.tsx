@@ -72,7 +72,7 @@ export function UserForm({
       } else if (field === 'status') {
         newData.status = String(value) as 'active' | 'inactive';
       } else {
-        // Para campos string - apenas estes campos devem receber String(value)
+        // Para campos string
         if (field === 'name' || field === 'email' || field === 'phone' || field === 'whatsapp' || field === 'role' || field === 'department') {
           (newData as any)[field] = String(value);
         }

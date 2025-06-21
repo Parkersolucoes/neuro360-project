@@ -15,7 +15,7 @@ export default function Usuarios() {
   const { users, loading, createUser, updateUser, deleteUser } = useUsers();
   const { companies } = useCompanies();
   const { createUserCompanies, getUserCompanies, getUserCompanyNames } = useUserCompanies();
-  const { profile } = useAuth();
+  const { userLogin } = useAuth();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCompaniesDialogOpen, setIsCompaniesDialogOpen] = useState(false);
@@ -24,7 +24,7 @@ export default function Usuarios() {
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
   const [primaryCompany, setPrimaryCompany] = useState<string>('');
 
-  const isMasterUser = profile?.is_master_user || false;
+  const isMasterUser = userLogin?.is_master || false;
 
   const saveUser = async (userData: Omit<User, 'id' | 'created_at' | 'updated_at'>) => {
     try {

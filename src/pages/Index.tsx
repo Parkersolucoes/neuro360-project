@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -8,15 +7,15 @@ import { useSystemConfig } from "@/hooks/useSystemConfig";
 
 export default function Index() {
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const { userLogin, loading } = useAuth();
   const { config: systemConfig } = useSystemConfig();
 
   useEffect(() => {
     // Redirecionar usuários autenticados para o dashboard
-    if (user && !loading) {
+    if (userLogin && !loading) {
       navigate('/dashboard');
     }
-  }, [user, loading, navigate]);
+  }, [userLogin, loading, navigate]);
 
   if (loading) {
     return (

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
@@ -97,7 +96,7 @@ const adminMenuItems = [
 export function AppSidebar() {
   const location = useLocation();
   const { currentCompany } = useCompanies();
-  const { profile, signOut } = useAuth();
+  const { userLogin, signOut } = useAuth();
   const { config: systemConfig } = useSystemConfig();
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
 
@@ -193,10 +192,10 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="p-4 bg-slate-900">
-        {profile && (
+        {userLogin && (
           <div className="mb-3 p-2 bg-slate-800 rounded-lg">
-            <p className="text-sm text-white font-medium">{profile.name}</p>
-            <p className="text-xs text-gray-400">{profile.email}</p>
+            <p className="text-sm text-white font-medium">{userLogin.name}</p>
+            <p className="text-xs text-gray-400">{userLogin.email}</p>
           </div>
         )}
         <Button 

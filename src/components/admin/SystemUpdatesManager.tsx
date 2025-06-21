@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,7 +14,7 @@ import { ptBR } from "date-fns/locale";
 
 export function SystemUpdatesManager() {
   const { updates, loading, createUpdate, updateUpdate, deleteUpdate } = useSystemUpdates();
-  const { profile } = useAuth();
+  const { userLogin } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [editingUpdate, setEditingUpdate] = useState<any>(null);
   const [formData, setFormData] = useState({
@@ -70,7 +69,7 @@ export function SystemUpdatesManager() {
     });
   };
 
-  if (!profile?.is_admin) {
+  if (!userLogin?.is_admin) {
     return null;
   }
 
