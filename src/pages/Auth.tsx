@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +14,7 @@ import { useSystemUpdates } from "@/hooks/useSystemUpdates";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -33,7 +35,9 @@ export default function Auth() {
     confirmPassword: ""
   });
 
+  const [resetEmail, setResetEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   useEffect(() => {
     // Redirecionar usuários autenticados
@@ -105,6 +109,48 @@ export default function Auth() {
     }
   };
 
+  const handlePasswordReset = async () => {
+    if (!resetEmail) {
+      toast({
+        title: "Erro",
+        description: "Digite seu email para recuperar a senha",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsResettingPassword(true);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/auth`
+      });
+
+      if (error) {
+        toast({
+          title: "Erro",
+          description: error.message || "Erro ao enviar email de recuperação",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Sucesso",
+          description: "Email de recuperação enviado! Verifique sua caixa de entrada.",
+        });
+        setResetEmail("");
+      }
+    } catch (error) {
+      console.error('Password reset error:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao enviar email de recuperação",
+        variant: "destructive"
+      });
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -113,7 +159,7 @@ export default function Auth() {
     );
   }
 
-  const systemName = systemConfig?.system_name || "Visão 360 - Soluções empresariais";
+  const systemName = "Visão 360 - Soluções em Dados";
   const systemDescription = systemConfig?.system_description || "Soluções de Análise dados para seu negócio";
   const backgroundImage = systemConfig?.login_background_image;
 
@@ -176,6 +222,29 @@ export default function Auth() {
                         />
                       </div>
                     </div>
+                    
+                    {/* Seção de recuperação de senha */}
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-2">
+                        <Input
+                          type="email"
+                          placeholder="Email para recuperar senha"
+                          value={resetEmail}
+                          onChange={(e) => setResetEmail(e.target.value)}
+                          className="flex-1"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handlePasswordReset}
+                          disabled={isResettingPassword}
+                        >
+                          {isResettingPassword ? 'Enviando...' : 'Recuperar'}
+                        </Button>
+                      </div>
+                    </div>
+
                     <Button 
                       type="submit" 
                       className="w-full bg-slate-800 hover:bg-slate-900"

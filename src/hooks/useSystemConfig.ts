@@ -33,7 +33,7 @@ export function useSystemConfig() {
       } else {
         // Se não houver configuração, criar uma padrão
         const defaultConfig = {
-          system_name: "Visão 360 - Soluções empresariais",
+          system_name: "Visão 360 - Soluções em Dados",
           system_description: "Soluções de Análise dados para seu negócio",
           primary_color: "#1e293b"
         };
