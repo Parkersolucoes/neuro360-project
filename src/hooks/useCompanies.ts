@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface Company {
   id: string;
@@ -11,79 +11,39 @@ export interface Company {
   phone?: string;
   address?: string;
   plan_id?: string;
-  status: 'active' | 'inactive' | 'suspended';
-  created_at?: string;
-  updated_at?: string;
-  plans?: {
-    name: string;
-    price: number;
-    max_sql_connections: number;
-    max_sql_queries: number;
-  };
-}
-
-export interface UserCompany {
-  id: string;
-  user_id: string;
-  company_id: string;
-  role: string;
-  is_active: boolean;
+  status: string;
   created_at: string;
   updated_at: string;
-  companies?: Company;
 }
 
 export function useCompanies() {
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [userCompanies, setUserCompanies] = useState<UserCompany[]>([]);
   const [currentCompany, setCurrentCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   const fetchCompanies = async () => {
     try {
-      // Since user_companies table exists but might not have data, simulate some data
-      const mockUserCompanies: UserCompany[] = [
-        {
-          id: 'uc-1',
-          user_id: 'user-1',
-          company_id: 'comp-1',
-          role: 'admin',
-          is_active: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          companies: {
-            id: 'comp-1',
-            name: 'Empresa Demo',
-            document: '12.345.678/0001-90',
-            email: 'demo@empresa.com',
-            phone: '(11) 3333-4444',
-            address: 'Rua Demo, 123',
-            status: 'active',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            plans: {
-              name: 'Básico',
-              price: 99.90,
-              max_sql_connections: 1,
-              max_sql_queries: 100
-            }
-          }
-        }
-      ];
+      const { data, error } = await supabase
+        .from('companies')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      setUserCompanies(mockUserCompanies);
-      
-      // Extract companies from userCompanies
-      const extractedCompanies = mockUserCompanies
-        .filter(uc => uc.companies)
-        .map(uc => uc.companies!) as Company[];
-      
-      setCompanies(extractedCompanies);
+      if (error) {
+        console.error('Error fetching companies:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao carregar empresas",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      setCompanies(data || []);
       
       // Set first company as current if none selected
-      if (extractedCompanies.length > 0 && !currentCompany) {
-        setCurrentCompany(extractedCompanies[0]);
+      if (data && data.length > 0 && !currentCompany) {
+        setCurrentCompany(data[0]);
       }
     } catch (error) {
       console.error('Error fetching companies:', error);
@@ -94,71 +54,68 @@ export function useCompanies() {
 
   const createCompany = async (companyData: Omit<Company, 'id' | 'created_at' | 'updated_at'>) => {
     try {
-      // Simulate creating a company
-      const mockCompany: Company = {
-        id: `comp-${Date.now()}`,
-        ...companyData,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        plans: {
-          name: 'Básico',
-          price: 99.90,
-          max_sql_connections: 1,
-          max_sql_queries: 100
-        }
-      };
+      const { data, error } = await supabase
+        .from('companies')
+        .insert([companyData])
+        .select()
+        .single();
 
-      const mockUserCompany: UserCompany = {
-        id: `uc-${Date.now()}`,
-        user_id: 'user-1',
-        company_id: mockCompany.id,
-        role: 'admin',
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        companies: mockCompany
-      };
+      if (error) {
+        console.error('Error creating company:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao criar empresa",
+          variant: "destructive"
+        });
+        throw error;
+      }
 
-      setCompanies(prev => [...prev, mockCompany]);
-      setUserCompanies(prev => [...prev, mockUserCompany]);
-      
+      setCompanies(prev => [data, ...prev]);
       toast({
         title: "Sucesso",
         description: "Empresa criada com sucesso!"
       });
-      
-      return mockCompany;
+
+      return data;
     } catch (error) {
       console.error('Error creating company:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao criar empresa",
-        variant: "destructive"
-      });
       throw error;
     }
   };
 
   const updateCompany = async (id: string, updates: Partial<Company>) => {
     try {
-      const updatedCompany = companies.find(company => company.id === id);
-      if (!updatedCompany) throw new Error('Company not found');
-      
-      const newCompany = { ...updatedCompany, ...updates };
-      
+      const { data, error } = await supabase
+        .from('companies')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating company:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao atualizar empresa",
+          variant: "destructive"
+        });
+        throw error;
+      }
+
       setCompanies(prev => prev.map(company => 
-        company.id === id ? newCompany : company
+        company.id === id ? data : company
       ));
 
-      setUserCompanies(prev => prev.map(uc => 
-        uc.company_id === id && uc.companies ? { ...uc, companies: newCompany } : uc
-      ));
-      
       if (currentCompany?.id === id) {
-        setCurrentCompany(newCompany);
+        setCurrentCompany(data);
       }
-      
-      return newCompany;
+
+      toast({
+        title: "Sucesso",
+        description: "Empresa atualizada com sucesso!"
+      });
+
+      return data;
     } catch (error) {
       console.error('Error updating company:', error);
       throw error;
@@ -167,24 +124,35 @@ export function useCompanies() {
 
   const deleteCompany = async (id: string) => {
     try {
+      const { error } = await supabase
+        .from('companies')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error deleting company:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao remover empresa",
+          variant: "destructive"
+        });
+        throw error;
+      }
+
       setCompanies(prev => prev.filter(company => company.id !== id));
-      setUserCompanies(prev => prev.filter(uc => uc.company_id !== id));
       
       if (currentCompany?.id === id) {
-        setCurrentCompany(null);
+        const remaining = companies.filter(c => c.id !== id);
+        setCurrentCompany(remaining.length > 0 ? remaining[0] : null);
       }
-      
+
       toast({
         title: "Sucesso",
         description: "Empresa removida com sucesso!"
       });
     } catch (error) {
       console.error('Error deleting company:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao remover empresa",
-        variant: "destructive"
-      });
+      throw error;
     }
   };
 
@@ -194,13 +162,12 @@ export function useCompanies() {
 
   return {
     companies,
-    userCompanies,
     currentCompany,
-    setCurrentCompany,
     loading,
     createCompany,
     updateCompany,
     deleteCompany,
+    setCurrentCompany,
     refetch: fetchCompanies
   };
 }

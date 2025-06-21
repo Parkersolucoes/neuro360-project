@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface Template {
   id: string;
@@ -28,8 +29,22 @@ export function useTemplates() {
 
   const fetchTemplates = async () => {
     try {
-      // Since templates table doesn't exist, return empty array
-      setTemplates([]);
+      const { data, error } = await supabase
+        .from('templates')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching templates:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao carregar templates",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      setTemplates(data || []);
     } catch (error) {
       console.error('Error fetching templates:', error);
       toast({
@@ -42,8 +57,16 @@ export function useTemplates() {
 
   const fetchPlanTemplates = async () => {
     try {
-      // Since plan_templates table doesn't exist, return empty array
-      setPlanTemplates([]);
+      const { data, error } = await supabase
+        .from('plan_templates')
+        .select('*');
+
+      if (error) {
+        console.error('Error fetching plan templates:', error);
+        return;
+      }
+
+      setPlanTemplates(data || []);
     } catch (error) {
       console.error('Error fetching plan templates:', error);
     } finally {
@@ -53,62 +76,87 @@ export function useTemplates() {
 
   const createTemplate = async (templateData: Omit<Template, 'id' | 'created_at' | 'updated_at'>) => {
     try {
-      // Simulate creating a template since table doesn't exist
-      const mockTemplate: Template = {
-        id: `mock-template-${Date.now()}`,
-        ...templateData,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      
-      setTemplates(prev => [mockTemplate, ...prev]);
+      const { data, error } = await supabase
+        .from('templates')
+        .insert([templateData])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating template:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao criar template",
+          variant: "destructive"
+        });
+        throw error;
+      }
+
+      setTemplates(prev => [data, ...prev]);
       toast({
-        title: "Informação",
-        description: "Funcionalidade Templates será implementada em uma próxima versão. Template simulado criado."
+        title: "Sucesso",
+        description: "Template criado com sucesso!"
       });
-      
-      return mockTemplate;
+
+      return data;
     } catch (error) {
       console.error('Error creating template:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao criar template",
-        variant: "destructive"
-      });
       throw error;
     }
   };
 
   const updateTemplate = async (id: string, updates: Partial<Template>) => {
     try {
-      // Simulate updating template
-      const updatedTemplate = templates.find(template => template.id === id);
-      if (!updatedTemplate) throw new Error('Template not found');
-      
-      const newTemplate = { ...updatedTemplate, ...updates };
+      const { data, error } = await supabase
+        .from('templates')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating template:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao atualizar template",
+          variant: "destructive"
+        });
+        throw error;
+      }
+
       setTemplates(prev => prev.map(template => 
-        template.id === id ? newTemplate : template
+        template.id === id ? data : template
       ));
-      
+
       toast({
         title: "Sucesso",
         description: "Template atualizado com sucesso!"
       });
-      
-      return newTemplate;
+
+      return data;
     } catch (error) {
       console.error('Error updating template:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao atualizar template",
-        variant: "destructive"
-      });
       throw error;
     }
   };
 
   const deleteTemplate = async (id: string) => {
     try {
+      const { error } = await supabase
+        .from('templates')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error deleting template:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao remover template",
+          variant: "destructive"
+        });
+        throw error;
+      }
+
       setTemplates(prev => prev.filter(template => template.id !== id));
       toast({
         title: "Sucesso",
@@ -116,60 +164,69 @@ export function useTemplates() {
       });
     } catch (error) {
       console.error('Error deleting template:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao remover template",
-        variant: "destructive"
-      });
       throw error;
     }
   };
 
   const linkTemplateToPlan = async (templateId: string, planId: string) => {
     try {
-      // Simulate linking template to plan
-      const mockPlanTemplate: PlanTemplate = {
-        id: `mock-plan-template-${Date.now()}`,
-        template_id: templateId,
-        plan_id: planId,
-        created_at: new Date().toISOString()
-      };
-      
-      setPlanTemplates(prev => [...prev, mockPlanTemplate]);
+      const { data, error } = await supabase
+        .from('plan_templates')
+        .insert([{ template_id: templateId, plan_id: planId }])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error linking template to plan:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao vincular template ao plano",
+          variant: "destructive"
+        });
+        throw error;
+      }
+
+      setPlanTemplates(prev => [...prev, data]);
       toast({
         title: "Sucesso",
         description: "Template vinculado ao plano com sucesso!"
       });
-      
-      return mockPlanTemplate;
+
+      return data;
     } catch (error) {
       console.error('Error linking template to plan:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao vincular template ao plano",
-        variant: "destructive"
-      });
       throw error;
     }
   };
 
   const unlinkTemplateFromPlan = async (templateId: string, planId: string) => {
     try {
+      const { error } = await supabase
+        .from('plan_templates')
+        .delete()
+        .eq('template_id', templateId)
+        .eq('plan_id', planId);
+
+      if (error) {
+        console.error('Error unlinking template from plan:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao desvincular template do plano",
+          variant: "destructive"
+        });
+        throw error;
+      }
+
       setPlanTemplates(prev => prev.filter(pt => 
         !(pt.template_id === templateId && pt.plan_id === planId)
       ));
-      
+
       toast({
         title: "Sucesso",
         description: "Template desvinculado do plano com sucesso!"
       });
     } catch (error) {
       console.error('Error unlinking template from plan:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao desvincular template do plano",
-        variant: "destructive"
-      });
       throw error;
     }
   };

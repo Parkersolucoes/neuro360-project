@@ -1,17 +1,21 @@
 
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface QRSession {
   id: string;
-  evolution_config_id: string;
-  instance_name: string;
+  company_id: string | null;
+  session_name: string;
+  status: string;
+  qr_code: string | null;
+  phone_number: string | null;
+  created_at: string;
+  updated_at: string;
+  session_status?: string;
   qr_code_data?: string;
-  session_status: 'connected' | 'waiting' | 'disconnected';
   connected_at?: string;
   last_activity?: string;
-  created_at?: string;
-  updated_at?: string;
 }
 
 export function useQRSessions() {
@@ -19,10 +23,31 @@ export function useQRSessions() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const fetchSession = async () => {
+  const fetchSession = async (companyId?: string) => {
     try {
-      // Since qr_sessions table doesn't exist, return null
-      setSession(null);
+      let query = supabase
+        .from('qr_sessions')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (companyId) {
+        query = query.eq('company_id', companyId);
+      }
+
+      const { data, error } = await query.limit(1);
+
+      if (error) {
+        console.error('Error fetching QR session:', error);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        setSession({
+          ...data[0],
+          session_status: data[0].status,
+          qr_code_data: data[0].qr_code
+        });
+      }
     } catch (error) {
       console.error('Error fetching QR session:', error);
     } finally {
@@ -30,33 +55,37 @@ export function useQRSessions() {
     }
   };
 
-  const createSession = async (evolutionConfigId: string, instanceName: string) => {
+  const createSession = async (evolutionConfigId: string, instanceName: string, companyId?: string) => {
     try {
-      // Simulate creating a session since table doesn't exist
-      const mockSession: QRSession = {
-        id: 'mock-session-id',
-        evolution_config_id: evolutionConfigId,
-        instance_name: instanceName,
-        session_status: 'waiting',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      
-      setSession(mockSession);
-      
-      toast({
-        title: "Informação",
-        description: "Funcionalidade QR Sessions será implementada em uma próxima versão."
+      const { data, error } = await supabase
+        .from('qr_sessions')
+        .insert([{
+          company_id: companyId || null,
+          session_name: instanceName,
+          status: 'waiting'
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating QR session:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao criar sessão QR",
+          variant: "destructive"
+        });
+        throw error;
+      }
+
+      setSession({
+        ...data,
+        session_status: data.status,
+        qr_code_data: data.qr_code
       });
-      
-      return mockSession;
+
+      return data;
     } catch (error) {
       console.error('Error creating QR session:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao criar sessão QR",
-        variant: "destructive"
-      });
       throw error;
     }
   };
@@ -65,39 +94,53 @@ export function useQRSessions() {
     if (!session) return;
 
     try {
-      // Simulate updating session
-      const updatedSession = { ...session, ...updates };
-      setSession(updatedSession);
-      return updatedSession;
+      const updateData: any = { ...updates, updated_at: new Date().toISOString() };
+      
+      // Map frontend properties to backend properties
+      if (updates.session_status) {
+        updateData.status = updates.session_status;
+        delete updateData.session_status;
+      }
+      if (updates.qr_code_data) {
+        updateData.qr_code = updates.qr_code_data;
+        delete updateData.qr_code_data;
+      }
+
+      const { data, error } = await supabase
+        .from('qr_sessions')
+        .update(updateData)
+        .eq('id', session.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating QR session:', error);
+        return;
+      }
+
+      setSession(prev => prev ? {
+        ...prev,
+        ...updates,
+        ...data,
+        session_status: data.status,
+        qr_code_data: data.qr_code
+      } : null);
     } catch (error) {
       console.error('Error updating QR session:', error);
-      throw error;
     }
   };
 
-  const disconnectSession = async () => {
-    if (!session) return;
-
-    try {
-      // Simulate disconnecting session
-      const disconnectedSession = { 
-        ...session, 
-        session_status: 'disconnected' as const,
-        qr_code_data: undefined 
-      };
-      
-      setSession(disconnectedSession);
-      
-      toast({
-        title: "Sucesso",
-        description: "Sessão desconectada com sucesso!"
+  const disconnectSession = () => {
+    if (session) {
+      updateSession({ 
+        session_status: 'disconnected',
+        qr_code_data: null,
+        phone_number: null
       });
-    } catch (error) {
-      console.error('Error disconnecting QR session:', error);
+      
       toast({
-        title: "Erro",
-        description: "Erro ao desconectar sessão",
-        variant: "destructive"
+        title: "Sessão desconectada",
+        description: "WhatsApp desconectado com sucesso!"
       });
     }
   };
