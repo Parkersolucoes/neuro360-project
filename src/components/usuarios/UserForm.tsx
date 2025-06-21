@@ -121,6 +121,7 @@ export function UserForm({
             placeholder="Nome do usuário"
             value={formData.name}
             onChange={(e) => setFormData({...formData, name: e.target.value})}
+            className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
           />
         </div>
         <div className="space-y-2">
@@ -131,6 +132,7 @@ export function UserForm({
             placeholder="email@empresa.com"
             value={formData.email}
             onChange={(e) => setFormData({...formData, email: e.target.value})}
+            className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
           />
         </div>
         <div className="space-y-2">
@@ -140,6 +142,7 @@ export function UserForm({
             placeholder="(11) 99999-9999"
             value={formData.phone}
             onChange={(e) => setFormData({...formData, phone: e.target.value})}
+            className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
           />
         </div>
         <div className="space-y-2">
@@ -149,12 +152,13 @@ export function UserForm({
             placeholder="(11) 99999-9999"
             value={formData.whatsapp}
             onChange={(e) => setFormData({...formData, whatsapp: e.target.value})}
+            className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
           />
         </div>
         <div className="space-y-2">
           <Label htmlFor="role">Função</Label>
           <Select value={formData.role} onValueChange={(value) => setFormData({...formData, role: value})}>
-            <SelectTrigger>
+            <SelectTrigger className="border-blue-200 focus:border-blue-500 focus:ring-blue-500">
               <SelectValue placeholder="Selecione a função" />
             </SelectTrigger>
             <SelectContent>
@@ -169,7 +173,7 @@ export function UserForm({
         <div className="space-y-2">
           <Label htmlFor="department">Departamento</Label>
           <Select value={formData.department} onValueChange={(value) => setFormData({...formData, department: value})}>
-            <SelectTrigger>
+            <SelectTrigger className="border-blue-200 focus:border-blue-500 focus:ring-blue-500">
               <SelectValue placeholder="Selecione o departamento" />
             </SelectTrigger>
             <SelectContent>
@@ -187,7 +191,7 @@ export function UserForm({
             value={formData.status} 
             onValueChange={(value: 'active' | 'inactive') => setFormData({...formData, status: value})}
           >
-            <SelectTrigger>
+            <SelectTrigger className="border-blue-200 focus:border-blue-500 focus:ring-blue-500">
               <SelectValue placeholder="Selecione o status" />
             </SelectTrigger>
             <SelectContent>
@@ -204,19 +208,20 @@ export function UserForm({
             id="is_admin"
             checked={formData.is_admin}
             onCheckedChange={(checked) => setFormData({...formData, is_admin: checked as boolean})}
+            className="border-blue-200 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
           />
           <Label htmlFor="is_admin" className="flex items-center space-x-2">
-            <Shield className="w-4 h-4" />
+            <Shield className="w-4 h-4 text-blue-500" />
             <span>Usuário Administrador (recebe alertas de erro)</span>
           </Label>
         </div>
         
         <div className="space-y-3">
           <Label className="text-base font-medium flex items-center space-x-2">
-            <Building2 className="w-4 h-4" />
+            <Building2 className="w-4 h-4 text-blue-500" />
             <span>Empresas</span>
           </Label>
-          <div className="border rounded-lg p-4 space-y-3 max-h-48 overflow-y-auto">
+          <div className="border border-blue-200 rounded-lg p-4 space-y-3 max-h-48 overflow-y-auto">
             {companies.map((company) => (
               <div key={company.id} className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
@@ -224,6 +229,7 @@ export function UserForm({
                     id={`company-${company.id}`}
                     checked={selectedCompanies.includes(company.id)}
                     onCheckedChange={(checked) => handleCompanyToggle(company.id, checked as boolean)}
+                    className="border-blue-200 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
                   />
                   <Label htmlFor={`company-${company.id}`} className="flex-1">
                     {company.name}
@@ -235,8 +241,9 @@ export function UserForm({
                       id={`primary-${company.id}`}
                       checked={primaryCompany === company.id}
                       onCheckedChange={(checked) => handlePrimaryCompanyChange(company.id, checked as boolean)}
+                      className="border-blue-200 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
                     />
-                    <Label htmlFor={`primary-${company.id}`} className="text-sm text-gray-600">
+                    <Label htmlFor={`primary-${company.id}`} className="text-sm text-blue-600">
                       Principal
                     </Label>
                   </div>
@@ -253,12 +260,13 @@ export function UserForm({
       </div>
 
       <div className="flex justify-end space-x-2 mt-6">
-        <Button variant="outline" onClick={onCancel}>
+        <Button variant="outline" onClick={onCancel} className="border-blue-200 text-blue-600 hover:bg-blue-50">
           Cancelar
         </Button>
         <Button 
           onClick={handleSave} 
           disabled={!isFormValid}
+          className="bg-blue-500 hover:bg-blue-600 text-white"
         >
           {editingUser ? "Atualizar" : "Criar"} Usuário
         </Button>

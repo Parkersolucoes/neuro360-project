@@ -70,7 +70,13 @@ export function useUsers() {
 
       if (error) throw error;
       
-      setUsers(data || []);
+      // Garantir que o status seja do tipo correto
+      const formattedUsers = (data || []).map(user => ({
+        ...user,
+        status: user.status as 'active' | 'inactive'
+      }));
+      
+      setUsers(formattedUsers);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast({
@@ -93,13 +99,19 @@ export function useUsers() {
 
       if (error) throw error;
       
-      setUsers(prev => [data, ...prev]);
+      // Garantir que o status seja do tipo correto
+      const formattedUser = {
+        ...data,
+        status: data.status as 'active' | 'inactive'
+      };
+      
+      setUsers(prev => [formattedUser, ...prev]);
       toast({
         title: "Sucesso",
         description: "Usuário criado com sucesso!"
       });
       
-      return data;
+      return formattedUser;
     } catch (error) {
       console.error('Error creating user:', error);
       toast({
@@ -122,8 +134,14 @@ export function useUsers() {
 
       if (error) throw error;
       
+      // Garantir que o status seja do tipo correto
+      const formattedUser = {
+        ...data,
+        status: data.status as 'active' | 'inactive'
+      };
+      
       setUsers(prev => prev.map(user => 
-        user.id === id ? data : user
+        user.id === id ? formattedUser : user
       ));
       
       toast({
@@ -131,7 +149,7 @@ export function useUsers() {
         description: "Usuário atualizado com sucesso!"
       });
       
-      return data;
+      return formattedUser;
     } catch (error) {
       console.error('Error updating user:', error);
       toast({
