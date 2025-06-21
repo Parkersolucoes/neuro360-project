@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { User } from "@/hooks/useUsers";
 import { Company } from "@/hooks/useCompanies";
@@ -78,7 +79,8 @@ export function UserForm({
       } else if (field === 'status') {
         updates.status = value as 'active' | 'inactive';
       } else {
-        (updates as any)[field] = value;
+        // Para outros campos string
+        (updates as any)[field] = String(value);
       }
       
       return { ...prev, ...updates };
@@ -110,10 +112,31 @@ export function UserForm({
   const handleSave = async () => {
     if (isSaving) return;
     
+    // Validar se há pelo menos uma empresa selecionada
+    if (selectedCompanies.length === 0) {
+      alert('Selecione pelo menos uma empresa para o usuário.');
+      return;
+    }
+    
     try {
       setIsSaving(true);
       console.log('Submitting form data:', formData);
-      await onSave(formData);
+      console.log('Selected companies:', selectedCompanies);
+      console.log('Primary company:', primaryCompany);
+      
+      // Garantir que todos os campos obrigatórios estão preenchidos
+      const userData = {
+        name: formData.name.trim(),
+        email: formData.email.trim().toLowerCase(),
+        phone: formData.phone.trim(),
+        whatsapp: formData.whatsapp.trim(),
+        role: formData.role,
+        department: formData.department.trim(),
+        is_admin: Boolean(formData.is_admin),
+        status: formData.status
+      };
+      
+      await onSave(userData);
     } catch (error) {
       console.error('Error saving user:', error);
     } finally {
@@ -121,7 +144,12 @@ export function UserForm({
     }
   };
 
-  const isFormValid = formData.name && formData.email && formData.phone && formData.whatsapp && formData.department;
+  const isFormValid = formData.name.trim() && 
+                     formData.email.trim() && 
+                     formData.phone.trim() && 
+                     formData.whatsapp.trim() && 
+                     formData.department.trim() &&
+                     selectedCompanies.length > 0;
 
   return (
     <div className="space-y-6 bg-white">

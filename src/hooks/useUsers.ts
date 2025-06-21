@@ -92,24 +92,73 @@ export function useUsers() {
     try {
       console.log('Creating user with data:', userData);
       
+      // Validações básicas
+      if (!userData.name?.trim()) {
+        throw new Error('Nome é obrigatório');
+      }
+      
+      if (!userData.email?.trim()) {
+        throw new Error('Email é obrigatório');
+      }
+      
+      if (!userData.phone?.trim()) {
+        throw new Error('Telefone é obrigatório');
+      }
+      
+      if (!userData.whatsapp?.trim()) {
+        throw new Error('WhatsApp é obrigatório');
+      }
+      
+      if (!userData.department?.trim()) {
+        throw new Error('Departamento é obrigatório');
+      }
+
+      // Validar formato do email
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(userData.email)) {
+        throw new Error('Formato de email inválido');
+      }
+
+      // Verificar se email já existe
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', userData.email.toLowerCase())
+        .maybeSingle();
+
+      if (existingUser) {
+        throw new Error('Já existe um usuário com este email');
+      }
+
+      // Preparar dados para inserção
+      const userToInsert = {
+        name: userData.name.trim(),
+        email: userData.email.trim().toLowerCase(),
+        phone: userData.phone.trim(),
+        whatsapp: userData.whatsapp.trim(),
+        role: userData.role || 'user',
+        department: userData.department.trim(),
+        is_admin: Boolean(userData.is_admin),
+        status: userData.status || 'active'
+      };
+
+      console.log('Inserting user data:', userToInsert);
+
       const { data, error } = await supabase
         .from('users')
-        .insert([{
-          name: userData.name,
-          email: userData.email,
-          phone: userData.phone,
-          whatsapp: userData.whatsapp,
-          role: userData.role,
-          department: userData.department,
-          is_admin: userData.is_admin,
-          status: userData.status
-        }])
+        .insert([userToInsert])
         .select()
         .single();
 
       if (error) {
         console.error('Supabase error:', error);
-        throw error;
+        
+        // Tratar erros específicos do Supabase
+        if (error.code === '23505') {
+          throw new Error('Email já está em uso por outro usuário');
+        }
+        
+        throw new Error(`Erro do banco de dados: ${error.message}`);
       }
       
       console.log('User created successfully:', data);
@@ -128,9 +177,11 @@ export function useUsers() {
       return formattedUser;
     } catch (error) {
       console.error('Error creating user:', error);
+      const errorMessage = error instanceof Error ? error.message : "Erro ao criar usuário";
+      
       toast({
         title: "Erro",
-        description: error instanceof Error ? error.message : "Erro ao criar usuário",
+        description: errorMessage,
         variant: "destructive"
       });
       throw error;
@@ -139,14 +190,69 @@ export function useUsers() {
 
   const updateUser = async (id: string, updates: Partial<User>) => {
     try {
+      // Validações básicas para atualização
+      if (updates.email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(updates.email)) {
+          throw new Error('Formato de email inválido');
+        }
+
+        // Verificar se email já existe em outro usuário
+        const { data: existingUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('email', updates.email.toLowerCase())
+          .neq('id', id)
+          .maybeSingle();
+
+        if (existingUser) {
+          throw new Error('Já existe outro usuário com este email');
+        }
+      }
+
+      // Preparar dados para atualização
+      const updateData: any = { ...updates };
+      
+      if (updateData.email) {
+        updateData.email = updateData.email.toLowerCase();
+      }
+      
+      if (updateData.name) {
+        updateData.name = updateData.name.trim();
+      }
+      
+      if (updateData.phone) {
+        updateData.phone = updateData.phone.trim();
+      }
+      
+      if (updateData.whatsapp) {
+        updateData.whatsapp = updateData.whatsapp.trim();
+      }
+      
+      if (updateData.department) {
+        updateData.department = updateData.department.trim();
+      }
+
+      if (typeof updateData.is_admin !== 'undefined') {
+        updateData.is_admin = Boolean(updateData.is_admin);
+      }
+
       const { data, error } = await supabase
         .from('users')
-        .update(updates)
+        .update(updateData)
         .eq('id', id)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase update error:', error);
+        
+        if (error.code === '23505') {
+          throw new Error('Email já está em uso por outro usuário');
+        }
+        
+        throw new Error(`Erro do banco de dados: ${error.message}`);
+      }
       
       const formattedUser = {
         ...data,
@@ -165,9 +271,11 @@ export function useUsers() {
       return formattedUser;
     } catch (error) {
       console.error('Error updating user:', error);
+      const errorMessage = error instanceof Error ? error.message : "Erro ao atualizar usuário";
+      
       toast({
         title: "Erro",
-        description: "Erro ao atualizar usuário",
+        description: errorMessage,
         variant: "destructive"
       });
       throw error;

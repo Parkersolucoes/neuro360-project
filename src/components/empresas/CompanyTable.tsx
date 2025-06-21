@@ -6,6 +6,8 @@ import { Edit, Trash2, Mail, Phone, MapPin, Settings, Database, MessageSquare } 
 import { Company } from "@/hooks/useCompanies";
 import { usePlans } from "@/hooks/usePlans";
 import { useCompanyStats } from "@/hooks/useCompanyStats";
+import { useCompanies } from "@/hooks/useCompanies";
+import { useToast } from "@/hooks/use-toast";
 
 interface CompanyTableProps {
   companies: Company[];
@@ -17,11 +19,36 @@ interface CompanyTableProps {
 export function CompanyTable({ companies, onEditCompany, onDeleteCompany, onConfigureCompany }: CompanyTableProps) {
   const { plans } = usePlans();
   const { stats } = useCompanyStats();
+  const { currentCompany } = useCompanies();
+  const { toast } = useToast();
 
   const handleDeleteCompany = async (companyId: string) => {
     if (confirm("Tem certeza que deseja remover esta empresa?")) {
       await onDeleteCompany(companyId);
     }
+  };
+
+  const handleConfigureCompany = (company: Company) => {
+    // Verificar se a empresa selecionada é a mesma do menu principal
+    if (!currentCompany) {
+      toast({
+        title: "Erro",
+        description: "Nenhuma empresa selecionada no menu principal.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (currentCompany.id !== company.id) {
+      toast({
+        title: "Acesso Negado",
+        description: `Só é possível configurar a empresa atualmente selecionada (${currentCompany.name}). Selecione a empresa ${company.name} no menu principal primeiro.`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    onConfigureCompany(company);
   };
 
   const getCompanyPlan = (planId: string | null) => {
@@ -54,12 +81,20 @@ export function CompanyTable({ companies, onEditCompany, onDeleteCompany, onConf
         {companies.map((company) => {
           const plan = getCompanyPlan(company.plan_id);
           const companyStats = getCompanyStats(company.id);
+          const isCurrentCompany = currentCompany?.id === company.id;
           
           return (
-            <TableRow key={company.id}>
+            <TableRow key={company.id} className={isCurrentCompany ? "bg-blue-50" : ""}>
               <TableCell>
                 <div>
-                  <div className="font-medium">{company.name}</div>
+                  <div className="font-medium flex items-center space-x-2">
+                    <span>{company.name}</span>
+                    {isCurrentCompany && (
+                      <Badge variant="default" className="text-xs bg-blue-600">
+                        Selecionada
+                      </Badge>
+                    )}
+                  </div>
                   <div className="text-sm text-gray-500 flex items-center space-x-1">
                     <MapPin className="w-3 h-3" />
                     <span>{company.address || 'Endereço não informado'}</span>
@@ -133,9 +168,10 @@ export function CompanyTable({ companies, onEditCompany, onDeleteCompany, onConf
                 <div className="flex space-x-2">
                   <Button
                     size="sm"
-                    variant="outline"
-                    onClick={() => onConfigureCompany(company)}
-                    title="Configurações"
+                    variant={isCurrentCompany ? "default" : "outline"}
+                    onClick={() => handleConfigureCompany(company)}
+                    title={isCurrentCompany ? "Configurações" : "Selecione esta empresa no menu principal para configurar"}
+                    disabled={!isCurrentCompany}
                   >
                     <Settings className="w-3 h-3" />
                   </Button>
