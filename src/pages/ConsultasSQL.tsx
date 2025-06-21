@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,20 +10,17 @@ import { QueryDetails } from "@/components/sql/QueryDetails";
 import { useSQLQueries } from "@/hooks/useSQLQueries";
 import { useSQLConnections } from "@/hooks/useSQLConnections";
 import { useCompanies } from "@/hooks/useCompanies";
-import { usePlans } from "@/hooks/usePlans";
 import { SQLQuery } from "@/types/sqlQuery";
 
 export default function ConsultasSQL() {
-  const { queries, createQuery, updateQuery, deleteQuery, loading, validatePlanLimits } = useSQLQueries();
+  const { queries, createQuery, updateQuery, deleteQuery, loading, validatePlanLimits, currentPlan } = useSQLQueries();
   const { connections } = useSQLConnections();
   const { currentCompany } = useCompanies();
-  const { plans } = usePlans();
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [editingQuery, setEditingQuery] = useState<SQLQuery | null>(null);
   const [selectedQuery, setSelectedQuery] = useState<SQLQuery | null>(null);
 
-  const currentPlan = currentCompany?.plan_id ? plans.find(plan => plan.id === currentCompany.plan_id) : null;
   const queriesCount = queries.length;
   const maxQueries = currentPlan?.max_sql_queries || 0;
 
@@ -165,7 +161,7 @@ export default function ConsultasSQL() {
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Database className="w-5 h-5 text-blue-500" />
-            <span>Consultas Salvas</span>
+            <span>Consultas Salvas ({queriesCount})</span>
           </CardTitle>
         </CardHeader>
         <CardContent>

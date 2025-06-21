@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useCompanies } from '@/hooks/useCompanies';
@@ -35,6 +34,12 @@ export function useSQLQueries() {
     }
   };
 
+  // Função para obter o plano atual da empresa
+  const getCurrentPlan = () => {
+    if (!currentCompany?.plan_id) return null;
+    return plans.find(plan => plan.id === currentCompany.plan_id) || null;
+  };
+
   const validatePlanLimits = (): boolean => {
     if (!currentCompany?.plan_id) {
       toast({
@@ -45,7 +50,7 @@ export function useSQLQueries() {
       return false;
     }
 
-    const currentPlan = plans.find(plan => plan.id === currentCompany.plan_id);
+    const currentPlan = getCurrentPlan();
     if (!currentPlan) {
       toast({
         title: "Erro",
@@ -147,9 +152,12 @@ export function useSQLQueries() {
     }
   };
 
+  // Recarregar dados quando a empresa ou planos mudarem
   useEffect(() => {
-    fetchQueries();
-  }, [currentCompany?.id]);
+    if (plans.length > 0) {
+      fetchQueries();
+    }
+  }, [currentCompany?.id, plans]);
 
   return {
     queries,
@@ -158,7 +166,8 @@ export function useSQLQueries() {
     updateQuery,
     deleteQuery,
     refetch: fetchQueries,
-    validatePlanLimits
+    validatePlanLimits,
+    currentPlan: getCurrentPlan()
   };
 }
 
