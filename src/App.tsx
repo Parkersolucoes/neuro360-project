@@ -7,7 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { CompaniesProvider } from "@/providers/CompaniesProvider";
 import { AuthProvider } from "@/hooks/useAuth";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { Sidebar } from "@/components/layout/Sidebar";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Index from "@/pages/Index";
 import Dashboard from "@/pages/Dashboard";
@@ -49,93 +49,132 @@ function App() {
                 <Route path="/" element={<Index />} />
                 <Route path="/dashboard" element={
                   <ProtectedRoute>
-                    <DashboardLayout>
-                      <Dashboard />
-                    </DashboardLayout>
+                    <div className="flex min-h-screen">
+                      <Sidebar />
+                      <main className="flex-1 p-6">
+                        <Dashboard />
+                      </main>
+                    </div>
                   </ProtectedRoute>
                 } />
                 <Route path="/empresas" element={
                   <ProtectedRoute>
-                    <DashboardLayout>
-                      <Empresas />
-                    </DashboardLayout>
+                    <div className="flex min-h-screen">
+                      <Sidebar />
+                      <main className="flex-1 p-6">
+                        <Empresas />
+                      </main>
+                    </div>
                   </ProtectedRoute>
                 } />
                 <Route path="/usuarios" element={
                   <ProtectedRoute>
-                    <DashboardLayout>
-                      <Usuarios />
-                    </DashboardLayout>
+                    <div className="flex min-h-screen">
+                      <Sidebar />
+                      <main className="flex-1 p-6">
+                        <Usuarios />
+                      </main>
+                    </div>
                   </ProtectedRoute>
                 } />
                 <Route path="/consultas-sql" element={
                   <ProtectedRoute>
-                    <DashboardLayout>
-                      <ConsultasSQL />
-                    </DashboardLayout>
+                    <div className="flex min-h-screen">
+                      <Sidebar />
+                      <main className="flex-1 p-6">
+                        <ConsultasSQL />
+                      </main>
+                    </div>
                   </ProtectedRoute>
                 } />
                 <Route path="/sql-server" element={
                   <ProtectedRoute>
-                    <DashboardLayout>
-                      <SQLServer />
-                    </DashboardLayout>
+                    <div className="flex min-h-screen">
+                      <Sidebar />
+                      <main className="flex-1 p-6">
+                        <SQLServer />
+                      </main>
+                    </div>
                   </ProtectedRoute>
                 } />
                 <Route path="/relatorios" element={
                   <ProtectedRoute>
-                    <DashboardLayout>
-                      <Relatorios />
-                    </DashboardLayout>
+                    <div className="flex min-h-screen">
+                      <Sidebar />
+                      <main className="flex-1 p-6">
+                        <Relatorios />
+                      </main>
+                    </div>
                   </ProtectedRoute>
                 } />
                 <Route path="/planos" element={
                   <ProtectedRoute>
-                    <DashboardLayout>
-                      <Planos />
-                    </DashboardLayout>
+                    <div className="flex min-h-screen">
+                      <Sidebar />
+                      <main className="flex-1 p-6">
+                        <Planos />
+                      </main>
+                    </div>
                   </ProtectedRoute>
                 } />
                 <Route path="/financeiro" element={
                   <ProtectedRoute>
-                    <DashboardLayout>
-                      <Financeiro />
-                    </DashboardLayout>
+                    <div className="flex min-h-screen">
+                      <Sidebar />
+                      <main className="flex-1 p-6">
+                        <Financeiro />
+                      </main>
+                    </div>
                   </ProtectedRoute>
                 } />
                 <Route path="/webhooks" element={
                   <ProtectedRoute>
-                    <DashboardLayout>
-                      <Webhooks />
-                    </DashboardLayout>
+                    <div className="flex min-h-screen">
+                      <Sidebar />
+                      <main className="flex-1 p-6">
+                        <Webhooks />
+                      </main>
+                    </div>
                   </ProtectedRoute>
                 } />
                 <Route path="/configuracao" element={
                   <ProtectedRoute>
-                    <DashboardLayout>
-                      <Configuracao />
-                    </DashboardLayout>
+                    <div className="flex min-h-screen">
+                      <Sidebar />
+                      <main className="flex-1 p-6">
+                        <Configuracao />
+                      </main>
+                    </div>
                   </ProtectedRoute>
                 } />
                 <Route path="/configuracao-sistema" element={
                   <ProtectedRoute>
-                    <DashboardLayout>
-                      <ConfiguracaoSistema />
-                    </DashboardLayout>
+                    <div className="flex min-h-screen">
+                      <Sidebar />
+                      <main className="flex-1 p-6">
+                        <ConfiguracaoSistema />
+                      </main>
+                    </div>
                   </ProtectedRoute>
                 } />
                 <Route path="/agendamentos" element={
                   <ProtectedRoute>
-                    <DashboardLayout>
-                      <Agendamentos />
-                    </DashboardLayout>
+                    <div className="flex min-h-screen">
+                      <Sidebar />
+                      <main className="flex-1 p-6">
+                        <Agendamentos />
+                      </main>
+                    </div>
                   </ProtectedRoute>
                 } />
                 <Route path="/agendamento/:id?" element={
                   <ProtectedRoute>
-                    <DashboardLayout>
-                      <Agendamento />
-                    </DashboardLayout>
+                    <div className="flex min-h-screen">
+                      <Sidebar />
+                      <main className="flex-1 p-6">
+                        <Agendamento />
+                      </main>
+                    </div>
                   </ProtectedRoute>
                 } />
                 <Route path="/404" element={<NotFound />} />
