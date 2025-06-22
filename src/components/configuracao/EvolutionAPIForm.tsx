@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, Save, TestTube } from "lucide-react";
+import { MessageSquare, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useEvolutionConfig } from "@/hooks/useEvolutionConfig";
 import { useSystemLogs } from "@/hooks/useSystemLogs";
@@ -82,26 +82,17 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
     try {
       setIsSaving(true);
 
-      // Obter configuração global
-      const globalConfig = localStorage.getItem('evolution_global_config');
-      if (!globalConfig) {
-        throw new Error('Configuração global da Evolution API não encontrada. Configure primeiro nas Configurações do Sistema.');
-      }
-
-      const { base_url } = JSON.parse(globalConfig);
-
-      console.log('EvolutionAPIForm: Saving config with validation:', {
+      console.log('EvolutionAPIForm: Saving config with integrated validation:', {
         instance_name: evolutionForm.instance_name,
         api_key: evolutionForm.instance_token,
-        api_url: base_url,
         company_id: companyId
       });
 
-      // O saveConfig agora inclui validação automática com QR Code
+      // O saveConfig agora inclui validação automática com QR Code usando configurações globais + empresa
       await saveConfig({
         instance_name: evolutionForm.instance_name,
         api_key: evolutionForm.instance_token,
-        api_url: base_url,
+        api_url: '', // Será preenchido automaticamente com configuração global
         webhook_url: null,
         company_id: companyId,
         is_active: true,
@@ -159,8 +150,9 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
       <CardContent>
         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-blue-800">
-            <strong>Nota:</strong> Configure primeiro a URL base e chave global da Evolution API nas 
-            <strong> Configurações do Sistema</strong> antes de configurar as instâncias por empresa.
+            <strong>Integração Automática:</strong> Esta configuração utiliza automaticamente os dados globais 
+            (URL base e chave principal) configurados nas <strong>Configurações do Sistema</strong> junto com 
+            os dados específicos desta instância.
             <br /><br />
             <strong>Validação Automática:</strong> Ao salvar, o sistema irá validar automaticamente a configuração 
             tentando gerar um QR Code através da Evolution API.
@@ -212,8 +204,8 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
           {evolutionConfig?.status === 'connected' && (
             <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
               <p className="text-sm text-green-800">
-                <strong>✓ Configuração validada com sucesso!</strong> A instância foi testada através da geração de QR Code. 
-                Agora você pode acessar a página <strong>QR Code</strong> no menu principal para conectar sua instância WhatsApp.
+                <strong>✓ Configuração validada com sucesso!</strong> A instância foi testada através da geração de QR Code 
+                usando as configurações globais do sistema. Agora você pode acessar a página <strong>QR Code</strong> no menu principal para conectar sua instância WhatsApp.
               </p>
             </div>
           )}

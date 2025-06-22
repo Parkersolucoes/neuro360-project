@@ -2,19 +2,52 @@
 import { useToast } from '@/hooks/use-toast';
 import { useSystemLogs } from '@/hooks/useSystemLogs';
 import { useAuth } from '@/hooks/useAuth';
+import { useCompanies } from '@/hooks/useCompanies';
 import { EvolutionConfigService } from '@/services/evolutionConfigService';
 import { EvolutionApiService } from '@/services/evolutionApiService';
+import { useSystemConfigs } from '@/hooks/useSystemConfigs';
 import type { EvolutionConfig, CreateEvolutionConfigData, UpdateEvolutionConfigData } from '@/types/evolutionConfig';
 
 export function useEvolutionConfigActions() {
   const { toast } = useToast();
   const { logError, logInfo } = useSystemLogs();
   const { userLogin } = useAuth();
+  const { currentCompany } = useCompanies();
+  const { getConfigValue } = useSystemConfigs();
+
+  const getGlobalEvolutionConfig = () => {
+    // Primeiro tenta buscar da configuração do sistema via hook
+    const globalConfig = getConfigValue('evolution_global_config');
+    
+    if (globalConfig && globalConfig.base_url && globalConfig.global_api_key) {
+      return {
+        base_url: globalConfig.base_url,
+        global_api_key: globalConfig.global_api_key
+      };
+    }
+
+    // Fallback para localStorage se não encontrou na configuração do sistema
+    const savedConfig = localStorage.getItem('evolution_global_config');
+    if (savedConfig) {
+      try {
+        const config = JSON.parse(savedConfig);
+        if (config.base_url && config.global_api_key) {
+          return {
+            base_url: config.base_url,
+            global_api_key: config.global_api_key
+          };
+        }
+      } catch (error) {
+        console.error('Error parsing localStorage config:', error);
+      }
+    }
+
+    return null;
+  };
 
   const validateConfigWithQRGeneration = async (config: {
-    api_url: string;
-    api_key: string;
     instance_name: string;
+    api_key: string;
   }): Promise<boolean> => {
     try {
       console.log('useEvolutionConfigActions: Validating config with QR generation:', config);
@@ -22,12 +55,21 @@ export function useEvolutionConfigActions() {
         instance_name: config.instance_name 
       });
 
-      // Criar uma instância temporária do serviço Evolution
+      // Buscar configuração global
+      const globalConfig = getGlobalEvolutionConfig();
+      
+      if (!globalConfig) {
+        throw new Error('Configuração global da Evolution API não encontrada. Configure primeiro nas Configurações do Sistema.');
+      }
+
+      console.log('useEvolutionConfigActions: Using global config:', { base_url: globalConfig.base_url });
+
+      // Criar uma instância temporária do serviço Evolution com dados combinados
       const tempEvolutionService = new EvolutionApiService({
         id: 'temp',
-        company_id: 'temp',
-        api_url: config.api_url,
-        api_key: config.api_key,
+        company_id: currentCompany?.id || 'temp',
+        api_url: globalConfig.base_url,
+        api_key: globalConfig.global_api_key, // Usar chave global para operações de instância
         instance_name: config.instance_name,
         webhook_url: null,
         is_active: true,
@@ -64,6 +106,17 @@ export function useEvolutionConfigActions() {
         throw new Error('Usuário não autenticado');
       }
 
+      if (!currentCompany?.id) {
+        throw new Error('Nenhuma empresa selecionada');
+      }
+
+      // Buscar configuração global
+      const globalConfig = getGlobalEvolutionConfig();
+      
+      if (!globalConfig) {
+        throw new Error('Configuração global da Evolution API não encontrada. Configure primeiro nas Configurações do Sistema.');
+      }
+
       // Validar configuração gerando QR Code
       toast({
         title: "Validando configuração",
@@ -71,18 +124,19 @@ export function useEvolutionConfigActions() {
       });
 
       const isValid = await validateConfigWithQRGeneration({
-        api_url: configData.api_url,
-        api_key: configData.api_key,
-        instance_name: configData.instance_name
+        instance_name: configData.instance_name,
+        api_key: configData.api_key
       });
 
       if (!isValid) {
-        throw new Error('Configuração inválida: não foi possível gerar QR Code. Verifique a URL da API, chave de acesso e nome da instância.');
+        throw new Error('Configuração inválida: não foi possível gerar QR Code. Verifique o nome da instância e token.');
       }
 
-      // Se a validação passou, criar a configuração com status 'connected'
+      // Se a validação passou, criar a configuração com dados globais + específicos da empresa
       const configToCreate = {
         ...configData,
+        api_url: globalConfig.base_url, // Usar URL da configuração global
+        company_id: currentCompany.id,
         status: 'connected' as const
       };
 
@@ -116,19 +170,29 @@ export function useEvolutionConfigActions() {
       console.log('useEvolutionConfigActions: Updating config:', id, updates);
       logInfo('Atualizando configuração Evolution API', 'useEvolutionConfigActions', { configId: id });
       
+      if (!currentCompany?.id) {
+        throw new Error('Nenhuma empresa selecionada');
+      }
+
+      // Buscar configuração global
+      const globalConfig = getGlobalEvolutionConfig();
+      
+      if (!globalConfig) {
+        throw new Error('Configuração global da Evolution API não encontrada. Configure primeiro nas Configurações do Sistema.');
+      }
+
       // Se estamos atualizando dados críticos, validar com QR Code
-      if (updates.api_url || updates.api_key || updates.instance_name) {
+      if (updates.instance_name || updates.api_key) {
         // Buscar configuração atual para ter dados completos
-        const currentConfig = await EvolutionConfigService.fetchByCompanyId(updates.company_id || '');
+        const currentConfig = await EvolutionConfigService.fetchByCompanyId(currentCompany.id);
         
         if (!currentConfig) {
           throw new Error('Configuração atual não encontrada');
         }
 
         const configToValidate = {
-          api_url: updates.api_url || currentConfig.api_url,
-          api_key: updates.api_key || currentConfig.api_key,
-          instance_name: updates.instance_name || currentConfig.instance_name
+          instance_name: updates.instance_name || currentConfig.instance_name,
+          api_key: updates.api_key || currentConfig.api_key
         };
 
         toast({
@@ -142,8 +206,9 @@ export function useEvolutionConfigActions() {
           throw new Error('Alterações inválidas: não foi possível gerar QR Code com as novas configurações. Verifique os dados informados.');
         }
 
-        // Se a validação passou, definir status como 'connected'
+        // Se a validação passou, definir status como 'connected' e atualizar URL da API
         updates.status = 'connected';
+        updates.api_url = globalConfig.base_url;
       }
 
       const updatedConfig = await EvolutionConfigService.update(id, updates);
