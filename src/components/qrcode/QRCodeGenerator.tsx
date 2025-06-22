@@ -6,6 +6,7 @@ import { QrCode, CheckCircle, AlertCircle, Smartphone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQRSessions } from "@/hooks/useQRSessions";
 import { QRCodeDisplay } from "./QRCodeDisplay";
+import { QRCodeForm } from "./QRCodeForm";
 import { SessionInfo } from "./SessionInfo";
 import { EvolutionApiService } from "@/services/evolutionApiService";
 
@@ -72,7 +73,7 @@ export function QRCodeGenerator({
     }
   }, [session]);
 
-  const generateQRCode = async () => {
+  const generateQRCode = async (customInstanceName: string) => {
     if (!evolutionService) {
       toast({
         title: "Erro",
@@ -87,7 +88,7 @@ export function QRCodeGenerator({
     try {
       let currentSession = session;
       if (!currentSession) {
-        currentSession = await createSession(evolutionConfigId, instanceName, currentCompanyId);
+        currentSession = await createSession(evolutionConfigId, customInstanceName, currentCompanyId);
       }
 
       const qrResponse = await evolutionService.generateQRCode();
@@ -97,22 +98,14 @@ export function QRCodeGenerator({
       await updateSession({
         session_status: 'waiting',
         qr_code_data: qrResponse.qrCode,
+        instance_name: customInstanceName,
         updated_at: new Date().toISOString()
       });
       
-      toast({
-        title: "QR Code gerado",
-        description: "Escaneie o código com seu WhatsApp para conectar",
-      });
-
       startStatusPolling();
     } catch (error) {
       console.error('Error generating QR code:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao gerar QR Code. Verifique se a instância foi criada corretamente nas configurações.",
-        variant: "destructive"
-      });
+      throw error; // Re-throw para que o QRCodeForm possa tratar
     } finally {
       setIsGenerating(false);
     }
@@ -172,7 +165,7 @@ export function QRCodeGenerator({
   };
 
   const refreshQRCode = () => {
-    generateQRCode();
+    generateQRCode(session?.instance_name || currentCompanyName);
   };
 
   // Verificar se há QR Code disponível automaticamente na sessão
@@ -180,50 +173,62 @@ export function QRCodeGenerator({
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <QrCode className="w-5 h-5 text-blue-500" />
-              <span>Conexão WhatsApp Evolution API</span>
+      {/* Interface Moderna de Geração de QR Code */}
+      <div className="space-y-6">
+        <QRCodeForm
+          companyName={currentCompanyName}
+          onGenerateQRCode={generateQRCode}
+          isGenerating={isGenerating}
+          qrCodeData={qrCode}
+        />
+        
+        {/* Card de Status da Conexão */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <QrCode className="w-5 h-5 text-blue-500" />
+                <span>Status da Conexão</span>
+              </div>
+              <Badge className={`${
+                sessionStatus === "connected" ? "bg-green-100 text-green-800" :
+                sessionStatus === "waiting" ? "bg-blue-100 text-blue-800" :
+                "bg-red-100 text-red-800"
+              }`}>
+                {sessionStatus === "connected" ? "Conectado" :
+                 sessionStatus === "waiting" ? "Aguardando" : "Desconectado"}
+                {sessionStatus === "connected" && <CheckCircle className="w-3 h-3 ml-1" />}
+                {sessionStatus === "disconnected" && <AlertCircle className="w-3 h-3 ml-1" />}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <strong>Instância:</strong> {session?.instance_name || instanceName}
+                <br />
+                {hasQRCodeAvailable ? (
+                  <span><strong>✓ QR Code disponível:</strong> A instância foi criada automaticamente e o QR Code está pronto para uso.</span>
+                ) : (
+                  <span><strong>Importante:</strong> A instância deve estar criada nas configurações da empresa antes de gerar o QR Code.</span>
+                )}
+              </p>
             </div>
-            <Badge className={`${
-              sessionStatus === "connected" ? "bg-green-100 text-green-800" :
-              sessionStatus === "waiting" ? "bg-blue-100 text-blue-800" :
-              "bg-red-100 text-red-800"
-            }`}>
-              {sessionStatus === "connected" ? "Conectado" :
-               sessionStatus === "waiting" ? "Aguardando" : "Desconectado"}
-              {sessionStatus === "connected" && <CheckCircle className="w-3 h-3 ml-1" />}
-              {sessionStatus === "disconnected" && <AlertCircle className="w-3 h-3 ml-1" />}
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-800">
-              <strong>Instância:</strong> {instanceName}
-              <br />
-              {hasQRCodeAvailable ? (
-                <strong>✓ QR Code disponível:</strong> + " A instância foi criada automaticamente e o QR Code está pronto para uso."
-              ) : (
-                <strong>Importante:</strong> + " A instância deve estar criada nas configurações da empresa antes de gerar o QR Code."
-              )}
-            </p>
-          </div>
-          
-          <QRCodeDisplay
-            sessionStatus={hasQRCodeAvailable ? "waiting" : sessionStatus}
-            qrCode={qrCode}
-            currentCompanyName={currentCompanyName}
-            onGenerateQRCode={generateQRCode}
-            onRefreshQRCode={refreshQRCode}
-            onDisconnectSession={handleDisconnectSession}
-            isGenerating={isGenerating}
-          />
-        </CardContent>
-      </Card>
+            
+            <QRCodeDisplay
+              sessionStatus={hasQRCodeAvailable ? "waiting" : sessionStatus}
+              qrCode={qrCode}
+              currentCompanyName={currentCompanyName}
+              onGenerateQRCode={() => generateQRCode(currentCompanyName)}
+              onRefreshQRCode={refreshQRCode}
+              onDisconnectSession={handleDisconnectSession}
+              isGenerating={isGenerating}
+            />
+          </CardContent>
+        </Card>
+      </div>
 
+      {/* Informações da Sessão */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
@@ -234,7 +239,7 @@ export function QRCodeGenerator({
         <CardContent className="space-y-4">
           <SessionInfo
             sessionStatus={sessionStatus}
-            instanceName={instanceName}
+            instanceName={session?.instance_name || instanceName}
             currentCompanyName={currentCompanyName}
             session={session}
           />
