@@ -26,7 +26,7 @@ export function useSystemLogsDB() {
   const [logs, setLogs] = useState<SystemLogDB[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { userLogin } = useAuth();
   const { currentCompany } = useCompanies();
 
   const fetchLogs = async () => {
@@ -43,7 +43,14 @@ export function useSystemLogsDB() {
         .limit(100);
 
       if (error) throw error;
-      setLogs(data || []);
+      
+      // Type assertion para garantir que os dados estão no formato correto
+      const typedLogs = (data || []).map(log => ({
+        ...log,
+        level: log.level as 'error' | 'warning' | 'info'
+      })) as SystemLogDB[];
+      
+      setLogs(typedLogs);
     } catch (error) {
       console.error('Error fetching system logs:', error);
       toast({
@@ -65,7 +72,7 @@ export function useSystemLogsDB() {
     try {
       const logData = {
         company_id: currentCompany?.id || null,
-        user_id: user?.id || null,
+        user_id: userLogin?.id || null,
         level,
         message,
         component,
@@ -84,7 +91,13 @@ export function useSystemLogsDB() {
 
       if (error) throw error;
 
-      setLogs(prevLogs => [data, ...prevLogs.slice(0, 99)]);
+      // Type assertion para o novo log
+      const typedLog = {
+        ...data,
+        level: data.level as 'error' | 'warning' | 'info'
+      } as SystemLogDB;
+
+      setLogs(prevLogs => [typedLog, ...prevLogs.slice(0, 99)]);
 
       // Mostrar toast apenas para erros
       if (level === 'error') {
