@@ -138,24 +138,21 @@ export class EvolutionApiService {
     }
   }
 
-  async createInstanceWithQRCode(phoneNumber?: string): Promise<CreateInstanceResponse & { qrCodeData?: string }> {
+  async createInstanceWithQRCode(phoneNumber: string): Promise<CreateInstanceResponse & { qrCodeData?: string }> {
     console.log('Evolution API: Creating instance with QR Code:', this.config.instance_name, 'Phone:', phoneNumber);
     
-    // Usar número da configuração se não fornecido como parâmetro
-    const numberToUse = phoneNumber || this.config.number;
-    
-    if (!numberToUse) {
+    if (!phoneNumber) {
       const errorMessage = 'Número de telefone é obrigatório para criar a instância';
       await this.logSystemError(errorMessage, { config: this.config });
       throw new Error(errorMessage);
     }
     
-    // Estrutura exata conforme especificado
+    // Estrutura exata conforme especificado - usando o número da empresa
     const requestBody = {
       instanceName: this.config.instance_name,
       token: "", // Enviado em branco conforme especificado
       qrcode: true,
-      number: numberToUse, // Número sem formatação (como cadastrado na empresa)
+      number: phoneNumber, // Número da empresa passado como parâmetro
       integration: "Baileys" // Tipo Baileys conforme especificado
     };
 
@@ -176,29 +173,26 @@ export class EvolutionApiService {
       const errorMessage = `Falha ao criar instância Evolution API: ${error instanceof Error ? error.message : 'Erro desconhecido'}`;
       await this.logSystemError(errorMessage, { 
         instanceName: this.config.instance_name,
-        number: numberToUse,
+        number: phoneNumber,
         error: error instanceof Error ? error.message : 'Erro desconhecido'
       });
       throw error;
     }
   }
 
-  async createInstance(phoneNumber?: string): Promise<CreateInstanceResponse> {
+  async createInstance(phoneNumber: string): Promise<CreateInstanceResponse> {
     console.log('Evolution API: Creating instance:', this.config.instance_name, 'Phone:', phoneNumber);
     
-    // Usar número da configuração se não fornecido como parâmetro
-    const numberToUse = phoneNumber || this.config.number;
-    
-    if (!numberToUse) {
+    if (!phoneNumber) {
       throw new Error('Número de telefone é obrigatório para criar a instância');
     }
     
-    // Estrutura exata conforme especificado
+    // Estrutura exata conforme especificado - usando o número da empresa
     const requestBody = {
       instanceName: this.config.instance_name,
       token: "", // Enviado em branco conforme especificado
       qrcode: true,
-      number: numberToUse, // Número sem formatação (como cadastrado na empresa)
+      number: phoneNumber, // Número da empresa passado como parâmetro
       integration: "Baileys" // Tipo Baileys conforme especificado
     };
 

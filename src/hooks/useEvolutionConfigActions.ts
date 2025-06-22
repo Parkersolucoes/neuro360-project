@@ -1,3 +1,4 @@
+
 import { useToast } from '@/hooks/use-toast';
 import { useSystemLogsDB } from '@/hooks/useSystemLogsDB';
 import { useAuth } from '@/hooks/useAuth';
@@ -82,20 +83,20 @@ export function useEvolutionConfigActions() {
 
       console.log('useEvolutionConfigActions: Using global config:', { base_url: globalConfig.base_url });
 
-      // Passo 3: Preparar número sem formatação
+      // Passo 3: Preparar número da empresa
       toast({
-        title: "Passo 2/6 - Preparando Número",
-        description: `📱 Número da empresa: ${config.company_phone}\n📋 Será enviado SEM formatação conforme especificado`
+        title: "Passo 2/6 - Preparando Número da Empresa",
+        description: `📱 Número cadastrado na empresa: ${config.company_phone}`
       });
 
-      const phoneNumber = config.company_phone; // Sem formatação, como cadastrado
+      const phoneNumber = config.company_phone;
       
-      console.log('useEvolutionConfigActions: Phone number without formatting:', phoneNumber);
+      console.log('useEvolutionConfigActions: Using company phone number:', phoneNumber);
 
       // Passo 4: Mostrar parâmetros completos que serão enviados
       toast({
         title: "Passo 3/6 - Parâmetros da Requisição",
-        description: `🌐 server-url: ${globalConfig.base_url}\n🔑 apikey: ${globalConfig.global_api_key.substring(0, 12)}...\n📱 instanceName: ${config.instance_name}\n🎯 token: (em branco)\n📱 qrcode: true\n📞 number: ${phoneNumber}\n🔧 integration: Baileys`
+        description: `🌐 URL: ${globalConfig.base_url}/instance/create\n🔑 apikey: ${globalConfig.global_api_key.substring(0, 12)}...\n📱 instanceName: ${config.instance_name}\n🎯 token: (em branco)\n📱 qrcode: true\n📞 number: ${phoneNumber}\n🔧 integration: Baileys`
       });
 
       const tempEvolutionService = new EvolutionApiService({
@@ -105,7 +106,7 @@ export function useEvolutionConfigActions() {
         api_key: globalConfig.global_api_key,
         instance_name: config.instance_name,
         webhook_url: null,
-        number: phoneNumber, // Número sem formatação
+        number: phoneNumber,
         is_active: true,
         status: 'testing' as const,
         created_at: new Date().toISOString(),
@@ -115,10 +116,10 @@ export function useEvolutionConfigActions() {
       // Passo 5: Enviar requisição
       toast({
         title: "Passo 4/6 - Enviando Requisição",
-        description: "🚀 Enviando POST para Evolution API com parâmetros especificados..."
+        description: "🚀 Enviando POST para Evolution API com número de telefone da empresa..."
       });
 
-      const createResponse = await tempEvolutionService.createInstanceWithQRCode();
+      const createResponse = await tempEvolutionService.createInstanceWithQRCode(phoneNumber);
       
       if (createResponse.instance && createResponse.instance.instanceName) {
         console.log('useEvolutionConfigActions: Instance created successfully with QR Code:', createResponse);
@@ -126,7 +127,7 @@ export function useEvolutionConfigActions() {
         // Passo 6: Sucesso e QR Code
         toast({
           title: "Passo 5/6 - Instância Criada com Sucesso",
-          description: `🎉 Nome: ${createResponse.instance.instanceName}\n📊 Status: ${createResponse.instance.status}\n${createResponse.qrCodeData ? '📱 QR Code gerado automaticamente' : '⚠️ QR Code não disponível'}`
+          description: `🎉 Nome: ${createResponse.instance.instanceName}\n📊 Status: ${createResponse.instance.status}\n📱 Número: ${phoneNumber}\n${createResponse.qrCodeData ? '📱 QR Code gerado automaticamente' : '⚠️ QR Code não disponível'}`
         });
         
         // Passo 7: Salvar QR Code
@@ -141,7 +142,7 @@ export function useEvolutionConfigActions() {
           
           toast({
             title: "✅ Processo Concluído com Sucesso!",
-            description: `🎯 Instância ${config.instance_name} criada\n📱 QR Code gerado e salvo\n👆 Escaneie o código para conectar`
+            description: `🎯 Instância ${config.instance_name} criada\n📱 Número: ${phoneNumber}\n📱 QR Code gerado e salvo\n👆 Escaneie o código para conectar`
           });
         }
         
@@ -247,7 +248,7 @@ export function useEvolutionConfigActions() {
 
       const sessionName = generateSessionName(currentCompany.name);
       const instanceName = configData.instance_name || sessionName;
-      const phoneNumber = currentCompany.phone; // Sem formatação
+      const phoneNumber = currentCompany.phone;
 
       // Criar instância com QR Code e feedback passo a passo
       const createResult = await createInstanceWithQRCode({
@@ -264,7 +265,7 @@ export function useEvolutionConfigActions() {
         instance_name: instanceName,
         api_url: globalConfig.base_url,
         api_key: globalConfig.global_api_key,
-        number: phoneNumber, // Sem formatação
+        number: phoneNumber,
         company_id: currentCompany.id,
         status: 'connected' as const
       };
