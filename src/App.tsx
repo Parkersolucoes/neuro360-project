@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from '@/hooks/useAuth';
-import { CompanyProvider } from '@/contexts/CompaniesContext';
+import { CompaniesProvider } from '@/providers/CompaniesProvider';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { Sidebar } from '@/components/layout/Sidebar';
 
@@ -22,7 +22,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <CompanyProvider>
+        <CompaniesProvider>
           <Router>
             <div className="App">
               <Routes>
@@ -52,7 +52,7 @@ function App() {
               <Toaster />
             </div>
           </Router>
-        </CompanyProvider>
+        </CompaniesProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
