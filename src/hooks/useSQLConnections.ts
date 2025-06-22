@@ -88,7 +88,7 @@ export function useSQLConnections() {
           password_encrypted: connectionData.password_encrypted,
           port: connectionData.port,
           connection_type: connectionData.connection_type,
-          status: connectionData.status
+          status: connectionData.status || 'active'
         })
         .select()
         .single();
@@ -197,6 +197,7 @@ export function useSQLConnections() {
       setTesting(true);
       console.log('Testing SQL connection:', connectionData);
       
+      // Simular teste de conexão
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       toast({

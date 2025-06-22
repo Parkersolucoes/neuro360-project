@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Save, X } from "lucide-react";
 import { useCompanies } from "@/hooks/useCompanies";
+import { useAuth } from "@/hooks/useAuth";
 
 interface SQLQueryFormProps {
   query?: any;
@@ -17,6 +18,7 @@ interface SQLQueryFormProps {
 
 export function SQLQueryForm({ query, onSubmit, onCancel }: SQLQueryFormProps) {
   const { currentCompany } = useCompanies();
+  const { userLogin } = useAuth();
   
   const [formData, setFormData] = useState({
     name: "",
@@ -38,9 +40,16 @@ export function SQLQueryForm({ query, onSubmit, onCancel }: SQLQueryFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!currentCompany?.id) {
+      console.error('No company selected');
+      return;
+    }
+
     onSubmit({
       ...formData,
-      company_id: currentCompany?.id
+      company_id: currentCompany.id,
+      user_id: userLogin?.id
     });
   };
 
