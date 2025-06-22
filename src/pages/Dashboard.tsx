@@ -200,14 +200,14 @@ export default function Dashboard() {
             
             {/* Webhook Integration Status */}
             <div className="border-t pt-4 mt-4">
-              <h4 className="text-sm font-medium text-gray-900 mb-3">Webhook Integration</h4>
+              <h4 className="text-sm font-medium text-gray-900 mb-3">Webhook QR Code</h4>
               {integration ? (
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center space-x-3">
                     <div className={`w-3 h-3 rounded-full ${
                       integration.is_active ? 'bg-green-500' : 'bg-red-500'
                     }`}></div>
-                    <span className="font-medium text-gray-900 text-sm">{integration.webhook_name}</span>
+                    <span className="font-medium text-gray-900 text-sm">QR Code Webhook</span>
                   </div>
                   <Badge className={
                     integration.is_active 

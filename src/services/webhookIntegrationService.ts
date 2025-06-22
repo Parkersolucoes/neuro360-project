@@ -17,8 +17,22 @@ export class WebhookIntegrationService {
       throw error;
     }
 
-    console.log('✅ WebhookIntegrationService: Webhook integration fetched:', data);
-    return data;
+    if (data) {
+      // Map database fields to our type
+      const mappedData: WebhookIntegration = {
+        id: data.id,
+        company_id: data.company_id,
+        qrcode_webhook_url: data.webhook_url || '',
+        is_active: data.is_active,
+        created_at: data.created_at,
+        updated_at: data.updated_at
+      };
+      console.log('✅ WebhookIntegrationService: Webhook integration fetched:', mappedData);
+      return mappedData;
+    }
+
+    console.log('✅ WebhookIntegrationService: No webhook integration found');
+    return null;
   }
 
   static async create(integrationData: CreateWebhookIntegrationData): Promise<WebhookIntegration> {
@@ -31,7 +45,7 @@ export class WebhookIntegrationService {
 
     const insertData = {
       company_id: integrationData.company_id,
-      qrcode_webhook_url: integrationData.qrcode_webhook_url,
+      webhook_url: integrationData.qrcode_webhook_url,
       is_active: integrationData.is_active,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -50,8 +64,18 @@ export class WebhookIntegrationService {
       throw error;
     }
 
-    console.log('✅ WebhookIntegrationService: Webhook integration created successfully:', data);
-    return data;
+    // Map database response to our type
+    const mappedData: WebhookIntegration = {
+      id: data.id,
+      company_id: data.company_id,
+      qrcode_webhook_url: data.webhook_url || '',
+      is_active: data.is_active,
+      created_at: data.created_at,
+      updated_at: data.updated_at
+    };
+
+    console.log('✅ WebhookIntegrationService: Webhook integration created successfully:', mappedData);
+    return mappedData;
   }
 
   static async update(id: string, updates: UpdateWebhookIntegrationData): Promise<WebhookIntegration> {
@@ -63,7 +87,7 @@ export class WebhookIntegrationService {
     }
 
     const updateData = {
-      qrcode_webhook_url: updates.qrcode_webhook_url,
+      webhook_url: updates.qrcode_webhook_url,
       is_active: updates.is_active,
       updated_at: new Date().toISOString()
     };
@@ -82,7 +106,17 @@ export class WebhookIntegrationService {
       throw error;
     }
 
-    console.log('✅ WebhookIntegrationService: Webhook integration updated successfully:', data);
-    return data;
+    // Map database response to our type
+    const mappedData: WebhookIntegration = {
+      id: data.id,
+      company_id: data.company_id,
+      qrcode_webhook_url: data.webhook_url || '',
+      is_active: data.is_active,
+      created_at: data.created_at,
+      updated_at: data.updated_at
+    };
+
+    console.log('✅ WebhookIntegrationService: Webhook integration updated successfully:', mappedData);
+    return mappedData;
   }
 }
