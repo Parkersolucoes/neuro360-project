@@ -43,7 +43,16 @@ export function useSQLQueriesNew() {
       const { data, error } = await supabase
         .from('sql_queries')
         .select(`
-          *,
+          id,
+          company_id,
+          connection_id,
+          name,
+          description,
+          query_text,
+          created_by,
+          status,
+          created_at,
+          updated_at,
           sql_connections (
             name,
             host,
@@ -56,11 +65,11 @@ export function useSQLQueriesNew() {
 
       if (error) throw error;
       
-      // Garantir que os dados retornados sejam compatíveis com o tipo SQLQueryNew
+      // Transformar dados para garantir compatibilidade com o tipo SQLQueryNew
       const typedData: SQLQueryNew[] = (data || []).map(item => ({
         id: item.id,
         company_id: item.company_id,
-        connection_id: item.connection_id,
+        connection_id: item.connection_id || '',
         name: item.name,
         description: item.description,
         query_text: item.query_text,
@@ -68,7 +77,7 @@ export function useSQLQueriesNew() {
         status: item.status as 'active' | 'inactive',
         created_at: item.created_at,
         updated_at: item.updated_at,
-        sql_connections: item.sql_connections
+        sql_connections: item.sql_connections || undefined
       }));
       
       setQueries(typedData);
@@ -93,11 +102,25 @@ export function useSQLQueriesNew() {
       const { data, error } = await supabase
         .from('sql_queries')
         .insert({
-          ...queryData,
-          company_id: currentCompany?.id
+          company_id: queryData.company_id,
+          connection_id: queryData.connection_id,
+          name: queryData.name,
+          description: queryData.description,
+          query_text: queryData.query_text,
+          created_by: queryData.created_by,
+          status: queryData.status
         })
         .select(`
-          *,
+          id,
+          company_id,
+          connection_id,
+          name,
+          description,
+          query_text,
+          created_by,
+          status,
+          created_at,
+          updated_at,
           sql_connections (
             name,
             host,
@@ -109,11 +132,10 @@ export function useSQLQueriesNew() {
 
       if (error) throw error;
 
-      // Garantir tipo correto ao adicionar à lista
       const typedData: SQLQueryNew = {
         id: data.id,
         company_id: data.company_id,
-        connection_id: data.connection_id,
+        connection_id: data.connection_id || '',
         name: data.name,
         description: data.description,
         query_text: data.query_text,
@@ -121,7 +143,7 @@ export function useSQLQueriesNew() {
         status: data.status as 'active' | 'inactive',
         created_at: data.created_at,
         updated_at: data.updated_at,
-        sql_connections: data.sql_connections
+        sql_connections: data.sql_connections || undefined
       };
 
       setQueries(prev => [typedData, ...prev]);
@@ -150,11 +172,26 @@ export function useSQLQueriesNew() {
       
       const { data, error } = await supabase
         .from('sql_queries')
-        .update(updates)
+        .update({
+          connection_id: updates.connection_id,
+          name: updates.name,
+          description: updates.description,
+          query_text: updates.query_text,
+          status: updates.status
+        })
         .eq('id', id)
         .eq('company_id', currentCompany?.id)
         .select(`
-          *,
+          id,
+          company_id,
+          connection_id,
+          name,
+          description,
+          query_text,
+          created_by,
+          status,
+          created_at,
+          updated_at,
           sql_connections (
             name,
             host,
@@ -166,11 +203,10 @@ export function useSQLQueriesNew() {
 
       if (error) throw error;
 
-      // Garantir tipo correto ao atualizar
       const typedData: SQLQueryNew = {
         id: data.id,
         company_id: data.company_id,
-        connection_id: data.connection_id,
+        connection_id: data.connection_id || '',
         name: data.name,
         description: data.description,
         query_text: data.query_text,
@@ -178,7 +214,7 @@ export function useSQLQueriesNew() {
         status: data.status as 'active' | 'inactive',
         created_at: data.created_at,
         updated_at: data.updated_at,
-        sql_connections: data.sql_connections
+        sql_connections: data.sql_connections || undefined
       };
 
       setQueries(prev => prev.map(query => 
@@ -232,7 +268,6 @@ export function useSQLQueriesNew() {
     }
   };
 
-  // Função para criar registro de teste
   const createTestRecord = async () => {
     try {
       if (!currentCompany?.id) {
@@ -244,7 +279,6 @@ export function useSQLQueriesNew() {
         return;
       }
 
-      // Primeiro, vamos buscar uma conexão existente para usar como teste
       const { data: connections, error: connectionsError } = await supabase
         .from('sql_connections')
         .select('id')
