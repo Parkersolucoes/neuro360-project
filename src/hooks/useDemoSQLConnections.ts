@@ -37,19 +37,15 @@ export function useDemoSQLConnections() {
             });
           } catch (error) {
             console.error(`Erro ao criar conexão demo para ${company.name}:`, error);
-            logError(`Falha ao criar conexão de demonstração para empresa ${company.name}: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'useDemoSQLConnections', {
-              company_id: company.id,
-              company_name: company.name,
-              error: error instanceof Error ? error.message : 'Erro desconhecido'
-            });
+            // Não usar logError para evitar problemas de RLS
+            console.log('Erro na criação de conexão demo:', error);
           }
         }
       }
     } catch (error) {
       console.error('Erro ao verificar/criar conexões de demonstração:', error);
-      logError(`Erro geral ao processar conexões de demonstração: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'useDemoSQLConnections', {
-        error: error instanceof Error ? error.message : 'Erro desconhecido'
-      });
+      // Log simples sem usar o sistema de logs
+      console.log('Erro geral ao processar conexões de demonstração:', error);
     }
   };
 
