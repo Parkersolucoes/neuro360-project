@@ -24,6 +24,17 @@ export interface InstanceStatus {
   qrCode?: string;
 }
 
+export interface SendMessageResponse {
+  key: {
+    remoteJid: string;
+    fromMe: boolean;
+    id: string;
+  };
+  message: any;
+  messageTimestamp: string;
+  status: string;
+}
+
 export class EvolutionApiService {
   private config: EvolutionConfig;
 
@@ -102,10 +113,37 @@ export class EvolutionApiService {
     return this.makeRequest(`/instance/delete/${this.config.instance_name}`, 'DELETE');
   }
 
-  async sendMessage(number: string, message: string): Promise<any> {
+  async sendTextMessage(number: string, message: string): Promise<SendMessageResponse> {
     return this.makeRequest(`/message/sendText/${this.config.instance_name}`, 'POST', {
       number: number,
       text: message
+    });
+  }
+
+  async sendMediaMessage(number: string, mediaUrl: string, caption?: string): Promise<SendMessageResponse> {
+    return this.makeRequest(`/message/sendMedia/${this.config.instance_name}`, 'POST', {
+      number: number,
+      mediaMessage: {
+        media: mediaUrl,
+        caption: caption || ''
+      }
+    });
+  }
+
+  async getMessages(limit: number = 50): Promise<any[]> {
+    return this.makeRequest(`/chat/findMessages/${this.config.instance_name}?limit=${limit}`);
+  }
+
+  async configureWebhook(webhookUrl: string): Promise<any> {
+    return this.makeRequest(`/webhook/set/${this.config.instance_name}`, 'POST', {
+      url: webhookUrl,
+      events: [
+        'QRCODE_UPDATED',
+        'CONNECTION_UPDATE',
+        'MESSAGES_UPSERT',
+        'MESSAGE_UPDATE',
+        'PRESENCE_UPDATE'
+      ]
     });
   }
 
@@ -149,5 +187,44 @@ export const getEvolutionApiService = async (companyId: string): Promise<Evoluti
   } catch (error) {
     console.error('Error getting Evolution API service:', error);
     return null;
+  }
+};
+
+// Função para salvar mensagem no banco de dados
+export const saveMessageToDatabase = async (
+  companyId: string,
+  evolutionConfigId: string,
+  messageData: {
+    message_id?: string;
+    from_number: string;
+    to_number: string;
+    content: string;
+    message_type?: string;
+    direction: 'inbound' | 'outbound';
+    status?: string;
+  }
+) => {
+  try {
+    const { data, error } = await supabase
+      .from('whatsapp_messages')
+      .insert({
+        company_id: companyId,
+        evolution_config_id: evolutionConfigId,
+        message_id: messageData.message_id || null,
+        from_number: messageData.from_number,
+        to_number: messageData.to_number,
+        content: messageData.content,
+        message_type: messageData.message_type || 'text',
+        direction: messageData.direction,
+        status: messageData.status || 'sent'
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error saving message to database:', error);
+    throw error;
   }
 };

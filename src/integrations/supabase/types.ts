@@ -151,9 +151,11 @@ export type Database = {
           last_activity: string | null
           phone_number: string | null
           qr_code: string | null
+          qr_code_data: string | null
           session_name: string
-          status: string
+          session_status: string | null
           updated_at: string
+          webhook_data: Json | null
         }
         Insert: {
           company_id?: string | null
@@ -166,9 +168,11 @@ export type Database = {
           last_activity?: string | null
           phone_number?: string | null
           qr_code?: string | null
+          qr_code_data?: string | null
           session_name: string
-          status?: string
+          session_status?: string | null
           updated_at?: string
+          webhook_data?: Json | null
         }
         Update: {
           company_id?: string | null
@@ -181,9 +185,11 @@ export type Database = {
           last_activity?: string | null
           phone_number?: string | null
           qr_code?: string | null
+          qr_code_data?: string | null
           session_name?: string
-          status?: string
+          session_status?: string | null
           updated_at?: string
+          webhook_data?: Json | null
         }
         Relationships: [
           {
@@ -657,6 +663,69 @@ export type Database = {
           whatsapp?: string
         }
         Relationships: []
+      }
+      whatsapp_messages: {
+        Row: {
+          company_id: string
+          content: string
+          created_at: string
+          direction: string
+          evolution_config_id: string | null
+          from_number: string
+          id: string
+          media_url: string | null
+          message_id: string | null
+          message_type: string
+          status: string
+          to_number: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          content: string
+          created_at?: string
+          direction: string
+          evolution_config_id?: string | null
+          from_number: string
+          id?: string
+          media_url?: string | null
+          message_id?: string | null
+          message_type?: string
+          status?: string
+          to_number: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          content?: string
+          created_at?: string
+          direction?: string
+          evolution_config_id?: string | null
+          from_number?: string
+          id?: string
+          media_url?: string | null
+          message_id?: string | null
+          message_type?: string
+          status?: string
+          to_number?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_messages_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_messages_evolution_config_id_fkey"
+            columns: ["evolution_config_id"]
+            isOneToOne: false
+            referencedRelation: "evolution_configs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
