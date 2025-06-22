@@ -120,17 +120,18 @@ export function useSystemConfig() {
     }
   };
 
-  const updateConfig = async (updates: Partial<SystemConfig>) => {
+  // Função saveConfig que atualiza as configurações
+  const saveConfig = async (formData: any) => {
     try {
-      console.log('Updating system config:', updates);
+      console.log('Saving system config:', formData);
       
       const configData = {
         config_key: 'system_appearance',
         config_value: {
-          system_name: updates.system_name || config?.system_name,
-          system_description: updates.system_description || config?.system_description,
-          primary_color: updates.primary_color || config?.primary_color,
-          login_background_image: updates.login_background_image || config?.login_background_image
+          system_name: formData.system_name || config?.system_name,
+          system_description: formData.system_description || config?.system_description,
+          primary_color: formData.primary_color || config?.primary_color,
+          login_background_image: formData.login_background_image || config?.login_background_image
         },
         description: 'Configurações de aparência do sistema',
         is_public: true
@@ -168,16 +169,19 @@ export function useSystemConfig() {
       }
 
       // Atualizar o estado local
-      if (config) {
-        const updatedConfig = { 
-          ...config, 
-          ...updates, 
-          updated_at: new Date().toISOString() 
-        };
-        setConfig(updatedConfig);
-      }
+      const configValue = result.config_value as SystemConfigValue;
+      const updatedConfig: SystemConfig = {
+        id: result.id,
+        system_name: configValue.system_name || 'Visão 360 - Soluções em Dados',
+        system_description: configValue.system_description || 'Plataforma completa para análise e gestão de dados empresariais',
+        primary_color: configValue.primary_color || '#1e293b',
+        login_background_image: configValue.login_background_image || '',
+        created_at: result.created_at,
+        updated_at: result.updated_at
+      };
 
-      console.log('System config updated successfully:', result);
+      setConfig(updatedConfig);
+      console.log('System config saved successfully:', result);
 
       toast({
         title: "Sucesso",
@@ -185,9 +189,9 @@ export function useSystemConfig() {
         variant: "default"
       });
 
-      return config;
+      return updatedConfig;
     } catch (error) {
-      console.error('Error updating system config:', error);
+      console.error('Error saving system config:', error);
       toast({
         title: "Erro",
         description: "Erro ao salvar configurações do sistema",
@@ -198,7 +202,7 @@ export function useSystemConfig() {
   };
 
   // Alias for compatibility with existing code
-  const saveConfig = updateConfig;
+  const updateConfig = saveConfig;
 
   const uploadImage = async (file: File): Promise<string> => {
     try {
@@ -222,11 +226,7 @@ export function useSystemConfig() {
         .from('system-assets')
         .getPublicUrl(filePath);
 
-      toast({
-        title: "Sucesso",
-        description: "Imagem enviada com sucesso!"
-      });
-
+      console.log('Image uploaded successfully:', urlData.publicUrl);
       return urlData.publicUrl;
     } catch (error) {
       console.error('Error uploading image:', error);
