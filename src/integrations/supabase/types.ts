@@ -325,6 +325,57 @@ export type Database = {
           },
         ]
       }
+      smtp_configs: {
+        Row: {
+          company_id: string
+          created_at: string
+          from_email: string
+          from_name: string | null
+          id: string
+          is_active: boolean
+          smtp_host: string
+          smtp_password_encrypted: string
+          smtp_port: number
+          smtp_username: string
+          status: string
+          updated_at: string
+          use_ssl: boolean
+          use_tls: boolean
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          from_email: string
+          from_name?: string | null
+          id?: string
+          is_active?: boolean
+          smtp_host: string
+          smtp_password_encrypted: string
+          smtp_port?: number
+          smtp_username: string
+          status?: string
+          updated_at?: string
+          use_ssl?: boolean
+          use_tls?: boolean
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          from_email?: string
+          from_name?: string | null
+          id?: string
+          is_active?: boolean
+          smtp_host?: string
+          smtp_password_encrypted?: string
+          smtp_port?: number
+          smtp_username?: string
+          status?: string
+          updated_at?: string
+          use_ssl?: boolean
+          use_tls?: boolean
+        }
+        Relationships: []
+      }
       sql_connections: {
         Row: {
           company_id: string
