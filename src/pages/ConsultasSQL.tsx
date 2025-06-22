@@ -6,6 +6,7 @@ import { Plus, Database, TestTube } from "lucide-react";
 import { useSQLQueriesNew } from "@/hooks/useSQLQueriesNew";
 import { SQLQueryForm } from "@/components/sql/SQLQueryForm";
 import { SQLQueryList } from "@/components/sql/SQLQueryList";
+import { CRUDTestPanel } from "@/components/sql/CRUDTestPanel";
 import { useCompanies } from "@/hooks/useCompanies";
 
 export default function ConsultasSQL() {
@@ -13,6 +14,7 @@ export default function ConsultasSQL() {
   const { currentCompany } = useCompanies();
   const [showForm, setShowForm] = useState(false);
   const [editingQuery, setEditingQuery] = useState<any>(null);
+  const [showTestPanel, setShowTestPanel] = useState(false);
 
   const handleCreateQuery = async (queryData: any) => {
     try {
@@ -106,6 +108,14 @@ export default function ConsultasSQL() {
         <div className="flex space-x-2">
           <Button 
             variant="outline"
+            onClick={() => setShowTestPanel(!showTestPanel)}
+            className="border-purple-600 text-purple-600 hover:bg-purple-50"
+          >
+            <TestTube className="w-4 h-4 mr-2" />
+            {showTestPanel ? 'Ocultar' : 'Mostrar'} Testes
+          </Button>
+          <Button 
+            variant="outline"
             onClick={createTestRecord}
             className="border-green-600 text-green-600 hover:bg-green-50"
           >
@@ -122,6 +132,10 @@ export default function ConsultasSQL() {
           </Button>
         </div>
       </div>
+
+      {showTestPanel && (
+        <CRUDTestPanel />
+      )}
 
       <Card>
         <CardHeader>
