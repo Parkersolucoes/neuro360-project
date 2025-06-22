@@ -13,7 +13,8 @@ import Dashboard from '@/pages/Dashboard';
 import Empresas from '@/pages/Empresas';
 import Usuarios from '@/pages/Usuarios';
 import Planos from '@/pages/Planos';
-import SQLServer from '@/pages/SQLServer';
+import ConsultasSQL from '@/pages/ConsultasSQL';
+import Agendamentos from '@/pages/Agendamentos';
 import ConfiguracaoSistema from '@/pages/ConfiguracaoSistema';
 
 const queryClient = new QueryClient();
@@ -40,7 +41,8 @@ function App() {
                             <Route path="/empresas" element={<Empresas />} />
                             <Route path="/usuarios" element={<Usuarios />} />
                             <Route path="/planos" element={<Planos />} />
-                            <Route path="/sql-server" element={<SQLServer />} />
+                            <Route path="/consultas" element={<ConsultasSQL />} />
+                            <Route path="/agendamento" element={<Agendamentos />} />
                             <Route path="/configuracao-sistema" element={<ConfiguracaoSistema />} />
                           </Routes>
                         </main>

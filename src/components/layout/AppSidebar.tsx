@@ -182,7 +182,7 @@ export function AppSidebar() {
                     >
                       <div className="flex items-center space-x-3">
                         <Shield className="w-5 h-5" />
-                        <span>Painel Avançado</span>
+                        <span>Painel Administrativo</span>
                       </div>
                       {adminMenuOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                     </SidebarMenuButton>
