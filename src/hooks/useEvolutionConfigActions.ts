@@ -387,6 +387,8 @@ export function useEvolutionConfigActions() {
       }
     },
     createInstanceWithQRCode,
-    generateSessionName
+    generateSessionName,
+    getGlobalEvolutionConfig,
+    formatPhoneNumber
   };
 }
