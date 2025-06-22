@@ -1,9 +1,9 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Building2, Settings } from "lucide-react";
 import { useCompanies, Company } from "@/hooks/useCompanies";
+import { useDemoSQLConnections } from "@/hooks/useDemoSQLConnections";
 import { CompanyForm } from "@/components/empresas/CompanyForm";
 import { CompanyTable } from "@/components/empresas/CompanyTable";
 import { CompanyStats } from "@/components/empresas/CompanyStats";
@@ -11,6 +11,7 @@ import { CompanyConfigTabs } from "@/components/empresas/CompanyConfigTabs";
 
 export default function Empresas() {
   const { companies, loading, createCompany, updateCompany, deleteCompany } = useCompanies();
+  const { createDemoConnectionsForNewCompanies } = useDemoSQLConnections();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [selectedCompanyForConfig, setSelectedCompanyForConfig] = useState<Company | null>(null);
@@ -21,6 +22,10 @@ export default function Empresas() {
         await updateCompany(editingCompany.id, companyData);
       } else {
         await createCompany(companyData);
+        // Após criar a empresa, tentar criar conexão de demonstração
+        setTimeout(() => {
+          createDemoConnectionsForNewCompanies();
+        }, 1000);
       }
       resetForm();
     } catch (error) {

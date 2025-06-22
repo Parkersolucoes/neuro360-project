@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Database, Plus, Edit, Trash2, Save, TestTube } from "lucide-react";
+import { Database, Plus, Edit, Trash2, Save, TestTube, CheckCircle, XCircle } from "lucide-react";
 import { SQLConnection, useSQLConnections } from "@/hooks/useSQLConnections";
+import { useDemoSQLConnections } from "@/hooks/useDemoSQLConnections";
 import { usePlans } from "@/hooks/usePlans";
 import { useCompanies } from "@/hooks/useCompanies";
 import { useToast } from "@/hooks/use-toast";
@@ -18,13 +19,15 @@ interface SQLConnectionFormProps {
 }
 
 export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormProps) {
-  const { createConnection, updateConnection, deleteConnection, testing } = useSQLConnections();
+  const { createConnection, updateConnection, deleteConnection, testConnection, testing } = useSQLConnections();
+  const { createDemoConnectionsForNewCompanies } = useDemoSQLConnections();
   const { plans } = usePlans();
   const { companies, currentCompany } = useCompanies();
   const { toast } = useToast();
   
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [editingConnection, setEditingConnection] = useState<SQLConnection | null>(null);
+  const [testingConnection, setTestingConnection] = useState<string | null>(null);
   const [connectionForm, setConnectionForm] = useState({
     name: "",
     host: "",
@@ -66,6 +69,28 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
     }
   }, [editingConnection]);
 
+  const validateForm = () => {
+    const errors: string[] = [];
+    
+    if (!connectionForm.name.trim()) errors.push("Nome da conexão é obrigatório");
+    if (!connectionForm.host.trim()) errors.push("Host/Servidor é obrigatório");
+    if (!connectionForm.database_name.trim()) errors.push("Nome do banco é obrigatório");
+    if (!connectionForm.username.trim()) errors.push("Usuário é obrigatório");
+    if (!connectionForm.password.trim() && !editingConnection) errors.push("Senha é obrigatória");
+    if (connectionForm.port <= 0 || connectionForm.port > 65535) errors.push("Porta deve estar entre 1 e 65535");
+    
+    if (errors.length > 0) {
+      toast({
+        title: "Dados inválidos",
+        description: errors.join(", "),
+        variant: "destructive"
+      });
+      return false;
+    }
+    
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -77,21 +102,25 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
       });
       return;
     }
+
+    if (!validateForm()) {
+      return;
+    }
     
     try {
       const connectionData = {
-        name: connectionForm.name,
-        host: connectionForm.host,
+        name: connectionForm.name.trim(),
+        host: connectionForm.host.trim(),
         port: connectionForm.port,
-        database_name: connectionForm.database_name,
-        username: connectionForm.username,
-        password_encrypted: connectionForm.password,
+        database_name: connectionForm.database_name.trim(),
+        username: connectionForm.username.trim(),
+        password_encrypted: connectionForm.password.trim(),
         connection_type: connectionForm.connection_type,
         company_id: effectiveCompanyId,
         status: 'active' as const
       };
 
-      console.log('Salvando conexão SQL:', connectionData);
+      console.log('📝 Salvando conexão SQL com dados validados:', connectionData);
 
       if (editingConnection) {
         await updateConnection(editingConnection.id, connectionData);
@@ -102,6 +131,7 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
       resetForm();
     } catch (error) {
       console.error('Error saving connection:', error);
+      // O erro já foi tratado no hook useSQLConnections
     }
   };
 
@@ -123,9 +153,18 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
     setEditingConnection(connection);
   };
 
-  const handleDelete = async (connectionId: string) => {
-    if (confirm("Tem certeza que deseja excluir esta conexão?")) {
+  const handleDelete = async (connectionId: string, connectionName: string) => {
+    if (confirm(`Tem certeza que deseja excluir a conexão "${connectionName}"?`)) {
       await deleteConnection(connectionId);
+    }
+  };
+
+  const handleTestConnection = async (connection: SQLConnection) => {
+    setTestingConnection(connection.id);
+    try {
+      await testConnection(connection);
+    } finally {
+      setTestingConnection(null);
     }
   };
 
@@ -149,6 +188,22 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
     }
     setEditingConnection(null);
     setIsFormVisible(true);
+  };
+
+  const handleCreateDemoConnections = async () => {
+    try {
+      await createDemoConnectionsForNewCompanies();
+      toast({
+        title: "Sucesso",
+        description: "Conexões de demonstração criadas com sucesso",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao criar conexões de demonstração",
+        variant: "destructive"
+      });
+    }
   };
 
   if (!effectiveCompanyId) {
@@ -182,6 +237,14 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
                 </Badge>
               )}
               <Button 
+                onClick={handleCreateDemoConnections}
+                variant="outline"
+                className="border-green-600 text-green-600 hover:bg-green-50"
+              >
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Criar Demo
+              </Button>
+              <Button 
                 onClick={handleNewConnection}
                 disabled={!canAddConnection}
                 className="bg-blue-600 hover:bg-blue-700"
@@ -198,7 +261,7 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
       {companyConnections.length > 0 && (
         <div className="grid gap-4">
           {companyConnections.map((connection) => (
-            <Card key={connection.id}>
+            <Card key={connection.id} className="border-l-4 border-l-blue-500">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
@@ -211,15 +274,36 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
                       <Badge variant="outline" className="border-gray-300 text-gray-700">
                         {connection.connection_type}
                       </Badge>
+                      {connection.name.includes('Demo') && (
+                        <Badge className="bg-yellow-100 text-yellow-800">
+                          Demo
+                        </Badge>
+                      )}
                     </div>
                     <p className="text-sm text-gray-500">
-                      {connection.host}:{connection.port} - {connection.database_name}
+                      <strong>Servidor:</strong> {connection.host}:{connection.port}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      <strong>Banco:</strong> {connection.database_name} | <strong>Usuário:</strong> {connection.username}
                     </p>
                     <p className="text-xs text-gray-400 mt-1">
-                      Usuário: {connection.username}
+                      Criado em: {new Date(connection.created_at).toLocaleDateString('pt-BR')}
                     </p>
                   </div>
                   <div className="flex space-x-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => handleTestConnection(connection)}
+                      disabled={testingConnection === connection.id}
+                      className="border-green-200 text-green-600 hover:bg-green-50"
+                    >
+                      {testingConnection === connection.id ? (
+                        <div className="w-3 h-3 animate-spin rounded-full border-2 border-green-600 border-t-transparent" />
+                      ) : (
+                        <TestTube className="w-3 h-3" />
+                      )}
+                    </Button>
                     <Button 
                       size="sm" 
                       variant="outline" 
@@ -232,7 +316,7 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
                       size="sm" 
                       variant="outline" 
                       className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-                      onClick={() => handleDelete(connection.id)}
+                      onClick={() => handleDelete(connection.id, connection.name)}
                     >
                       <Trash2 className="w-3 h-3" />
                     </Button>
@@ -246,7 +330,7 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
 
       {/* Formulário de Nova/Editar Conexão */}
       {isFormVisible && (
-        <Card>
+        <Card className="border-t-4 border-t-blue-500">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Database className="w-5 h-5 text-blue-600" />
@@ -268,7 +352,7 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="connection_type">Tipo de Banco</Label>
+                  <Label htmlFor="connection_type">Tipo de Banco *</Label>
                   <Select 
                     value={connectionForm.connection_type}
                     onValueChange={(value) => setConnectionForm({...connectionForm, connection_type: value})}
@@ -305,6 +389,8 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
                     value={connectionForm.port}
                     onChange={(e) => setConnectionForm({...connectionForm, port: parseInt(e.target.value) || 1433})}
                     placeholder="1433"
+                    min="1"
+                    max="65535"
                     className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                     required
                   />
@@ -336,7 +422,9 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password">Senha *</Label>
+                  <Label htmlFor="password">
+                    Senha {editingConnection ? '(deixe em branco para manter a atual)' : '*'}
+                  </Label>
                   <Input
                     id="password"
                     type="password"
@@ -344,23 +432,15 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
                     onChange={(e) => setConnectionForm({...connectionForm, password: e.target.value})}
                     placeholder="********"
                     className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                    required
+                    required={!editingConnection}
                   />
                 </div>
               </div>
               
-              <div className="flex space-x-2">
+              <div className="flex space-x-2 pt-4 border-t">
                 <Button type="submit" disabled={testing} className="bg-blue-600 hover:bg-blue-700">
                   <Save className="w-4 h-4 mr-2" />
                   {testing ? 'Salvando...' : editingConnection ? 'Atualizar' : 'Salvar'} Conexão
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  className="border-blue-600 text-blue-600 hover:bg-blue-50"
-                >
-                  <TestTube className="w-4 h-4 mr-2" />
-                  Testar Conexão
                 </Button>
                 <Button type="button" variant="outline" onClick={resetForm}>
                   Cancelar
@@ -378,10 +458,16 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
             <Database className="w-16 h-16 mx-auto mb-4 text-gray-300" />
             <h3 className="text-xl font-semibold text-gray-900 mb-3">Nenhuma conexão configurada</h3>
             <p className="text-gray-500 mb-6">Configure a primeira conexão de banco de dados para esta empresa.</p>
-            <Button onClick={handleNewConnection} className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="w-4 h-4 mr-2" />
-              Criar primeira conexão
-            </Button>
+            <div className="flex justify-center space-x-4">
+              <Button onClick={handleCreateDemoConnections} variant="outline" className="border-green-600 text-green-600 hover:bg-green-50">
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Criar Demonstração
+              </Button>
+              <Button onClick={handleNewConnection} className="bg-blue-600 hover:bg-blue-700">
+                <Plus className="w-4 h-4 mr-2" />
+                Criar primeira conexão
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -390,7 +476,7 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
       {!currentPlan && (
         <Card>
           <CardContent className="p-12 text-center">
-            <Database className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+            <XCircle className="w-16 h-16 mx-auto mb-4 text-red-300" />
             <h3 className="text-xl font-semibold text-gray-900 mb-3">Plano não configurado</h3>
             <p className="text-gray-500">A empresa deve ter um plano associado para configurar conexões de banco de dados.</p>
           </CardContent>
