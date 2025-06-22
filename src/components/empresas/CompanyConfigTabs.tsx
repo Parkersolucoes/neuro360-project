@@ -14,6 +14,14 @@ interface CompanyConfigTabsProps {
 export function CompanyConfigTabs({ company }: CompanyConfigTabsProps) {
   const { connections } = useSQLConnections();
 
+  if (!company) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-600">Empresa não encontrada</p>
+      </div>
+    );
+  }
+
   return (
     <Tabs defaultValue="sql" className="space-y-6">
       <TabsList className="grid w-full grid-cols-3">
