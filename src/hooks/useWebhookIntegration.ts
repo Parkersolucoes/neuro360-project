@@ -1,8 +1,22 @@
 
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { WebhookIntegrationService } from '@/services/webhookIntegrationService';
-import type { WebhookIntegration, UpdateWebhookIntegrationData } from '@/types/webhookIntegration';
+import { supabase } from '@/integrations/supabase/client';
+
+interface WebhookIntegration {
+  id: string;
+  company_id: string;
+  qrcode_webhook_url: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+interface SaveWebhookData {
+  company_id: string;
+  qrcode_webhook_url: string;
+  is_active: boolean;
+}
 
 export function useWebhookIntegration(companyId?: string) {
   const [integration, setIntegration] = useState<WebhookIntegration | null>(null);
@@ -11,7 +25,6 @@ export function useWebhookIntegration(companyId?: string) {
 
   const fetchIntegration = async () => {
     if (!companyId) {
-      console.log('🚫 useWebhookIntegration: No company ID provided');
       setIntegration(null);
       setLoading(false);
       return;
@@ -19,14 +32,36 @@ export function useWebhookIntegration(companyId?: string) {
 
     try {
       setLoading(true);
-      console.log('🔍 useWebhookIntegration: Fetching integration for company:', companyId);
+      console.log('🔍 Carregando webhook integration para empresa:', companyId);
       
-      const integrationData = await WebhookIntegrationService.fetchByCompanyId(companyId);
-      setIntegration(integrationData);
-      
-      console.log('✅ useWebhookIntegration: Integration loaded:', integrationData);
+      const { data, error } = await supabase
+        .from('webhook_integrations')
+        .select('*')
+        .eq('company_id', companyId)
+        .maybeSingle();
+
+      if (error) {
+        console.error('❌ Erro ao carregar webhook:', error);
+        throw error;
+      }
+
+      if (data) {
+        const mappedData: WebhookIntegration = {
+          id: data.id,
+          company_id: data.company_id,
+          qrcode_webhook_url: data.webhook_url || '',
+          is_active: data.is_active,
+          created_at: data.created_at,
+          updated_at: data.updated_at
+        };
+        setIntegration(mappedData);
+        console.log('✅ Webhook integration carregada:', mappedData);
+      } else {
+        setIntegration(null);
+        console.log('ℹ️ Nenhuma configuração encontrada');
+      }
     } catch (error) {
-      console.error('❌ useWebhookIntegration: Error fetching webhook integration:', error);
+      console.error('❌ Erro ao carregar webhook integration:', error);
       toast({
         title: "Erro",
         description: "Erro ao carregar configuração webhook",
@@ -37,56 +72,71 @@ export function useWebhookIntegration(companyId?: string) {
     }
   };
 
-  const saveIntegration = async (integrationData: UpdateWebhookIntegrationData & { company_id: string; qrcode_webhook_url: string }) => {
-    if (!companyId) {
-      console.error('❌ useWebhookIntegration: Company ID is required');
-      throw new Error('Company ID is required');
-    }
-
+  const saveIntegration = async (data: SaveWebhookData) => {
     try {
-      console.log('💾 useWebhookIntegration: Saving webhook integration with companyId:', companyId);
-      console.log('💾 useWebhookIntegration: Integration data:', integrationData);
+      console.log('💾 Salvando webhook integration:', data);
 
-      let savedIntegration: WebhookIntegration;
+      let result;
       
-      if (integration && integration.id) {
-        console.log('🔄 useWebhookIntegration: Updating existing integration:', integration.id);
-        savedIntegration = await WebhookIntegrationService.update(integration.id, {
-          qrcode_webhook_url: integrationData.qrcode_webhook_url,
-          is_active: integrationData.is_active !== undefined ? integrationData.is_active : true
-        });
+      if (integration) {
+        // Atualizar existente
+        result = await supabase
+          .from('webhook_integrations')
+          .update({
+            webhook_url: data.qrcode_webhook_url,
+            is_active: data.is_active,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', integration.id)
+          .select()
+          .single();
       } else {
-        console.log('📝 useWebhookIntegration: Creating new integration for company:', companyId);
-        savedIntegration = await WebhookIntegrationService.create({
-          company_id: companyId,
-          qrcode_webhook_url: integrationData.qrcode_webhook_url,
-          is_active: integrationData.is_active !== undefined ? integrationData.is_active : true
-        });
+        // Criar novo
+        result = await supabase
+          .from('webhook_integrations')
+          .insert({
+            company_id: data.company_id,
+            webhook_url: data.qrcode_webhook_url,
+            is_active: data.is_active
+          })
+          .select()
+          .single();
       }
       
-      setIntegration(savedIntegration);
+      if (result.error) {
+        console.error('❌ Erro ao salvar webhook:', result.error);
+        throw result.error;
+      }
       
-      console.log('✅ useWebhookIntegration: Integration saved successfully:', savedIntegration);
+      console.log('✅ Webhook salvo com sucesso:', result.data);
+      
+      // Atualizar estado local
+      const mappedData: WebhookIntegration = {
+        id: result.data.id,
+        company_id: result.data.company_id,
+        qrcode_webhook_url: result.data.webhook_url || '',
+        is_active: result.data.is_active,
+        created_at: result.data.created_at,
+        updated_at: result.data.updated_at
+      };
+      setIntegration(mappedData);
       
       toast({
         title: "Sucesso",
         description: "Configuração webhook salva com sucesso!"
       });
       
-      return savedIntegration;
-    } catch (error) {
-      console.error('❌ useWebhookIntegration: Error saving webhook integration:', error);
+      return mappedData;
+    } catch (error: any) {
+      console.error('❌ Erro ao salvar webhook:', error);
       
       let errorMessage = "Erro ao salvar configuração webhook";
-      
-      if (error instanceof Error) {
-        if (error.message.includes('violates row-level security')) {
-          errorMessage = "Erro de permissão: Verifique se você tem acesso à empresa selecionada";
-        } else if (error.message.includes('not authenticated')) {
-          errorMessage = "Erro de autenticação: Faça login novamente";
-        } else {
-          errorMessage = `Erro: ${error.message}`;
-        }
+      if (error?.message?.includes('violates row-level security')) {
+        errorMessage = "Erro de permissão: Verifique se você tem acesso à empresa";
+      } else if (error?.message?.includes('not authenticated')) {
+        errorMessage = "Erro de autenticação: Faça login novamente";
+      } else if (error?.message) {
+        errorMessage = `Erro: ${error.message}`;
       }
       
       toast({
@@ -94,6 +144,7 @@ export function useWebhookIntegration(companyId?: string) {
         description: errorMessage,
         variant: "destructive"
       });
+      
       throw error;
     }
   };

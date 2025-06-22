@@ -20,20 +20,16 @@ export function QRCodeInterface() {
   const [timer, setTimer] = useState(0);
   const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'waiting' | 'connected'>('disconnected');
 
-  // Preencher automaticamente o nome da instância com base no nome da empresa
+  // Gerar nome da instância automaticamente
   useEffect(() => {
-    if (currentCompany?.name && instanceName === '') {
-      const firstName = currentCompany.name.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
-      const date = new Date();
-      const dateStr = date.getFullYear().toString() + 
-                     (date.getMonth() + 1).toString().padStart(2, '0') + 
-                     date.getDate().toString().padStart(2, '0');
-      
-      setInstanceName(`${firstName}_${dateStr}`);
+    if (currentCompany?.name && !instanceName) {
+      const companyName = currentCompany.name.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+      const timestamp = Date.now().toString().slice(-6);
+      setInstanceName(`${companyName}_${timestamp}`);
     }
   }, [currentCompany, instanceName]);
 
-  // Timer para regenerar QR Code a cada 30 segundos
+  // Timer para regenerar QR Code
   useEffect(() => {
     let interval: NodeJS.Timeout;
     
@@ -56,16 +52,13 @@ export function QRCodeInterface() {
     };
   }, [timer, qrCodeData, connectionStatus]);
 
-  const sendInstanceToWebhook = async (instanceName: string) => {
+  const sendToWebhook = async (instanceName: string) => {
     if (!integration?.qrcode_webhook_url) {
       console.log('Nenhuma URL de webhook configurada');
       return;
     }
 
     try {
-      console.log('Enviando nome da instância para webhook:', instanceName);
-      console.log('URL do webhook:', integration.qrcode_webhook_url);
-
       const payload = {
         event: 'qr_code_generated',
         timestamp: new Date().toISOString(),
@@ -77,33 +70,33 @@ export function QRCodeInterface() {
         }
       };
 
+      console.log('📤 Enviando para webhook:', integration.qrcode_webhook_url);
+      
       const response = await fetch(integration.qrcode_webhook_url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
       if (response.ok) {
-        console.log('✅ Nome da instância enviado com sucesso para o webhook');
+        console.log('✅ Webhook enviado com sucesso');
         toast({
           title: "Webhook Enviado",
-          description: "Nome da instância enviado para o webhook com sucesso!"
+          description: "Dados enviados para o webhook com sucesso!"
         });
       } else {
-        console.error('❌ Erro ao enviar para webhook:', response.status, response.statusText);
+        console.warn(`⚠️ Webhook retornou: ${response.status}`);
         toast({
           title: "Aviso",
-          description: `Erro ao enviar para webhook: ${response.status}`,
+          description: `Webhook retornou status: ${response.status}`,
           variant: "destructive"
         });
       }
     } catch (error) {
-      console.error('❌ Erro ao enviar para webhook:', error);
+      console.error('❌ Erro ao enviar webhook:', error);
       toast({
-        title: "Aviso",
-        description: "Erro de conexão com o webhook",
+        title: "Erro de Conexão",
+        description: "Erro ao conectar com o webhook",
         variant: "destructive"
       });
     }
@@ -132,26 +125,26 @@ export function QRCodeInterface() {
     setConnectionStatus('waiting');
     
     try {
-      // Enviar nome da instância para o webhook antes de gerar o QR Code
-      await sendInstanceToWebhook(instanceName.trim());
+      // Enviar para webhook antes de gerar QR Code
+      await sendToWebhook(instanceName.trim());
 
-      // Simular geração de QR Code (substituir pela integração real)
-      const mockQRCode = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==`;
+      // Simular QR Code (substituir pela integração real)
+      const mockQRCode = `data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y5ZjlmOSIgc3Ryb2tlPSIjZGRkIiBzdHJva2Utd2lkdGg9IjEiLz4KICA8dGV4dCB4PSIxMDAiIHk9IjEwMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY2NiI+UVIgQ29kZTwvdGV4dD4KPC9zdmc+`;
       
       setQrCodeData(mockQRCode);
       setTimer(30);
       
       toast({
-        title: "QR Code Gerado!",
-        description: "Escaneie o código QR com seu WhatsApp para conectar",
+        title: "QR Code Gerado",
+        description: "Escaneie o código QR com seu WhatsApp",
       });
     } catch (error) {
       console.error('Erro ao gerar QR Code:', error);
       setConnectionStatus('disconnected');
       
       toast({
-        title: "Erro ao Gerar QR Code",
-        description: "Erro na geração do QR Code",
+        title: "Erro",
+        description: "Erro ao gerar QR Code",
         variant: "destructive"
       });
     } finally {
@@ -162,18 +155,18 @@ export function QRCodeInterface() {
   const getStatusBadge = () => {
     switch (connectionStatus) {
       case 'connected':
-        return <Badge className="bg-green-500">Conectado</Badge>;
+        return <Badge className="bg-green-500 text-white">Conectado</Badge>;
       case 'waiting':
-        return <Badge variant="outline">Aguardando</Badge>;
+        return <Badge variant="outline" className="border-yellow-500 text-yellow-600">Aguardando</Badge>;
       default:
         return <Badge variant="secondary">Desconectado</Badge>;
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-6xl mx-auto">
       <div className="grid md:grid-cols-2 gap-8">
-        {/* Configuração da Instância */}
+        {/* Configuração */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
@@ -194,7 +187,7 @@ export function QRCodeInterface() {
               <Input 
                 value={currentCompany?.name || ''} 
                 disabled 
-                className="bg-gray-50 border-gray-200"
+                className="bg-gray-50"
               />
             </div>
 
@@ -206,31 +199,28 @@ export function QRCodeInterface() {
                 value={instanceName}
                 onChange={(e) => setInstanceName(e.target.value)}
                 placeholder="Digite o nome da instância"
-                className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
               />
               <p className="text-xs text-gray-500 mt-1">
                 Nome único para identificar sua instância WhatsApp
               </p>
             </div>
 
-            {integration?.qrcode_webhook_url && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <p className="text-sm text-blue-800">
-                  ✅ Webhook configurado: {integration.qrcode_webhook_url}
+            {integration?.qrcode_webhook_url ? (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                <p className="text-sm text-green-800 font-medium">
+                  ✅ Webhook configurado
                 </p>
-                <p className="text-xs text-blue-600 mt-1">
-                  O nome da instância será enviado para este webhook ao gerar o QR Code
+                <p className="text-xs text-green-600 mt-1">
+                  {integration.qrcode_webhook_url}
                 </p>
               </div>
-            )}
-
-            {!integration?.qrcode_webhook_url && (
+            ) : (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                <p className="text-sm text-yellow-800">
-                  ⚠️ Nenhum webhook configurado
+                <p className="text-sm text-yellow-800 font-medium">
+                  ⚠️ Webhook não configurado
                 </p>
                 <p className="text-xs text-yellow-600 mt-1">
-                  Configure um webhook na aba "Webhook Integração" para receber notificações
+                  Configure na aba "Webhook Integração"
                 </p>
               </div>
             )}
@@ -238,12 +228,12 @@ export function QRCodeInterface() {
             <Button
               onClick={handleGenerateQRCode}
               disabled={isGenerating || !instanceName.trim()}
-              className="w-full bg-green-500 hover:bg-green-600"
+              className="w-full bg-green-600 hover:bg-green-700"
             >
               {isGenerating ? (
                 <>
                   <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  Gerando QR Code...
+                  Gerando...
                 </>
               ) : (
                 <>
@@ -256,7 +246,7 @@ export function QRCodeInterface() {
             {timer > 0 && (
               <div className="text-center">
                 <p className="text-sm text-gray-600">
-                  Novo QR Code em: <span className="font-bold text-blue-600">{timer}s</span>
+                  Renovação em: <span className="font-bold text-blue-600">{timer}s</span>
                 </p>
                 <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
                   <div 
@@ -280,11 +270,11 @@ export function QRCodeInterface() {
           <CardContent>
             {qrCodeData ? (
               <div className="text-center space-y-4">
-                <div className="bg-white p-4 rounded-lg border-2 border-gray-200 inline-block">
+                <div className="bg-white p-6 rounded-lg border-2 border-gray-200 inline-block">
                   <img 
                     src={qrCodeData}
                     alt="QR Code WhatsApp"
-                    className="w-64 h-64 mx-auto"
+                    className="w-48 h-48 mx-auto"
                   />
                 </div>
                 
@@ -294,7 +284,7 @@ export function QRCodeInterface() {
                   </h3>
                   <div className="text-sm text-gray-600 space-y-1">
                     <p>1. Abra o WhatsApp no seu celular</p>
-                    <p>2. Toque em Menu → Dispositivos conectados</p>
+                    <p>2. Vá em Menu → Dispositivos conectados</p>
                     <p>3. Toque em "Conectar um dispositivo"</p>
                     <p>4. Aponte a câmera para este QR Code</p>
                   </div>
@@ -303,20 +293,20 @@ export function QRCodeInterface() {
                 {timer > 0 && (
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                     <p className="text-sm text-blue-800">
-                      ⏱️ Este QR Code expira em <strong>{timer} segundos</strong>
+                      ⏱️ Expira em <strong>{timer} segundos</strong>
                     </p>
                   </div>
                 )}
               </div>
             ) : (
-              <div className="text-center py-16 space-y-4">
+              <div className="text-center py-20 space-y-4">
                 <QrCode className="w-16 h-16 text-gray-300 mx-auto" />
                 <div className="space-y-2">
                   <h3 className="text-lg font-medium text-gray-500">
                     QR Code não gerado
                   </h3>
                   <p className="text-sm text-gray-400">
-                    Clique em "Gerar QR Code" para conectar seu WhatsApp
+                    Clique em "Gerar QR Code" para conectar
                   </p>
                 </div>
               </div>
