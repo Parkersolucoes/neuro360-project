@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { QrCode, Timer, RefreshCw } from "lucide-react";
+import { QrCode, Timer, RefreshCw, Globe } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCompanies } from "@/hooks/useCompanies";
 
@@ -14,10 +14,51 @@ export default function WhatsApp() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [isAutoRefreshEnabled, setIsAutoRefreshEnabled] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<string | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
   const { currentCompany } = useCompanies();
+
+  // Função para testar a conexão com o webhook
+  const testWebhookConnection = async (webhookUrl: string): Promise<boolean> => {
+    try {
+      console.log('Testando conexão com webhook:', webhookUrl);
+      setConnectionStatus(`Testando conexão com: ${webhookUrl}`);
+      
+      // Fazer uma requisição HEAD ou OPTIONS para testar a conectividade
+      const response = await fetch(webhookUrl, {
+        method: 'HEAD',
+        signal: AbortSignal.timeout(10000), // 10 segundos timeout para teste
+      });
+
+      console.log('Status do teste de conexão:', response.status);
+      
+      if (response.ok || response.status === 405) { // 405 Method Not Allowed é aceitável
+        setConnectionStatus(`✅ Conexão estabelecida com: ${webhookUrl}`);
+        return true;
+      } else {
+        setConnectionStatus(`❌ Erro de conexão (${response.status}): ${webhookUrl}`);
+        return false;
+      }
+    } catch (error) {
+      console.error('Erro no teste de conexão:', error);
+      
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          setConnectionStatus(`❌ Timeout na conexão: ${webhookUrl}`);
+        } else if (error.message.includes('fetch')) {
+          setConnectionStatus(`❌ Falha na conexão: ${webhookUrl} - ${error.message}`);
+        } else {
+          setConnectionStatus(`❌ Erro de conexão: ${webhookUrl} - ${error.message}`);
+        }
+      } else {
+        setConnectionStatus(`❌ Erro desconhecido na conexão: ${webhookUrl}`);
+      }
+      
+      return false;
+    }
+  };
 
   // Função para gerar QR Code via webhook
   const generateQRCode = async () => {
@@ -40,6 +81,7 @@ export default function WhatsApp() {
     }
 
     setIsGenerating(true);
+    setConnectionStatus(null);
     
     try {
       console.log('Enviando requisição para webhook:', currentCompany.qr_code);
@@ -52,6 +94,23 @@ export default function WhatsApp() {
       } catch (urlError) {
         throw new Error(`URL do webhook inválida: ${currentCompany.qr_code}`);
       }
+
+      // Testar conexão primeiro
+      const isConnected = await testWebhookConnection(webhookUrl.toString());
+      
+      if (!isConnected) {
+        toast({
+          title: "Erro de Conexão",
+          description: "Não foi possível conectar com o webhook. Verifique a URL e tente novamente.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Aguardar 1 segundo para mostrar o status de conexão
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setConnectionStatus(`🔄 Enviando solicitação para: ${webhookUrl.toString()}`);
 
       const response = await fetch(webhookUrl.toString(), {
         method: 'POST',
@@ -113,6 +172,7 @@ export default function WhatsApp() {
         }
         
         setQrCodeData(qrCodeUrl);
+        setConnectionStatus(`✅ QR Code gerado com sucesso via: ${webhookUrl.toString()}`);
         
         toast({
           title: "Sucesso",
@@ -136,6 +196,8 @@ export default function WhatsApp() {
           errorMessage = error.message;
         }
       }
+      
+      setConnectionStatus(`❌ Erro: ${errorMessage}`);
       
       toast({
         title: "Erro",
@@ -283,6 +345,17 @@ export default function WhatsApp() {
               </Alert>
             )}
 
+            {/* Status da conexão */}
+            {connectionStatus && (
+              <Alert>
+                <Globe className="w-4 h-4" />
+                <AlertDescription>
+                  <strong>Status da Conexão:</strong><br />
+                  {connectionStatus}
+                </AlertDescription>
+              </Alert>
+            )}
+
             {isAutoRefreshEnabled && countdown > 0 && (
               <Alert>
                 <Timer className="w-4 h-4" />
@@ -347,11 +420,13 @@ export default function WhatsApp() {
             <br />
             2. Clique em "Gerar QR Code" para criar um novo código via webhook
             <br />
-            3. O QR Code será atualizado automaticamente a cada 30 segundos
+            3. O sistema verificará a conexão com o webhook antes de enviar a solicitação
             <br />
-            4. Use o botão "Auto-Refresh" para controlar a atualização automática
+            4. O QR Code será atualizado automaticamente a cada 30 segundos
             <br />
-            5. Certifique-se de que o webhook esteja configurado no cadastro da empresa
+            5. Use o botão "Auto-Refresh" para controlar a atualização automática
+            <br />
+            6. Certifique-se de que o webhook esteja configurado no cadastro da empresa
           </AlertDescription>
         </Alert>
       </div>
