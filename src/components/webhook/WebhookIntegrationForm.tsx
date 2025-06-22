@@ -32,6 +32,31 @@ export function WebhookIntegrationForm({ companyId }: WebhookIntegrationFormProp
       try {
         console.log('🔍 Carregando integração webhook para empresa:', companyId);
         
+        // Verificar se o usuário está autenticado
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        
+        if (authError) {
+          console.error('❌ Erro de autenticação:', authError);
+          toast({
+            title: "Erro de Autenticação",
+            description: "Faça login novamente",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        if (!user) {
+          console.error('❌ Usuário não autenticado');
+          toast({
+            title: "Erro",
+            description: "Usuário não autenticado",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        console.log('✅ Usuário autenticado:', user.id);
+        
         const { data, error } = await supabase
           .from('webhook_integrations')
           .select('*')
@@ -91,6 +116,20 @@ export function WebhookIntegrationForm({ companyId }: WebhookIntegrationFormProp
     try {
       setIsSaving(true);
       
+      // Verificar autenticação antes de salvar
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        console.error('❌ Erro de autenticação:', authError);
+        toast({
+          title: "Erro de Autenticação",
+          description: "Faça login novamente",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      console.log('✅ Usuário autenticado para salvar:', user.id);
       console.log('💾 Salvando webhook integration:', {
         company_id: companyId,
         webhook_url: qrcodeWebhookUrl.trim(),
@@ -101,6 +140,7 @@ export function WebhookIntegrationForm({ companyId }: WebhookIntegrationFormProp
       
       if (existingIntegration) {
         // Atualizar registro existente
+        console.log('🔄 Atualizando registro existente:', existingIntegration.id);
         result = await supabase
           .from('webhook_integrations')
           .update({
@@ -112,6 +152,33 @@ export function WebhookIntegrationForm({ companyId }: WebhookIntegrationFormProp
           .select();
       } else {
         // Criar novo registro
+        console.log('📝 Criando novo registro para empresa:', companyId);
+        
+        // Verificar se o usuário tem acesso à empresa
+        const { data: userCompany, error: userCompanyError } = await supabase
+          .from('user_companies')
+          .select('*')
+          .eq('company_id', companyId)
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (userCompanyError) {
+          console.error('❌ Erro ao verificar acesso à empresa:', userCompanyError);
+          throw new Error('Erro ao verificar permissões');
+        }
+
+        if (!userCompany) {
+          console.error('❌ Usuário não tem acesso à empresa:', companyId);
+          toast({
+            title: "Erro de Permissão",
+            description: "Você não tem acesso a esta empresa",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        console.log('✅ Usuário tem acesso à empresa:', userCompany);
+
         result = await supabase
           .from('webhook_integrations')
           .insert({
