@@ -97,6 +97,11 @@ export function useUsers() {
     try {
       console.log('Creating user with data:', userData);
       
+      // Validar se há empresa selecionada
+      if (!currentCompany) {
+        throw new Error('Nenhuma empresa selecionada. Selecione uma empresa antes de criar usuários.');
+      }
+      
       // Validações básicas
       if (!userData.name?.trim()) {
         throw new Error('Nome é obrigatório');
@@ -176,6 +181,27 @@ export function useUsers() {
       
       if (!data) {
         throw new Error('Erro: dados do usuário não retornados após criação');
+      }
+
+      // Criar associação do usuário com a empresa atual
+      console.log('Creating user-company association for user:', data.id, 'company:', currentCompany.id);
+      
+      const { error: associationError } = await supabase
+        .from('user_companies')
+        .insert([{
+          user_id: data.id,
+          company_id: currentCompany.id,
+          role: userData.role || 'user',
+          is_primary: true // Primeira empresa do usuário é sempre primária
+        }]);
+
+      if (associationError) {
+        console.error('Error creating user-company association:', associationError);
+        // Não falhar a criação do usuário por causa da associação
+        // Mas logar o erro para debug
+        console.warn('User created but association failed. User may not appear in list until manually associated.');
+      } else {
+        console.log('User-company association created successfully');
       }
       
       const formattedUser: User = {
