@@ -1,16 +1,16 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, Save, Smartphone, QrCode } from "lucide-react";
+import { MessageSquare, Save, Smartphone, QrCode, CheckCircle, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useEvolutionConfig } from "@/hooks/useEvolutionConfig";
 import { useSystemLogs } from "@/hooks/useSystemLogs";
 import { useCompanies } from "@/hooks/useCompanies";
 import { useEvolutionConfigActions } from "@/hooks/useEvolutionConfigActions";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 interface EvolutionAPIFormProps {
   companyId: string;
@@ -21,7 +21,7 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
   const { logError, logInfo } = useSystemLogs();
   const { currentCompany } = useCompanies();
   const { config: evolutionConfig, saveConfig, loading } = useEvolutionConfig(companyId);
-  const { generateSessionName, createInstanceWithQRCode } = useEvolutionConfigActions();
+  const { generateSessionName, createInstanceWithQRCode, getGlobalEvolutionConfig, formatPhoneNumber } = useEvolutionConfigActions();
 
   const [evolutionForm, setEvolutionForm] = useState({
     instance_name: "",
@@ -31,6 +31,8 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [showQRCode, setShowQRCode] = useState(false);
   const [qrCodeData, setQrCodeData] = useState<string>("");
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [confirmationData, setConfirmationData] = useState<any>(null);
 
   // Preencher o formulário da Evolution com dados existentes
   useEffect(() => {
@@ -58,6 +60,48 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
     }
   }, [evolutionConfig, currentCompany, generateSessionName]);
 
+  const prepareConfirmationData = () => {
+    if (!currentCompany?.phone) {
+      toast({
+        title: "Erro",
+        description: "Número de telefone da empresa é obrigatório. Configure nas informações da empresa.",
+        variant: "destructive"
+      });
+      return null;
+    }
+
+    const globalConfig = getGlobalEvolutionConfig();
+    
+    if (!globalConfig) {
+      toast({
+        title: "Erro",
+        description: "Configuração global da Evolution API não encontrada. Configure primeiro nas Configurações do Sistema.",
+        variant: "destructive"
+      });
+      return null;
+    }
+
+    const formattedPhone = formatPhoneNumber(currentCompany.phone);
+    
+    return {
+      globalConfig,
+      instanceName: evolutionForm.instance_name,
+      webhookUrl: evolutionForm.webhook_url || 'Não informado',
+      companyPhone: currentCompany.phone,
+      formattedPhone,
+      companyName: currentCompany.name,
+      integration: 'WHATSAPP-BAILEYS',
+      events: [
+        'APPLICATION_STARTUP',
+        'QRCODE_UPDATED', 
+        'MESSAGES_UPSERT',
+        'CONNECTION_UPDATE',
+        'CONTACTS_UPSERT',
+        'CHATS_UPSERT'
+      ]
+    };
+  };
+
   const handleEvolutionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -83,16 +127,17 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
       return;
     }
 
-    if (!currentCompany?.phone) {
-      toast({
-        title: "Erro",
-        description: "Número de telefone da empresa é obrigatório. Configure nas informações da empresa.",
-        variant: "destructive"
-      });
-      return;
-    }
+    // Preparar dados para confirmação
+    const confirmData = prepareConfirmationData();
+    if (!confirmData) return;
 
+    setConfirmationData(confirmData);
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmCreation = async () => {
     try {
+      setShowConfirmDialog(false);
       setIsSaving(true);
       setShowQRCode(false);
       setQrCodeData("");
@@ -106,7 +151,7 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
       // Usar createInstanceWithQRCode diretamente para ter controle do QR Code
       const createResult = await createInstanceWithQRCode({
         instance_name: evolutionForm.instance_name,
-        company_phone: currentCompany.phone
+        company_phone: currentCompany!.phone
       });
 
       if (createResult.success) {
@@ -271,6 +316,98 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
           </form>
         </CardContent>
       </Card>
+
+      {/* Confirmation Dialog */}
+      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2">
+              <CheckCircle className="w-5 h-5 text-blue-600" />
+              <span>Confirmar Criação da Instância WhatsApp</span>
+            </DialogTitle>
+          </DialogHeader>
+          
+          {confirmationData && (
+            <div className="space-y-4 max-h-96 overflow-y-auto">
+              <div className="grid grid-cols-1 gap-4">
+                
+                {/* Configurações Globais */}
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h4 className="font-semibold text-blue-800 mb-2">🌐 Configurações Globais da Evolution API</h4>
+                  <div className="space-y-1 text-sm">
+                    <p><strong>URL Base:</strong> {confirmationData.globalConfig.base_url}</p>
+                    <p><strong>API Key:</strong> {confirmationData.globalConfig.global_api_key.substring(0, 12)}***</p>
+                  </div>
+                </div>
+
+                {/* Dados da Empresa */}
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <h4 className="font-semibold text-green-800 mb-2">🏢 Dados da Empresa</h4>
+                  <div className="space-y-1 text-sm">
+                    <p><strong>Nome:</strong> {confirmationData.companyName}</p>
+                    <p><strong>Telefone Original:</strong> {confirmationData.companyPhone}</p>
+                    <p><strong>Telefone Formatado:</strong> {confirmationData.formattedPhone}</p>
+                  </div>
+                </div>
+
+                {/* Parâmetros da Instância */}
+                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <h4 className="font-semibold text-yellow-800 mb-2">⚙️ Parâmetros da Instância</h4>
+                  <div className="space-y-1 text-sm">
+                    <p><strong>Nome da Instância:</strong> {confirmationData.instanceName}</p>
+                    <p><strong>Integração:</strong> {confirmationData.integration}</p>
+                    <p><strong>Webhook URL:</strong> {confirmationData.webhookUrl}</p>
+                    <p><strong>QR Code:</strong> Habilitado</p>
+                    <p><strong>Webhook por Eventos:</strong> Desabilitado</p>
+                    <p><strong>Webhook Base64:</strong> Desabilitado</p>
+                  </div>
+                </div>
+
+                {/* Eventos Configurados */}
+                <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                  <h4 className="font-semibold text-purple-800 mb-2">📡 Eventos Configurados</h4>
+                  <div className="grid grid-cols-2 gap-1 text-xs">
+                    {confirmationData.events.map((event: string, index: number) => (
+                      <p key={index}>• {event}</p>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Resumo da Requisição */}
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                  <h4 className="font-semibold text-gray-800 mb-2">📋 Resumo da Requisição</h4>
+                  <div className="space-y-1 text-sm">
+                    <p><strong>Endpoint:</strong> {confirmationData.globalConfig.base_url}/instance/create</p>
+                    <p><strong>Método:</strong> POST</p>
+                    <p><strong>Content-Type:</strong> application/json</p>
+                    <p><strong>Autenticação:</strong> API Key no header</p>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="space-x-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowConfirmDialog(false)}
+              disabled={isSaving}
+            >
+              <X className="w-4 h-4 mr-1" />
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleConfirmCreation}
+              disabled={isSaving}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              <CheckCircle className="w-4 h-4 mr-1" />
+              {isSaving ? "Criando..." : "Confirmar e Criar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* QR Code Display */}
       {showQRCode && qrCodeData && (
