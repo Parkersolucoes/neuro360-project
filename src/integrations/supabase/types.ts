@@ -19,7 +19,6 @@ export type Database = {
           name: string
           phone: string | null
           plan_id: string | null
-          qr_code: string | null
           status: string
           updated_at: string
         }
@@ -32,7 +31,6 @@ export type Database = {
           name: string
           phone?: string | null
           plan_id?: string | null
-          qr_code?: string | null
           status?: string
           updated_at?: string
         }
@@ -45,7 +43,6 @@ export type Database = {
           name?: string
           phone?: string | null
           plan_id?: string | null
-          qr_code?: string | null
           status?: string
           updated_at?: string
         }
@@ -133,6 +130,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "query_executions_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "sql_connections"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "query_executions_query_id_fkey"
             columns: ["query_id"]
@@ -258,7 +262,15 @@ export type Database = {
           use_ssl?: boolean
           use_tls?: boolean
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "smtp_configs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sql_connections: {
         Row: {
@@ -315,7 +327,7 @@ export type Database = {
       }
       sql_queries: {
         Row: {
-          company_id: string | null
+          company_id: string
           connection_id: string | null
           created_at: string
           created_by: string | null
@@ -328,7 +340,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
-          company_id?: string | null
+          company_id: string
           connection_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -341,7 +353,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
-          company_id?: string | null
+          company_id?: string
           connection_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -366,6 +378,13 @@ export type Database = {
             columns: ["connection_id"]
             isOneToOne: false
             referencedRelation: "sql_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sql_queries_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
@@ -677,10 +696,6 @@ export type Database = {
     Functions: {
       is_master_user: {
         Args: { user_uuid?: string }
-        Returns: boolean
-      }
-      user_has_company_access: {
-        Args: { company_uuid: string; user_uuid?: string }
         Returns: boolean
       }
       validate_user_password: {
