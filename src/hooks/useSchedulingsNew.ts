@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useCompanies } from '@/hooks/useCompanies';
@@ -43,7 +42,14 @@ export function useSchedulingsNew() {
 
       if (error) throw error;
       
-      setSchedulings(data || []);
+      // Garantir que os tipos estejam corretos e que recipients seja array
+      const typedData: Scheduling[] = (data || []).map(item => ({
+        ...item,
+        status: item.status as 'pending' | 'sent' | 'cancelled' | 'failed',
+        recipients: Array.isArray(item.recipients) ? item.recipients : []
+      }));
+      
+      setSchedulings(typedData);
     } catch (error) {
       console.error('Error fetching schedulings:', error);
       toast({

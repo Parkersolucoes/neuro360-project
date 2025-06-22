@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,7 +22,7 @@ export function SQLQueryForm({ query, onSubmit, onCancel }: SQLQueryFormProps) {
     description: "",
     query_text: "",
     connection_id: "",
-    status: "active" as const
+    status: "active" as "active" | "inactive"
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});

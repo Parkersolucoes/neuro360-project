@@ -60,7 +60,13 @@ export function useSQLQueriesNew() {
 
       if (error) throw error;
       
-      setQueries(data || []);
+      // Garantir que os tipos estejam corretos
+      const typedData: SQLQuery[] = (data || []).map(item => ({
+        ...item,
+        status: item.status as 'active' | 'inactive'
+      }));
+      
+      setQueries(typedData);
     } catch (error) {
       console.error('Error fetching SQL queries:', error);
       toast({
@@ -96,8 +102,8 @@ export function useSQLQueriesNew() {
           query_text: queryData.query_text.trim(),
           connection_id: queryData.connection_id || null,
           status: queryData.status || 'active',
-          created_by: null, // TODO: Implementar autenticação
-          user_id: null
+          created_by: queryData.created_by || null,
+          user_id: queryData.user_id || null
         })
         .select()
         .single();
@@ -216,7 +222,9 @@ export function useSQLQueriesNew() {
         description: "Consulta de teste criada automaticamente",
         query_text: "SELECT COUNT(*) as total FROM usuarios WHERE status = 'ativo'",
         connection_id: connections.length > 0 ? connections[0].id : null,
-        status: 'active' as const
+        status: 'active' as const,
+        created_by: null,
+        user_id: null
       };
 
       await createQuery(testQuery);

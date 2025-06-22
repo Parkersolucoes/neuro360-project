@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,7 +19,7 @@ export function SchedulingForm({ scheduling, onSubmit, onCancel }: SchedulingFor
     name: "",
     message_content: "",
     scheduled_for: "",
-    status: "pending" as const,
+    status: "pending" as "pending" | "sent" | "cancelled" | "failed",
     recipients: [""]
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
