@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Webhook, Save, TestTube } from "lucide-react";
+import { Save, Link } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useWebhookIntegration } from "@/hooks/useWebhookIntegration";
 
@@ -17,23 +17,22 @@ export function WebhookIntegrationForm({ companyId }: WebhookIntegrationFormProp
   const { toast } = useToast();
   const { integration, loading, saveIntegration } = useWebhookIntegration(companyId);
   
-  const [webhookUrl, setWebhookUrl] = useState("");
+  const [path, setPath] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const [isTesting, setIsTesting] = useState(false);
 
   useEffect(() => {
     if (integration?.qrcode_webhook_url) {
-      setWebhookUrl(integration.qrcode_webhook_url);
+      setPath(integration.qrcode_webhook_url);
     }
   }, [integration]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!webhookUrl.trim()) {
+    if (!path.trim()) {
       toast({
         title: "Erro",
-        description: "URL do webhook é obrigatória",
+        description: "Caminho é obrigatório",
         variant: "destructive"
       });
       return;
@@ -53,68 +52,14 @@ export function WebhookIntegrationForm({ companyId }: WebhookIntegrationFormProp
       
       await saveIntegration({
         company_id: companyId,
-        qrcode_webhook_url: webhookUrl.trim(),
+        qrcode_webhook_url: path.trim(),
         is_active: true
       });
       
     } catch (error) {
-      console.error('Erro ao salvar webhook:', error);
+      console.error('Erro ao salvar caminho:', error);
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  const testWebhook = async () => {
-    if (!webhookUrl.trim()) {
-      toast({
-        title: "Erro",
-        description: "Configure uma URL antes de testar",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsTesting(true);
-
-    try {
-      const testPayload = {
-        event: 'webhook.test',
-        timestamp: new Date().toISOString(),
-        company_id: companyId,
-        data: {
-          message: 'Teste do webhook QR Code',
-          system: 'WhatsApp Automation'
-        }
-      };
-
-      const response = await fetch(webhookUrl.trim(), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(testPayload)
-      });
-
-      if (response.ok) {
-        toast({
-          title: "Sucesso",
-          description: "Webhook testado com sucesso!",
-        });
-      } else {
-        toast({
-          title: "Erro no Teste",
-          description: `Erro ${response.status}: ${response.statusText}`,
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Erro de Conexão",
-        description: "Não foi possível conectar ao webhook",
-        variant: "destructive"
-      });
-    } finally {
-      setIsTesting(false);
     }
   };
 
@@ -136,8 +81,8 @@ export function WebhookIntegrationForm({ companyId }: WebhookIntegrationFormProp
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <Webhook className="w-5 h-5 text-blue-600" />
-            <span>Configuração Webhook QR Code</span>
+            <Link className="w-5 h-5 text-blue-600" />
+            <span>Configuração de Caminho</span>
           </div>
           {integration?.qrcode_webhook_url && (
             <Badge className="bg-green-100 text-green-800">
@@ -149,52 +94,36 @@ export function WebhookIntegrationForm({ companyId }: WebhookIntegrationFormProp
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="webhook_url">URL do Webhook *</Label>
+            <Label htmlFor="path">Caminho *</Label>
             <Input
-              id="webhook_url"
-              type="url"
-              value={webhookUrl}
-              onChange={(e) => setWebhookUrl(e.target.value)}
-              placeholder="https://seu-servidor.com/webhook/qrcode"
+              id="path"
+              type="text"
+              value={path}
+              onChange={(e) => setPath(e.target.value)}
+              placeholder="Digite o caminho ou URL"
               className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
               required
             />
             <p className="text-sm text-gray-500">
-              URL onde será enviado o nome da instância ao gerar QR Code
+              Caminho onde será salvo ou URL de destino
             </p>
           </div>
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 className="font-medium text-blue-900 mb-2">Como Funciona</h4>
-            <ul className="text-sm text-blue-800 space-y-1">
-              <li>• Quando um QR Code é gerado, o nome da instância será enviado para esta URL</li>
-              <li>• O payload incluirá informações da empresa e timestamp</li>
-              <li>• Use o botão "Testar" para verificar se a URL está funcionando</li>
-            </ul>
+            <h4 className="font-medium text-blue-900 mb-2">Informação</h4>
+            <p className="text-sm text-blue-800">
+              Configure um caminho para salvar as informações do QR Code gerado.
+            </p>
           </div>
           
-          <div className="flex space-x-3">
-            <Button 
-              type="submit" 
-              className="bg-blue-600 hover:bg-blue-700"
-              disabled={isSaving || !webhookUrl.trim() || !companyId}
-            >
-              <Save className="w-4 h-4 mr-2" />
-              {isSaving ? "Salvando..." : "Salvar Configuração"}
-            </Button>
-
-            {webhookUrl.trim() && (
-              <Button 
-                type="button" 
-                variant="outline"
-                onClick={testWebhook}
-                disabled={isTesting}
-              >
-                <TestTube className="w-4 h-4 mr-2" />
-                {isTesting ? "Testando..." : "Testar Webhook"}
-              </Button>
-            )}
-          </div>
+          <Button 
+            type="submit" 
+            className="bg-blue-600 hover:bg-blue-700"
+            disabled={isSaving || !path.trim() || !companyId}
+          >
+            <Save className="w-4 h-4 mr-2" />
+            {isSaving ? "Salvando..." : "Salvar Caminho"}
+          </Button>
         </form>
       </CardContent>
     </Card>

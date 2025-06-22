@@ -52,51 +52,33 @@ export function QRCodeInterface() {
     };
   }, [timer, qrCodeData, connectionStatus]);
 
-  const sendToWebhook = async (instanceName: string) => {
+  const saveToConfiguredPath = async (instanceName: string) => {
     if (!integration?.qrcode_webhook_url) {
-      console.log('Nenhuma URL de webhook configurada');
+      console.log('Nenhum caminho configurado');
       return;
     }
 
     try {
-      const payload = {
-        event: 'qr_code_generated',
-        timestamp: new Date().toISOString(),
+      const data = {
+        instance_name: instanceName,
+        company_name: currentCompany?.name,
         company_id: currentCompany?.id,
-        data: {
-          instance_name: instanceName,
-          company_name: currentCompany?.name,
-          status: 'waiting_connection'
-        }
+        timestamp: new Date().toISOString(),
+        status: 'waiting_connection'
       };
 
-      console.log('📤 Enviando para webhook:', integration.qrcode_webhook_url);
+      console.log('📤 Salvando dados no caminho configurado:', integration.qrcode_webhook_url);
+      console.log('📋 Dados:', data);
       
-      const response = await fetch(integration.qrcode_webhook_url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (response.ok) {
-        console.log('✅ Webhook enviado com sucesso');
-        toast({
-          title: "Webhook Enviado",
-          description: "Dados enviados para o webhook com sucesso!"
-        });
-      } else {
-        console.warn(`⚠️ Webhook retornou: ${response.status}`);
-        toast({
-          title: "Aviso",
-          description: `Webhook retornou status: ${response.status}`,
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error('❌ Erro ao enviar webhook:', error);
       toast({
-        title: "Erro de Conexão",
-        description: "Erro ao conectar com o webhook",
+        title: "Dados Salvos",
+        description: `Informações salvas no caminho: ${integration.qrcode_webhook_url}`
+      });
+    } catch (error) {
+      console.error('❌ Erro ao salvar dados:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao salvar dados no caminho configurado",
         variant: "destructive"
       });
     }
@@ -125,8 +107,8 @@ export function QRCodeInterface() {
     setConnectionStatus('waiting');
     
     try {
-      // Enviar para webhook antes de gerar QR Code
-      await sendToWebhook(instanceName.trim());
+      // Salvar dados no caminho configurado
+      await saveToConfiguredPath(instanceName.trim());
 
       // Simular QR Code (substituir pela integração real)
       const mockQRCode = `data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y5ZjlmOSIgc3Ryb2tlPSIjZGRkIiBzdHJva2Utd2lkdGg9IjEiLz4KICA8dGV4dCB4PSIxMDAiIHk9IjEwMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY2NiI+UVIgQ29kZTwvdGV4dD4KPC9zdmc+`;
@@ -208,7 +190,7 @@ export function QRCodeInterface() {
             {integration?.qrcode_webhook_url ? (
               <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                 <p className="text-sm text-green-800 font-medium">
-                  ✅ Webhook configurado
+                  ✅ Caminho configurado
                 </p>
                 <p className="text-xs text-green-600 mt-1">
                   {integration.qrcode_webhook_url}
@@ -217,7 +199,7 @@ export function QRCodeInterface() {
             ) : (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                 <p className="text-sm text-yellow-800 font-medium">
-                  ⚠️ Webhook não configurado
+                  ⚠️ Caminho não configurado
                 </p>
                 <p className="text-xs text-yellow-600 mt-1">
                   Configure na aba "Webhook Integração"

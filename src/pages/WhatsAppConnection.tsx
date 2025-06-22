@@ -4,7 +4,7 @@ import { QRCodeInterface } from "@/components/qrcode/QRCodeInterface";
 import { WebhookIntegrationForm } from "@/components/webhook/WebhookIntegrationForm";
 import { WhatsAppManager } from "@/components/whatsapp/WhatsAppManager";
 import { useCompanies } from "@/hooks/useCompanies";
-import { QrCode, Webhook, MessageSquare } from "lucide-react";
+import { QrCode, Link, MessageSquare } from "lucide-react";
 
 export default function WhatsAppConnection() {
   const { currentCompany } = useCompanies();
@@ -33,9 +33,9 @@ export default function WhatsAppConnection() {
             <QrCode className="w-4 h-4" />
             <span>QR Code</span>
           </TabsTrigger>
-          <TabsTrigger value="webhook" className="flex items-center space-x-2">
-            <Webhook className="w-4 h-4" />
-            <span>Webhook Integração</span>
+          <TabsTrigger value="path" className="flex items-center space-x-2">
+            <Link className="w-4 h-4" />
+            <span>Configuração de Caminho</span>
           </TabsTrigger>
           <TabsTrigger value="messages" className="flex items-center space-x-2">
             <MessageSquare className="w-4 h-4" />
@@ -47,7 +47,7 @@ export default function WhatsAppConnection() {
           <QRCodeInterface />
         </TabsContent>
 
-        <TabsContent value="webhook">
+        <TabsContent value="path">
           <WebhookIntegrationForm companyId={currentCompany.id} />
         </TabsContent>
 

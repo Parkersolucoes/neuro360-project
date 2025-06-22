@@ -32,7 +32,7 @@ export function useWebhookIntegration(companyId?: string) {
 
     try {
       setLoading(true);
-      console.log('🔍 Carregando webhook integration para empresa:', companyId);
+      console.log('🔍 Carregando configuração para empresa:', companyId);
       
       const { data, error } = await supabase
         .from('webhook_integrations')
@@ -41,7 +41,7 @@ export function useWebhookIntegration(companyId?: string) {
         .maybeSingle();
 
       if (error) {
-        console.error('❌ Erro ao carregar webhook:', error);
+        console.error('❌ Erro ao carregar configuração:', error);
         throw error;
       }
 
@@ -55,16 +55,16 @@ export function useWebhookIntegration(companyId?: string) {
           updated_at: data.updated_at
         };
         setIntegration(mappedData);
-        console.log('✅ Webhook integration carregada:', mappedData);
+        console.log('✅ Configuração carregada:', mappedData);
       } else {
         setIntegration(null);
         console.log('ℹ️ Nenhuma configuração encontrada');
       }
     } catch (error) {
-      console.error('❌ Erro ao carregar webhook integration:', error);
+      console.error('❌ Erro ao carregar configuração:', error);
       toast({
         title: "Erro",
-        description: "Erro ao carregar configuração webhook",
+        description: "Erro ao carregar configuração",
         variant: "destructive"
       });
     } finally {
@@ -74,7 +74,7 @@ export function useWebhookIntegration(companyId?: string) {
 
   const saveIntegration = async (data: SaveWebhookData) => {
     try {
-      console.log('💾 Salvando webhook integration:', data);
+      console.log('💾 Salvando configuração:', data);
 
       let result;
       
@@ -104,11 +104,11 @@ export function useWebhookIntegration(companyId?: string) {
       }
       
       if (result.error) {
-        console.error('❌ Erro ao salvar webhook:', result.error);
+        console.error('❌ Erro ao salvar configuração:', result.error);
         throw result.error;
       }
       
-      console.log('✅ Webhook salvo com sucesso:', result.data);
+      console.log('✅ Configuração salva com sucesso:', result.data);
       
       // Atualizar estado local
       const mappedData: WebhookIntegration = {
@@ -123,14 +123,14 @@ export function useWebhookIntegration(companyId?: string) {
       
       toast({
         title: "Sucesso",
-        description: "Configuração webhook salva com sucesso!"
+        description: "Caminho salvo com sucesso!"
       });
       
       return mappedData;
     } catch (error: any) {
-      console.error('❌ Erro ao salvar webhook:', error);
+      console.error('❌ Erro ao salvar configuração:', error);
       
-      let errorMessage = "Erro ao salvar configuração webhook";
+      let errorMessage = "Erro ao salvar caminho";
       if (error?.message?.includes('violates row-level security')) {
         errorMessage = "Erro de permissão: Verifique se você tem acesso à empresa";
       } else if (error?.message?.includes('not authenticated')) {
