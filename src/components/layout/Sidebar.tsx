@@ -14,7 +14,10 @@ import {
   BarChart3,
   Calendar,
   QrCode,
-  Webhook
+  Webhook,
+  Shield,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +27,7 @@ import { CompanySelector } from "./CompanySelector";
 
 export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
   const location = useLocation();
   const { userLogin } = useAuth();
   const { currentCompany } = useCompanies();
@@ -33,16 +37,28 @@ export function Sidebar() {
 
   const menuItems = [
     { path: "/dashboard", icon: Home, label: "Dashboard" },
-    { path: "/empresas", icon: Building2, label: "Empresas" },
-    { path: "/usuarios", icon: Users, label: "Usuários" },
-    { path: "/planos", icon: Package, label: "Planos" },
-    { path: "/sql-server", icon: Database, label: "SQL Server" },
     { path: "/agendamentos", icon: Calendar, label: "Agendamentos" },
     { path: "/whatsapp", icon: QrCode, label: "WhatsApp" },
     { path: "/webhooks", icon: Webhook, label: "Webhooks" },
     { path: "/relatorios", icon: BarChart3, label: "Relatórios" },
-    { path: "/configuracao-sistema", icon: Settings, label: "Config. Sistema" },
+    { path: "/usuarios", icon: Users, label: "Usuários" },
   ];
+
+  const adminMenuItems = [
+    { path: "/configuracao-sistema", icon: Settings, label: "Config. Sistema" },
+    { path: "/empresas", icon: Building2, label: "Empresas" },
+    { path: "/planos", icon: Package, label: "Planos" },
+  ];
+
+  // Verificar se algum item do menu admin está ativo
+  const isAdminMenuActive = adminMenuItems.some(item => location.pathname === item.path);
+
+  // Abrir automaticamente o menu admin se algum item estiver ativo
+  useEffect(() => {
+    if (isAdminMenuActive) {
+      setIsAdminMenuOpen(true);
+    }
+  }, [isAdminMenuActive]);
 
   return (
     <div className={`bg-slate-800 text-white transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'} min-h-screen flex flex-col`}>
@@ -94,6 +110,56 @@ export function Sidebar() {
               </li>
             );
           })}
+
+          {/* Menu Administrativo */}
+          {isMasterUser && (
+            <li>
+              <div className="mt-4 pt-4 border-t border-slate-700">
+                <button
+                  onClick={() => setIsAdminMenuOpen(!isAdminMenuOpen)}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
+                    isAdminMenuActive
+                      ? 'bg-blue-600 text-white'
+                      : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <Shield className="w-5 h-5 flex-shrink-0" />
+                    {!isCollapsed && <span>Painel Administrativo</span>}
+                  </div>
+                  {!isCollapsed && (
+                    isAdminMenuOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                  )}
+                </button>
+
+                {/* Submenu Administrativo */}
+                {isAdminMenuOpen && !isCollapsed && (
+                  <ul className="mt-2 ml-6 space-y-1">
+                    {adminMenuItems.map((item) => {
+                      const isActive = location.pathname === item.path;
+                      const Icon = item.icon;
+
+                      return (
+                        <li key={item.path}>
+                          <Link
+                            to={item.path}
+                            className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors text-sm ${
+                              isActive 
+                                ? 'bg-blue-500 text-white' 
+                                : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                            }`}
+                          >
+                            <Icon className="w-4 h-4 flex-shrink-0" />
+                            <span>{item.label}</span>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            </li>
+          )}
         </ul>
       </nav>
 
