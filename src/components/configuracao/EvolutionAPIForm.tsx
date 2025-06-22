@@ -22,8 +22,7 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
 
   const [evolutionForm, setEvolutionForm] = useState({
     instance_name: "",
-    api_url: "https://api.evolution.com",
-    api_key: "",
+    instance_token: "",
     webhook_url: ""
   });
 
@@ -35,16 +34,14 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
       console.log('EvolutionAPIForm: Loading existing config:', evolutionConfig);
       setEvolutionForm({
         instance_name: evolutionConfig.instance_name || "",
-        api_url: evolutionConfig.api_url || "https://api.evolution.com",
-        api_key: evolutionConfig.api_key || "",
+        instance_token: evolutionConfig.api_key || "", // Reutilizando o campo api_key como token da instância
         webhook_url: evolutionConfig.webhook_url || ""
       });
     } else {
       console.log('EvolutionAPIForm: No existing config, using defaults');
       setEvolutionForm({
         instance_name: "",
-        api_url: "https://api.evolution.com",
-        api_key: "",
+        instance_token: "",
         webhook_url: ""
       });
     }
@@ -64,8 +61,8 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
       return;
     }
 
-    if (!evolutionForm.api_key.trim()) {
-      const errorMsg = "Chave da API é obrigatória";
+    if (!evolutionForm.instance_token.trim()) {
+      const errorMsg = "Token da instância é obrigatório";
       logError(errorMsg, 'EvolutionAPIForm');
       toast({
         title: "Erro",
@@ -87,19 +84,33 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
     }
 
     try {
+      // Obter configuração global
+      const globalConfig = localStorage.getItem('evolution_global_config');
+      if (!globalConfig) {
+        throw new Error('Configuração global da Evolution API não encontrada. Configure primeiro nas Configurações do Sistema.');
+      }
+
+      const { base_url } = JSON.parse(globalConfig);
+
       console.log('EvolutionAPIForm: Saving config with data:', {
-        ...evolutionForm,
+        instance_name: evolutionForm.instance_name,
+        api_key: evolutionForm.instance_token,
+        api_url: base_url,
+        webhook_url: evolutionForm.webhook_url,
         company_id: companyId
       });
 
       await saveConfig({
-        ...evolutionForm,
+        instance_name: evolutionForm.instance_name,
+        api_key: evolutionForm.instance_token, // Salvando como api_key para compatibilidade
+        api_url: base_url, // Usando a URL base global
+        webhook_url: evolutionForm.webhook_url,
         company_id: companyId,
         is_active: true,
         status: 'disconnected' as const
       });
 
-      logInfo('Configuração Evolution API salva com sucesso', 'EvolutionAPIForm', {
+      logInfo('Configuração Evolution API da instância salva com sucesso', 'EvolutionAPIForm', {
         companyId,
         instanceName: evolutionForm.instance_name
       });
@@ -111,8 +122,8 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
   };
 
   const handleTestConnection = async () => {
-    if (!evolutionForm.api_url || !evolutionForm.api_key) {
-      const errorMsg = "URL da API e chave são obrigatórias para o teste";
+    if (!evolutionForm.instance_name || !evolutionForm.instance_token) {
+      const errorMsg = "Nome da instância e token são obrigatórios para o teste";
       logError(errorMsg, 'EvolutionAPIForm');
       toast({
         title: "Erro",
@@ -125,34 +136,46 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
     setIsTesting(true);
     
     try {
-      logInfo('Testando conexão com Evolution API', 'EvolutionAPIForm', {
-        api_url: evolutionForm.api_url
+      // Obter configuração global
+      const globalConfig = localStorage.getItem('evolution_global_config');
+      if (!globalConfig) {
+        throw new Error('Configuração global da Evolution API não encontrada. Configure primeiro nas Configurações do Sistema.');
+      }
+
+      const { base_url } = JSON.parse(globalConfig);
+
+      logInfo('Testando conexão com instância Evolution API', 'EvolutionAPIForm', {
+        api_url: base_url,
+        instance_name: evolutionForm.instance_name
       });
 
       const isConnected = await EvolutionApiService.testConnection({
-        api_url: evolutionForm.api_url,
-        api_key: evolutionForm.api_key
+        api_url: base_url,
+        api_key: evolutionForm.instance_token
       });
 
       if (isConnected) {
         toast({
           title: "Sucesso",
-          description: "Conexão com a Evolution API estabelecida com sucesso!",
+          description: "Conexão com a instância Evolution API estabelecida com sucesso!",
         });
         
-        logInfo('Conexão com Evolution API estabelecida com sucesso', 'EvolutionAPIForm');
+        logInfo('Conexão com instância Evolution API estabelecida com sucesso', 'EvolutionAPIForm');
         
         // Atualizar status no banco se a configuração já existe
         if (evolutionConfig) {
           await saveConfig({
-            ...evolutionForm,
+            instance_name: evolutionForm.instance_name,
+            api_key: evolutionForm.instance_token,
+            api_url: base_url,
+            webhook_url: evolutionForm.webhook_url,
             company_id: companyId,
             is_active: true,
             status: 'connected' as const
           });
         }
       } else {
-        const errorMsg = "Não foi possível conectar com a Evolution API. Verifique a URL e a chave da API.";
+        const errorMsg = "Não foi possível conectar com a instância Evolution API. Verifique o token da instância.";
         logError(errorMsg, 'EvolutionAPIForm');
         toast({
           title: "Erro de Conexão",
@@ -162,10 +185,10 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
       }
     } catch (error) {
       console.error('EvolutionAPIForm: Connection test failed:', error);
-      logError(`Erro ao testar conexão com Evolution API: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'EvolutionAPIForm', error);
+      logError(`Erro ao testar conexão com instância Evolution API: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'EvolutionAPIForm', error);
       toast({
         title: "Erro",
-        description: "Erro ao testar conexão com a Evolution API",
+        description: error instanceof Error ? error.message : "Erro ao testar conexão com a instância Evolution API",
         variant: "destructive"
       });
     } finally {
@@ -192,7 +215,7 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <MessageSquare className="w-5 h-5 text-blue-600" />
-            <span>Evolution API</span>
+            <span>Evolution API - Configuração da Instância</span>
           </div>
           {evolutionConfig && (
             <Badge className={
@@ -209,6 +232,13 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-blue-800">
+            <strong>Nota:</strong> Configure primeiro a URL base e chave global da Evolution API nas 
+            <strong> Configurações do Sistema</strong> antes de configurar as instâncias por empresa.
+          </p>
+        </div>
+        
         <form onSubmit={handleEvolutionSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="evolution_instance">Nome da Instância *</Label>
@@ -220,29 +250,24 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
               className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
               required
             />
+            <p className="text-sm text-gray-500">
+              Nome único da instância WhatsApp
+            </p>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="evolution_url">URL da API *</Label>
+            <Label htmlFor="instance_token">Token da Instância *</Label>
             <Input
-              id="evolution_url"
-              value={evolutionForm.api_url}
-              onChange={(e) => setEvolutionForm({...evolutionForm, api_url: e.target.value})}
-              placeholder="https://api.evolution.com"
-              className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="evolution_key">Chave da API *</Label>
-            <Input
-              id="evolution_key"
+              id="instance_token"
               type="password"
-              value={evolutionForm.api_key}
-              onChange={(e) => setEvolutionForm({...evolutionForm, api_key: e.target.value})}
-              placeholder="Sua chave da API Evolution"
+              value={evolutionForm.instance_token}
+              onChange={(e) => setEvolutionForm({...evolutionForm, instance_token: e.target.value})}
+              placeholder="Token específico da instância"
               className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
               required
             />
+            <p className="text-sm text-gray-500">
+              Token de acesso específico desta instância
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="evolution_webhook">Webhook URL (Opcional)</Label>
@@ -253,6 +278,9 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
               placeholder="https://seusite.com/webhook"
               className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
             />
+            <p className="text-sm text-gray-500">
+              URL para receber eventos desta instância
+            </p>
           </div>
           <div className="flex space-x-2">
             <Button type="submit" className="bg-blue-600 hover:bg-blue-700">

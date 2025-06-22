@@ -65,14 +65,14 @@ const menuItems = [
     url: "/agendamento",
     icon: Calendar,
   },
-];
-
-const adminMenuItems = [
   {
     title: "Usuários",
     url: "/usuarios",
     icon: Users,
   },
+];
+
+const adminMenuItems = [
   {
     title: "Empresas",
     url: "/empresas",
@@ -106,6 +106,9 @@ export function AppSidebar() {
   const handleSignOut = () => {
     signOut();
   };
+
+  // Verificar se o usuário é master
+  const isMasterUser = userLogin?.is_admin === '0';
 
   return (
     <Sidebar className="border-r border-gray-700 bg-slate-900">
@@ -155,23 +158,35 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={location.pathname === item.url}>
-                    <Link 
-                      to={item.url} 
-                      className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        location.pathname === item.url
-                          ? 'bg-blue-600 text-white border-r-2 border-blue-400'
-                          : 'text-gray-300 hover:bg-slate-800 hover:text-white'
-                      }`}
-                    >
-                      <item.icon className="w-5 h-5" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {menuItems.map((item) => {
+                // Se for usuário master e o item for "Usuários", desabilitar
+                const isDisabled = isMasterUser && item.title === "Usuários";
+                
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild isActive={location.pathname === item.url}>
+                      {isDisabled ? (
+                        <div className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium cursor-not-allowed opacity-50 text-gray-500`}>
+                          <item.icon className="w-5 h-5" />
+                          <span>{item.title}</span>
+                        </div>
+                      ) : (
+                        <Link 
+                          to={item.url} 
+                          className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            location.pathname === item.url
+                              ? 'bg-blue-600 text-white border-r-2 border-blue-400'
+                              : 'text-gray-300 hover:bg-slate-800 hover:text-white'
+                          }`}
+                        >
+                          <item.icon className="w-5 h-5" />
+                          <span>{item.title}</span>
+                        </Link>
+                      )}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
 
               <SidebarMenuItem>
                 <Collapsible open={adminMenuOpen} onOpenChange={setAdminMenuOpen}>

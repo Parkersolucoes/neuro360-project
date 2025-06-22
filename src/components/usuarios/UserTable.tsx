@@ -62,7 +62,7 @@ export function UserTable({
           const isAdmin = user.is_admin === '0'; // Master é admin também
           
           return (
-            <TableRow key={user.id}>
+            <TableRow key={user.id} className={isMaster ? 'opacity-50 pointer-events-none' : ''}>
               <TableCell>
                 <div className="flex items-center space-x-2">
                   <div>
@@ -116,29 +116,28 @@ export function UserTable({
                 </Badge>
               </TableCell>
               <TableCell>
-                <div className="flex space-x-2">
-                  {/* Apenas usuários master podem gerenciar empresas */}
-                  {isMasterUser && !isMaster && (
+                {!isMaster && (
+                  <div className="flex space-x-2">
+                    {/* Apenas usuários master podem gerenciar empresas */}
+                    {isMasterUser && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onManageCompanies(user)}
+                        title="Gerenciar Empresas"
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      >
+                        <Building2 className="w-3 h-3" />
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => onManageCompanies(user)}
-                      title="Gerenciar Empresas"
-                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      onClick={() => onEditUser(user)}
+                      title="Editar"
                     >
-                      <Building2 className="w-3 h-3" />
+                      <Edit className="w-3 h-3" />
                     </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => onEditUser(user)}
-                    title="Editar"
-                  >
-                    <Edit className="w-3 h-3" />
-                  </Button>
-                  {/* Não permitir deletar usuário master */}
-                  {!isMaster && (
                     <Button
                       size="sm"
                       variant="outline"
@@ -148,8 +147,13 @@ export function UserTable({
                     >
                       <Trash2 className="w-3 h-3" />
                     </Button>
-                  )}
-                </div>
+                  </div>
+                )}
+                {isMaster && (
+                  <div className="text-sm text-gray-500 italic">
+                    Usuário protegido
+                  </div>
+                )}
               </TableCell>
             </TableRow>
           );

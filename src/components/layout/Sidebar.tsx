@@ -43,10 +43,10 @@ export function Sidebar() {
     { path: "/whatsapp", icon: QrCode, label: "WhatsApp" },
     { path: "/webhooks", icon: Webhook, label: "Webhooks" },
     { path: "/relatorios", icon: BarChart3, label: "Relatórios" },
+    { path: "/usuarios", icon: Users, label: "Usuários" },
   ];
 
   const adminMenuItems = [
-    { path: "/usuarios", icon: Users, label: "Usuários" },
     { path: "/configuracao-sistema", icon: Settings, label: "Config. Sistema" },
     { path: "/empresas", icon: Building2, label: "Empresas" },
     { path: "/planos", icon: Package, label: "Planos" },
@@ -99,20 +99,30 @@ export function Sidebar() {
           {menuItems.map((item) => {
             const isActive = location.pathname === item.path;
             const Icon = item.icon;
+            
+            // Se for usuário master e o item for "Usuários", desabilitar
+            const isDisabled = isMasterUser && item.label === "Usuários";
 
             return (
               <li key={item.path}>
-                <Link
-                  to={item.path}
-                  className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
-                    isActive 
-                      ? 'bg-blue-600 text-white' 
-                      : 'text-slate-300 hover:bg-slate-700 hover:text-white'
-                  }`}
-                >
-                  <Icon className="w-5 h-5 flex-shrink-0" />
-                  {!isCollapsed && <span>{item.label}</span>}
-                </Link>
+                {isDisabled ? (
+                  <div className="flex items-center space-x-3 px-3 py-2 rounded-lg cursor-not-allowed opacity-50 text-gray-500">
+                    <Icon className="w-5 h-5 flex-shrink-0" />
+                    {!isCollapsed && <span>{item.label}</span>}
+                  </div>
+                ) : (
+                  <Link
+                    to={item.path}
+                    className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
+                      isActive 
+                        ? 'bg-blue-600 text-white' 
+                        : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                    }`}
+                  >
+                    <Icon className="w-5 h-5 flex-shrink-0" />
+                    {!isCollapsed && <span>{item.label}</span>}
+                  </Link>
+                )}
               </li>
             );
           })}
