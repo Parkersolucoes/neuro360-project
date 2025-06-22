@@ -6,6 +6,7 @@ import { useCompanies } from '@/hooks/useCompanies';
 import { EvolutionConfigService } from '@/services/evolutionConfigService';
 import { EvolutionApiService } from '@/services/evolutionApiService';
 import { useSystemConfigs } from '@/hooks/useSystemConfigs';
+import { supabase } from '@/integrations/supabase/client';
 import type { EvolutionConfig, CreateEvolutionConfigData, UpdateEvolutionConfigData } from '@/types/evolutionConfig';
 
 export function useEvolutionConfigActions() {
@@ -16,7 +17,6 @@ export function useEvolutionConfigActions() {
   const { getConfigValue } = useSystemConfigs();
 
   const getGlobalEvolutionConfig = () => {
-    // Primeiro tenta buscar da configuração do sistema via hook
     const globalConfig = getConfigValue('evolution_global_config');
     
     if (globalConfig && globalConfig.base_url && globalConfig.global_api_key) {
@@ -26,7 +26,6 @@ export function useEvolutionConfigActions() {
       };
     }
 
-    // Fallback para localStorage se não encontrou na configuração do sistema
     const savedConfig = localStorage.getItem('evolution_global_config');
     if (savedConfig) {
       try {
@@ -46,10 +45,7 @@ export function useEvolutionConfigActions() {
   };
 
   const generateSessionName = (companyName: string): string => {
-    // Pegar primeiro nome da empresa
     const firstName = companyName.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
-    
-    // Adicionar data no formato YYYYMMDD
     const date = new Date();
     const dateStr = date.getFullYear().toString() + 
                    (date.getMonth() + 1).toString().padStart(2, '0') + 
@@ -58,16 +54,29 @@ export function useEvolutionConfigActions() {
     return `${firstName}_${dateStr}`;
   };
 
-  const createInstanceWithValidation = async (config: {
+  const formatPhoneNumber = (phone: string): string => {
+    // Remove todos os caracteres não numéricos
+    const cleanPhone = phone.replace(/\D/g, '');
+    
+    // Se já começa com 55, retorna como está
+    if (cleanPhone.startsWith('55')) {
+      return cleanPhone;
+    }
+    
+    // Adiciona 55 no início
+    return `55${cleanPhone}`;
+  };
+
+  const createInstanceWithQRCode = async (config: {
     instance_name: string;
-  }): Promise<boolean> => {
+    company_phone?: string;
+  }): Promise<{ success: boolean; qrCodeData?: string }> => {
     try {
-      console.log('useEvolutionConfigActions: Creating Evolution instance:', config);
-      logInfo('Criando nova instância Evolution API', 'useEvolutionConfigActions', { 
+      console.log('useEvolutionConfigActions: Creating Evolution instance with QR Code:', config);
+      logInfo('Criando nova instância Evolution API com QR Code', 'useEvolutionConfigActions', { 
         instance_name: config.instance_name 
       });
 
-      // Buscar configuração global
       const globalConfig = getGlobalEvolutionConfig();
       
       if (!globalConfig) {
@@ -76,37 +85,88 @@ export function useEvolutionConfigActions() {
 
       console.log('useEvolutionConfigActions: Using global config:', { base_url: globalConfig.base_url });
 
-      // Criar uma instância temporária do serviço Evolution com dados combinados
+      // Formatar número de telefone
+      const phoneNumber = config.company_phone ? formatPhoneNumber(config.company_phone) : undefined;
+      console.log('useEvolutionConfigActions: Formatted phone number:', phoneNumber);
+
       const tempEvolutionService = new EvolutionApiService({
         id: 'temp',
         company_id: currentCompany?.id || 'temp',
         api_url: globalConfig.base_url,
-        api_key: globalConfig.global_api_key, // Usar chave global para operações de instância
+        api_key: globalConfig.global_api_key,
         instance_name: config.instance_name,
         webhook_url: null,
         is_active: true,
         status: 'testing' as const
       });
 
-      // Tentar criar a instância para validar a configuração
-      const createResponse = await tempEvolutionService.createInstance();
+      const createResponse = await tempEvolutionService.createInstanceWithQRCode(phoneNumber);
       
       if (createResponse.instance && createResponse.instance.instanceName) {
-        console.log('useEvolutionConfigActions: Instance created successfully:', createResponse);
-        logInfo('Instância Evolution API criada com sucesso', 'useEvolutionConfigActions', {
+        console.log('useEvolutionConfigActions: Instance created successfully with QR Code:', createResponse);
+        
+        // Salvar QR Code na sessão se disponível
+        if (createResponse.qrCodeData && currentCompany) {
+          await saveQRCodeToSession(config.instance_name, createResponse.qrCodeData, currentCompany.id);
+        }
+        
+        logInfo('Instância Evolution API criada com sucesso e QR Code salvo', 'useEvolutionConfigActions', {
           instance_name: config.instance_name,
-          response: createResponse
+          has_qr_code: !!createResponse.qrCodeData
         });
-        return true;
+        
+        return { 
+          success: true, 
+          qrCodeData: createResponse.qrCodeData 
+        };
       } else {
         console.log('useEvolutionConfigActions: Instance creation failed, invalid response');
         logError('Falha na criação da instância - resposta inválida', 'useEvolutionConfigActions');
-        return false;
+        return { success: false };
       }
     } catch (error) {
       console.error('useEvolutionConfigActions: Instance creation failed:', error);
       logError(`Falha na criação da instância: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'useEvolutionConfigActions', error);
-      return false;
+      return { success: false };
+    }
+  };
+
+  const saveQRCodeToSession = async (instanceName: string, qrCodeData: string, companyId: string) => {
+    try {
+      // Verificar se já existe uma sessão para esta instância
+      const { data: existingSession } = await supabase
+        .from('qr_sessions')
+        .select('*')
+        .eq('instance_name', instanceName)
+        .eq('company_id', companyId)
+        .single();
+
+      if (existingSession) {
+        // Atualizar sessão existente
+        await supabase
+          .from('qr_sessions')
+          .update({
+            qr_code_data: qrCodeData,
+            session_status: 'waiting',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingSession.id);
+      } else {
+        // Criar nova sessão
+        await supabase
+          .from('qr_sessions')
+          .insert({
+            session_name: instanceName,
+            instance_name: instanceName,
+            company_id: companyId,
+            qr_code_data: qrCodeData,
+            session_status: 'waiting'
+          });
+      }
+
+      console.log('QR Code saved to session successfully');
+    } catch (error) {
+      console.error('Error saving QR Code to session:', error);
     }
   };
 
@@ -123,39 +183,34 @@ export function useEvolutionConfigActions() {
         throw new Error('Nenhuma empresa selecionada');
       }
 
-      // Buscar configuração global
       const globalConfig = getGlobalEvolutionConfig();
       
       if (!globalConfig) {
         throw new Error('Configuração global da Evolution API não encontrada. Configure primeiro nas Configurações do Sistema.');
       }
 
-      // Gerar nome da sessão baseado no nome da empresa
       const sessionName = generateSessionName(currentCompany.name);
-      
-      // Usar o nome da sessão gerado se não foi fornecido um nome de instância
       const instanceName = configData.instance_name || sessionName;
 
-      // Validar configuração criando instância
       toast({
         title: "Criando instância",
-        description: "Criando nova instância WhatsApp na Evolution API..."
+        description: "Criando nova instância WhatsApp na Evolution API com QR Code..."
       });
 
-      const isValid = await createInstanceWithValidation({
-        instance_name: instanceName
+      const createResult = await createInstanceWithQRCode({
+        instance_name: instanceName,
+        company_phone: currentCompany.phone
       });
 
-      if (!isValid) {
+      if (!createResult.success) {
         throw new Error('Configuração inválida: não foi possível criar a instância. Verifique o nome da instância.');
       }
 
-      // Se a validação passou, criar a configuração com dados globais + específicos da empresa
       const configToCreate = {
         ...configData,
         instance_name: instanceName,
-        api_url: globalConfig.base_url, // Usar URL da configuração global
-        api_key: globalConfig.global_api_key, // Usar chave global
+        api_url: globalConfig.base_url,
+        api_key: globalConfig.global_api_key,
         company_id: currentCompany.id,
         status: 'connected' as const
       };
@@ -167,7 +222,9 @@ export function useEvolutionConfigActions() {
       
       toast({
         title: "Sucesso",
-        description: "Configuração da Evolution API criada e instância criada com sucesso! Agora você pode gerar QR Code."
+        description: createResult.qrCodeData 
+          ? "Configuração criada e QR Code gerado! Acesse o menu QR Code para conectar o WhatsApp."
+          : "Configuração da Evolution API criada com sucesso! Acesse o menu QR Code para gerar o código."
       });
       
       return newConfig;
@@ -194,16 +251,13 @@ export function useEvolutionConfigActions() {
         throw new Error('Nenhuma empresa selecionada');
       }
 
-      // Buscar configuração global
       const globalConfig = getGlobalEvolutionConfig();
       
       if (!globalConfig) {
         throw new Error('Configuração global da Evolution API não encontrada. Configure primeiro nas Configurações do Sistema.');
       }
 
-      // Se estamos atualizando dados críticos, validar criando nova instância
       if (updates.instance_name) {
-        // Buscar configuração atual para ter dados completos
         const currentConfig = await EvolutionConfigService.fetchByCompanyId(currentCompany.id);
         
         if (!currentConfig) {
@@ -212,7 +266,6 @@ export function useEvolutionConfigActions() {
 
         let instanceName = updates.instance_name;
         
-        // Se não há nome de instância definido, gerar um novo
         if (!instanceName) {
           instanceName = generateSessionName(currentCompany.name);
           updates.instance_name = instanceName;
@@ -223,15 +276,15 @@ export function useEvolutionConfigActions() {
           description: "Criando nova instância para validar as alterações..."
         });
 
-        const isValid = await createInstanceWithValidation({
-          instance_name: instanceName
+        const createResult = await createInstanceWithQRCode({
+          instance_name: instanceName,
+          company_phone: currentCompany.phone
         });
 
-        if (!isValid) {
+        if (!createResult.success) {
           throw new Error('Alterações inválidas: não foi possível criar instância com as novas configurações. Verifique os dados informados.');
         }
 
-        // Se a validação passou, definir status como 'connected' e atualizar URL da API
         updates.status = 'connected';
         updates.api_url = globalConfig.base_url;
         updates.api_key = globalConfig.global_api_key;
@@ -265,7 +318,7 @@ export function useEvolutionConfigActions() {
   return {
     createConfig,
     updateConfig,
-    createInstanceWithValidation,
+    createInstanceWithQRCode,
     generateSessionName
   };
 }

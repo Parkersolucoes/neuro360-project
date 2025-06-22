@@ -62,6 +62,16 @@ export function QRCodeGenerator({
     initEvolutionService();
   }, [evolutionConfigId]);
 
+  // Carregar QR Code existente da sessão
+  useEffect(() => {
+    if (session?.qr_code_data) {
+      console.log('QRCodeGenerator: Loading existing QR Code from session');
+      setQrCode(session.qr_code_data);
+    } else {
+      console.log('QRCodeGenerator: No existing QR Code found in session');
+    }
+  }, [session]);
+
   const generateQRCode = async () => {
     if (!evolutionService) {
       toast({
@@ -75,18 +85,15 @@ export function QRCodeGenerator({
     setIsGenerating(true);
     
     try {
-      // Criar ou atualizar sessão no banco
       let currentSession = session;
       if (!currentSession) {
         currentSession = await createSession(evolutionConfigId, instanceName, currentCompanyId);
       }
 
-      // Gerar QR Code através da Evolution API (instância já deve estar criada)
       const qrResponse = await evolutionService.generateQRCode();
       
       setQrCode(qrResponse.qrCode);
       
-      // Atualizar sessão com o QR Code
       await updateSession({
         session_status: 'waiting',
         qr_code_data: qrResponse.qrCode,
@@ -98,7 +105,6 @@ export function QRCodeGenerator({
         description: "Escaneie o código com seu WhatsApp para conectar",
       });
 
-      // Iniciar polling para verificar status da conexão
       startStatusPolling();
     } catch (error) {
       console.error('Error generating QR code:', error);
@@ -120,7 +126,6 @@ export function QRCodeGenerator({
         const status = await evolutionService.getInstanceStatus();
         
         if (status.status === 'open') {
-          // Instância conectada
           await updateSession({
             session_status: 'connected',
             connected_at: new Date().toISOString(),
@@ -137,9 +142,8 @@ export function QRCodeGenerator({
       } catch (error) {
         console.error('Error checking instance status:', error);
       }
-    }, 5000); // Verificar a cada 5 segundos
+    }, 5000);
 
-    // Limpar polling após 5 minutos
     setTimeout(() => {
       clearInterval(pollInterval);
     }, 300000);
@@ -171,11 +175,8 @@ export function QRCodeGenerator({
     generateQRCode();
   };
 
-  useEffect(() => {
-    if (session?.qr_code_data) {
-      setQrCode(session.qr_code_data);
-    }
-  }, [session]);
+  // Verificar se há QR Code disponível automaticamente na sessão
+  const hasQRCodeAvailable = session?.qr_code_data && session.qr_code_data.length > 0;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -203,12 +204,16 @@ export function QRCodeGenerator({
             <p className="text-sm text-blue-800">
               <strong>Instância:</strong> {instanceName}
               <br />
-              <strong>Importante:</strong> A instância deve estar criada nas configurações da empresa antes de gerar o QR Code.
+              {hasQRCodeAvailable ? (
+                <strong>✓ QR Code disponível:</strong> + " A instância foi criada automaticamente e o QR Code está pronto para uso."
+              ) : (
+                <strong>Importante:</strong> + " A instância deve estar criada nas configurações da empresa antes de gerar o QR Code."
+              )}
             </p>
           </div>
           
           <QRCodeDisplay
-            sessionStatus={sessionStatus}
+            sessionStatus={hasQRCodeAvailable ? "waiting" : sessionStatus}
             qrCode={qrCode}
             currentCompanyName={currentCompanyName}
             onGenerateQRCode={generateQRCode}

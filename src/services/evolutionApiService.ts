@@ -85,13 +85,62 @@ export class EvolutionApiService {
     }
   }
 
+  async createInstanceWithQRCode(phoneNumber?: string): Promise<CreateInstanceResponse & { qrCodeData?: string }> {
+    console.log('Evolution API: Creating instance with QR Code:', this.config.instance_name);
+    
+    const requestBody = {
+      instanceName: this.config.instance_name,
+      qrcode: true,
+      integration: 'WHATSAPP-BAILEYS',
+      webhookUrl: this.config.webhook_url || undefined,
+      webhookByEvents: false,
+      webhookBase64: false,
+      number: phoneNumber || undefined,
+      events: [
+        'APPLICATION_STARTUP',
+        'QRCODE_UPDATED',
+        'MESSAGES_UPSERT',
+        'MESSAGES_UPDATE',
+        'MESSAGES_DELETE',
+        'SEND_MESSAGE',
+        'CONTACTS_SET',
+        'CONTACTS_UPSERT',
+        'CONTACTS_UPDATE',
+        'PRESENCE_UPDATE',
+        'CHATS_SET',
+        'CHATS_UPSERT',
+        'CHATS_UPDATE',
+        'CHATS_DELETE',
+        'GROUPS_UPSERT',
+        'GROUP_UPDATE',
+        'GROUP_PARTICIPANTS_UPDATE',
+        'CONNECTION_UPDATE',
+        'CALL',
+        'NEW_JWT_TOKEN'
+      ]
+    };
+
+    const response = await this.makeRequest(`/instance/create`, 'POST', requestBody);
+    
+    // Extrair QR Code da resposta se disponível
+    let qrCodeData;
+    if (response.qrcode) {
+      qrCodeData = response.qrcode.base64 || response.qrcode.code;
+    }
+    
+    return {
+      ...response,
+      qrCodeData
+    };
+  }
+
   async createInstance(): Promise<CreateInstanceResponse> {
     console.log('Evolution API: Creating instance:', this.config.instance_name);
     
     const requestBody = {
       instanceName: this.config.instance_name,
       qrcode: true,
-      integration: 'WHATSAPP-BAILEYS', // Baileys como padrão
+      integration: 'WHATSAPP-BAILEYS',
       webhookUrl: this.config.webhook_url || undefined,
       webhookByEvents: false,
       webhookBase64: false,
@@ -128,7 +177,6 @@ export class EvolutionApiService {
 
   async generateQRCode(): Promise<QRCodeResponse> {
     try {
-      // Gerar QR Code para a instância já criada
       const response = await this.makeRequest(`/instance/connect/${this.config.instance_name}`, 'GET');
       
       if (response.base64) {
