@@ -47,6 +47,21 @@ export class EvolutionApiService {
     this.config = config;
   }
 
+  private async logSystemError(message: string, details?: any) {
+    try {
+      await supabase
+        .from('system_logs')
+        .insert({
+          level: 'error',
+          message,
+          component: 'EvolutionApiService',
+          details
+        });
+    } catch (error) {
+      console.error('Failed to log system error:', error);
+    }
+  }
+
   private async makeRequest(endpoint: string, method: 'GET' | 'POST' | 'DELETE' = 'GET', body?: any) {
     const url = `${this.config.api_url}${endpoint}`;
     
@@ -54,22 +69,25 @@ export class EvolutionApiService {
     
     // Log detalhado dos parâmetros quando é um POST para criar instância
     if (method === 'POST' && (endpoint.includes('/instance/create') || endpoint.includes('/instance/'))) {
-      console.log('🚀 EVOLUTION API - PARÂMETROS DETALHADOS DA REQUISIÇÃO:');
+      console.log('🚀 EVOLUTION API - REQUISIÇÃO DETALHADA:');
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('📍 ENDPOINT:', url);
-      console.log('📤 MÉTODO:', method);
-      console.log('📋 HEADERS:');
-      console.log('   Content-Type: application/json');
-      console.log('   apikey:', this.config.api_key);
-      console.log('📦 BODY DA REQUISIÇÃO (JSON):');
+      console.log('📍 URL COMPLETA:', url);
+      console.log('📤 MÉTODO HTTP:', method);
+      console.log('📋 HEADERS DA REQUISIÇÃO:');
+      console.log('   • Content-Type: application/json');
+      console.log('   • apikey:', this.config.api_key.substring(0, 12) + '***');
+      console.log('📦 CORPO DA REQUISIÇÃO (JSON):');
       console.log(JSON.stringify(body, null, 2));
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       
-      // Log específico do número sem formatação
-      if (body?.number) {
-        console.log('📱 DETALHES DO NÚMERO SEM FORMATAÇÃO:');
-        console.log('   • Número no body:', body.number);
-        console.log('   • Enviado sem formatação (como cadastrado na empresa)');
+      // Log específico de cada parâmetro
+      if (body) {
+        console.log('🔍 DETALHAMENTO DOS PARÂMETROS:');
+        console.log('   • instanceName:', body.instanceName || 'NÃO INFORMADO');
+        console.log('   • token:', body.token === "" ? '(VAZIO - CONFORME ESPECIFICADO)' : body.token);
+        console.log('   • qrcode:', body.qrcode);
+        console.log('   • number:', body.number || 'NÃO INFORMADO');
+        console.log('   • integration:', body.integration || 'NÃO INFORMADO');
         console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       }
     }
@@ -85,14 +103,37 @@ export class EvolutionApiService {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorMessage = `HTTP error! status: ${response.status}`;
+        const errorDetails = {
+          url,
+          method,
+          status: response.status,
+          statusText: response.statusText,
+          body: body
+        };
+        
+        console.error('Evolution API: Request failed:', errorDetails);
+        await this.logSystemError(`Falha na requisição Evolution API: ${errorMessage}`, errorDetails);
+        
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
-      console.log('Evolution API: Response received:', data);
+      console.log('✅ Evolution API: Resposta recebida com sucesso:', data);
       return data;
     } catch (error) {
-      console.error('Evolution API: Request failed:', error);
+      const errorMessage = `Erro na comunicação com Evolution API: ${error instanceof Error ? error.message : 'Erro desconhecido'}`;
+      const errorDetails = {
+        url,
+        method,
+        body,
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
+        stack: error instanceof Error ? error.stack : undefined
+      };
+      
+      console.error('Evolution API: Request failed:', errorDetails);
+      await this.logSystemError(errorMessage, errorDetails);
+      
       throw error;
     }
   }
@@ -104,7 +145,9 @@ export class EvolutionApiService {
     const numberToUse = phoneNumber || this.config.number;
     
     if (!numberToUse) {
-      throw new Error('Número de telefone é obrigatório para criar a instância');
+      const errorMessage = 'Número de telefone é obrigatório para criar a instância';
+      await this.logSystemError(errorMessage, { config: this.config });
+      throw new Error(errorMessage);
     }
     
     // Estrutura exata conforme especificado
@@ -116,18 +159,28 @@ export class EvolutionApiService {
       integration: "Baileys" // Tipo Baileys conforme especificado
     };
 
-    const response = await this.makeRequest(`/instance/create`, 'POST', requestBody);
-    
-    // Extrair QR Code da resposta se disponível
-    let qrCodeData;
-    if (response.qrcode) {
-      qrCodeData = response.qrcode.base64 || response.qrcode.code;
+    try {
+      const response = await this.makeRequest(`/instance/create`, 'POST', requestBody);
+      
+      // Extrair QR Code da resposta se disponível
+      let qrCodeData;
+      if (response.qrcode) {
+        qrCodeData = response.qrcode.base64 || response.qrcode.code;
+      }
+      
+      return {
+        ...response,
+        qrCodeData
+      };
+    } catch (error) {
+      const errorMessage = `Falha ao criar instância Evolution API: ${error instanceof Error ? error.message : 'Erro desconhecido'}`;
+      await this.logSystemError(errorMessage, { 
+        instanceName: this.config.instance_name,
+        number: numberToUse,
+        error: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+      throw error;
     }
-    
-    return {
-      ...response,
-      qrCodeData
-    };
   }
 
   async createInstance(phoneNumber?: string): Promise<CreateInstanceResponse> {
