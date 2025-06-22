@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -53,15 +52,6 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
   }, [evolutionConfig]);
 
   const prepareConfirmationData = () => {
-    if (!currentCompany?.phone) {
-      toast({
-        title: "Erro",
-        description: "Número de telefone da empresa é obrigatório. Configure nas informações da empresa.",
-        variant: "destructive"
-      });
-      return null;
-    }
-
     const globalConfig = getGlobalEvolutionConfig();
     
     if (!globalConfig) {
@@ -72,16 +62,12 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
       });
       return null;
     }
-
-    const formattedPhone = formatPhoneNumber(currentCompany.phone);
     
     return {
       globalConfig,
       instanceName: evolutionForm.instance_name,
       webhookUrl: evolutionForm.webhook_url || '',
-      companyPhone: currentCompany.phone,
-      formattedPhone,
-      companyName: currentCompany.name,
+      companyName: currentCompany?.name || 'Não informado',
       integration: 'WHATSAPP-BAILEYS',
       curlCommand: `curl --request POST \\
 --url ${globalConfig.base_url}/instance/create \\
@@ -91,7 +77,7 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
   "instanceName": "${evolutionForm.instance_name}",
   "token": "",
   "qrcode": true,
-  "number": "${currentCompany.phone}",
+  "number": "",
   "integration": "WHATSAPP-BAILEYS",
   "webhook": "${evolutionForm.webhook_url || ''}",
   "webhook_by_events": true
@@ -153,26 +139,22 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
         company_id: companyId
       });
 
-      // Usar createInstanceWithQRCode com webhook_url
       const createResult = await createInstanceWithQRCode({
         instance_name: evolutionForm.instance_name,
-        company_phone: currentCompany!.phone,
         webhook_url: evolutionForm.webhook_url
       });
 
       if (createResult.success) {
-        // Salvar configuração no banco
         await saveConfig({
           instance_name: evolutionForm.instance_name,
-          api_key: '', // Será preenchido automaticamente com configuração global
-          api_url: '', // Será preenchido automaticamente com configuração global
+          api_key: '',
+          api_url: '',
           webhook_url: evolutionForm.webhook_url || null,
           company_id: companyId,
           is_active: true,
           status: 'connected' as const
         });
 
-        // Mostrar QR Code se disponível
         if (createResult.qrCodeData) {
           setQrCodeData(createResult.qrCodeData);
           setShowQRCode(true);
@@ -242,7 +224,7 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
               (URL base e chave principal) configurados nas <strong>Configurações do Sistema</strong> para 
               criar uma nova instância no Evolution API com integração <strong>Baileys</strong>.
               <br /><br />
-              <strong>Parâmetros do POST:</strong> instanceName, token (vazio), qrcode (true), number (telefone da empresa), 
+              <strong>Parâmetros do POST:</strong> instanceName, token (vazio), qrcode (true), number (vazio), 
               integration (WHATSAPP-BAILEYS), webhook (URL informada), webhook_by_events (true).
               <br /><br />
               <strong>Processo:</strong> Após criar a instância conforme especificação cURL, o QR Code será gerado automaticamente 
@@ -339,11 +321,11 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
 
                 {/* Dados da Empresa */}
                 <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <h4 className="font-semibold text-green-800 mb-2">🏢 Dados da Empresa (instanceName e number)</h4>
+                  <h4 className="font-semibold text-green-800 mb-2">🏢 Dados da Instância (instanceName e number)</h4>
                   <div className="space-y-1 text-sm">
                     <p><strong>Nome da Empresa:</strong> {confirmationData.companyName}</p>
                     <p><strong>Instance Name:</strong> {confirmationData.instanceName}</p>
-                    <p><strong>Number (Telefone):</strong> {confirmationData.companyPhone}</p>
+                    <p><strong>Number:</strong> (vazio conforme solicitado)</p>
                   </div>
                 </div>
 
@@ -354,7 +336,7 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
                     <p><strong>instanceName:</strong> "{confirmationData.instanceName}"</p>
                     <p><strong>token:</strong> "" (vazio conforme especificação)</p>
                     <p><strong>qrcode:</strong> true</p>
-                    <p><strong>number:</strong> "{confirmationData.companyPhone}"</p>
+                    <p><strong>number:</strong> "" (vazio conforme solicitado)</p>
                     <p><strong>integration:</strong> "{confirmationData.integration}"</p>
                     <p><strong>webhook:</strong> "{confirmationData.webhookUrl || 'Vazio'}"</p>
                     <p><strong>webhook_by_events:</strong> true</p>
@@ -377,7 +359,7 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
                     <p><strong>Método:</strong> POST</p>
                     <p><strong>URL Completa:</strong> {confirmationData.globalConfig.base_url}/instance/create</p>
                     <p><strong>Corpo da Requisição:</strong> JSON com 7 parâmetros conforme especificação cURL</p>
-                    <p><strong>Observação:</strong> Parâmetro "number" enviado com telefone da empresa: {confirmationData.companyPhone}</p>
+                    <p><strong>Observação:</strong> Parâmetro "number" enviado vazio conforme solicitado</p>
                   </div>
                 </div>
 
@@ -455,4 +437,3 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
     </div>
   );
 }
-

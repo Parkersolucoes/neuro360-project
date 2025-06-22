@@ -1,5 +1,3 @@
-
-
 import { useToast } from '@/hooks/use-toast';
 import { useSystemLogsDB } from '@/hooks/useSystemLogsDB';
 import { useAuth } from '@/hooks/useAuth';
@@ -57,7 +55,6 @@ export function useEvolutionConfigActions() {
 
   const showRequestPreview = (config: {
     instance_name: string;
-    company_phone: string;
     webhook_url?: string;
     globalConfig: any;
   }) => {
@@ -65,7 +62,7 @@ export function useEvolutionConfigActions() {
       instanceName: config.instance_name,
       token: "",
       qrcode: true,
-      number: config.company_phone, // Número da empresa
+      number: "", // Sempre vazio conforme solicitado
       integration: "WHATSAPP-BAILEYS",
       webhook: config.webhook_url || "",
       webhook_by_events: true
@@ -95,7 +92,7 @@ curl --request POST \\
 • instanceName: ${requestBody.instanceName}
 • token: (vazio conforme especificação)
 • qrcode: ${requestBody.qrcode}
-• number: ${requestBody.number}
+• number: ${requestBody.number} (vazio conforme solicitado)
 • integration: ${requestBody.integration}
 • webhook: ${requestBody.webhook || '(vazio)'}
 • webhook_by_events: ${requestBody.webhook_by_events}`
@@ -106,7 +103,6 @@ curl --request POST \\
 
   const createInstanceWithQRCode = async (config: {
     instance_name: string;
-    company_phone: string;
     webhook_url?: string;
   }): Promise<{ success: boolean; qrCodeData?: string; evolutionService?: EvolutionApiService }> => {
     try {
@@ -137,9 +133,9 @@ curl --request POST \\
       toast({
         title: "Passo 3/8 - Validando Dados da Empresa",
         description: `🏢 Empresa: ${currentCompany?.name}
-📱 Telefone: ${config.company_phone}
 📋 Instância: ${config.instance_name}
-🔗 Webhook: ${config.webhook_url || 'Não informado'}`
+🔗 Webhook: ${config.webhook_url || 'Não informado'}
+📱 Number: (vazio conforme solicitado)`
       });
 
       // Passo 4: Mostrar prévia completa da requisição
@@ -150,7 +146,6 @@ curl --request POST \\
 
       const requestBody = showRequestPreview({
         instance_name: config.instance_name,
-        company_phone: config.company_phone,
         webhook_url: config.webhook_url,
         globalConfig
       });
@@ -168,7 +163,7 @@ curl --request POST \\
         api_key: globalConfig.global_api_key,
         instance_name: config.instance_name,
         webhook_url: config.webhook_url || null,
-        number: config.company_phone,
+        number: "", // Sempre vazio
         is_active: true,
         status: 'testing' as const,
         created_at: new Date().toISOString(),
@@ -183,7 +178,7 @@ curl --request POST \\
       });
 
       const createResponse = await tempEvolutionService.createInstanceWithQRCode(
-        config.company_phone, 
+        "", // Enviando vazio conforme solicitado
         config.webhook_url
       );
       
@@ -193,7 +188,7 @@ curl --request POST \\
           title: "Passo 7/8 - ✅ INSTÂNCIA CRIADA COM SUCESSO!",
           description: `🎉 Nome: ${createResponse.instance.instanceName}
 📊 Status: ${createResponse.instance.status}
-📱 Número: ${config.company_phone}
+📱 Number: (vazio conforme solicitado)
 🔗 Webhook: ${config.webhook_url || 'Não configurado'}
 ${createResponse.qrCodeData ? '📱 QR Code gerado!' : '⚠️ QR Code não disponível'}`
         });
@@ -210,7 +205,7 @@ ${createResponse.qrCodeData ? '📱 QR Code gerado!' : '⚠️ QR Code não disp
           toast({
             title: "🎯 PROCESSO CONCLUÍDO COM SUCESSO!",
             description: `✅ Instância ${config.instance_name} criada e configurada
-📱 Número da empresa: ${config.company_phone}
+📱 Number: (vazio conforme solicitado)
 🔗 Webhook configurado: ${config.webhook_url || 'Não configurado'}
 📱 QR Code gerado e salvo
 👆 Escaneie o código QR para conectar o WhatsApp`
@@ -219,7 +214,7 @@ ${createResponse.qrCodeData ? '📱 QR Code gerado!' : '⚠️ QR Code não disp
         
         await logInfo('Instância Evolution API criada com sucesso conforme especificação cURL', 'useEvolutionConfigActions', {
           instance_name: config.instance_name,
-          phone_number: config.company_phone,
+          number: "", // Log mostra que enviamos vazio
           webhook_url: config.webhook_url,
           has_qr_code: !!createResponse.qrCodeData,
           api_url: globalConfig.base_url,
@@ -321,12 +316,11 @@ ${createResponse.qrCodeData ? '📱 QR Code gerado!' : '⚠️ QR Code não disp
 
       const sessionName = generateSessionName(currentCompany.name);
       const instanceName = configData.instance_name || sessionName;
-      const phoneNumber = currentCompany.phone;
 
       // Criar instância com QR Code e feedback passo a passo
       const createResult = await createInstanceWithQRCode({
         instance_name: instanceName,
-        company_phone: currentCompany.phone
+        webhook_url: configData.webhook_url
       });
 
       if (!createResult.success) {
@@ -338,7 +332,7 @@ ${createResponse.qrCodeData ? '📱 QR Code gerado!' : '⚠️ QR Code não disp
         instance_name: instanceName,
         api_url: globalConfig.base_url,
         api_key: globalConfig.global_api_key,
-        number: phoneNumber,
+        number: "", // Sempre vazio
         company_id: currentCompany.id,
         status: 'connected' as const
       };
@@ -401,7 +395,7 @@ ${createResponse.qrCodeData ? '📱 QR Code gerado!' : '⚠️ QR Code não disp
 
           const createResult = await createInstanceWithQRCode({
             instance_name: instanceName,
-            company_phone: currentCompany.phone
+            webhook_url: updates.webhook_url
           });
 
           if (!createResult.success) {
@@ -411,7 +405,7 @@ ${createResponse.qrCodeData ? '📱 QR Code gerado!' : '⚠️ QR Code não disp
           updates.status = 'connected';
           updates.api_url = globalConfig.base_url;
           updates.api_key = globalConfig.global_api_key;
-          updates.number = phoneNumber;
+          updates.number = ""; // Sempre vazio
         }
 
         const updatedConfig = await EvolutionConfigService.update(id, updates);

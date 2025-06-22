@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import type { EvolutionConfig } from '@/types/evolutionConfig';
 
@@ -115,20 +114,14 @@ export class EvolutionApiService {
   }
 
   async createInstanceWithQRCode(phoneNumber: string, webhookUrl?: string): Promise<CreateInstanceResponse & { qrCodeData?: string }> {
-    console.log('Evolution API: Creating instance with QR Code:', this.config.instance_name, 'Phone:', phoneNumber);
+    console.log('Evolution API: Creating instance with QR Code:', this.config.instance_name);
     
-    if (!phoneNumber) {
-      const errorMessage = 'Número de telefone é obrigatório para criar a instância';
-      await this.logSystemError(errorMessage, { config: this.config });
-      throw new Error(errorMessage);
-    }
-    
-    // Estrutura conforme especificação cURL - number recebe o telefone da empresa
+    // Estrutura conforme especificação cURL - number enviado vazio
     const requestBody = {
       instanceName: this.config.instance_name,
       token: "",
       qrcode: true,
-      number: phoneNumber, // Enviando número da empresa
+      number: "", // Sempre enviar vazio conforme solicitado
       integration: "WHATSAPP-BAILEYS",
       webhook: webhookUrl || "",
       webhook_by_events: true
@@ -151,7 +144,7 @@ export class EvolutionApiService {
       const errorMessage = `Falha ao criar instância Evolution API: ${error instanceof Error ? error.message : 'Erro desconhecido'}`;
       await this.logSystemError(errorMessage, { 
         instanceName: this.config.instance_name,
-        number: phoneNumber, // Log mostra o número enviado
+        number: "", // Log mostra que enviamos vazio
         error: error instanceof Error ? error.message : 'Erro desconhecido'
       });
       throw error;
@@ -159,18 +152,14 @@ export class EvolutionApiService {
   }
 
   async createInstance(phoneNumber: string, webhookUrl?: string): Promise<CreateInstanceResponse> {
-    console.log('Evolution API: Creating instance:', this.config.instance_name, 'Phone:', phoneNumber);
+    console.log('Evolution API: Creating instance:', this.config.instance_name);
     
-    if (!phoneNumber) {
-      throw new Error('Número de telefone é obrigatório para criar a instância');
-    }
-    
-    // Estrutura conforme especificação cURL - number recebe o telefone da empresa
+    // Estrutura conforme especificação cURL - number enviado vazio
     const requestBody = {
       instanceName: this.config.instance_name,
       token: "",
       qrcode: true,
-      number: phoneNumber, // Enviando número da empresa
+      number: "", // Sempre enviar vazio conforme solicitado
       integration: "WHATSAPP-BAILEYS",
       webhook: webhookUrl || "",
       webhook_by_events: true
