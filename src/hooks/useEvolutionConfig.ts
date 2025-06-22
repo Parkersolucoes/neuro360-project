@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -84,54 +83,24 @@ export function useEvolutionConfig(companyId?: string) {
         throw new Error('Usuário não autenticado');
       }
 
-      // Criar configuração com RPC para contornar RLS se necessário
-      const { data, error } = await supabase.rpc('create_evolution_config', {
-        p_company_id: configData.company_id,
-        p_api_url: configData.api_url,
-        p_api_key: configData.api_key,
-        p_instance_name: configData.instance_name,
-        p_webhook_url: configData.webhook_url,
-        p_is_active: configData.is_active,
-        p_status: configData.status
-      });
+      // Inserção direta com timestamps explícitos
+      const { data, error } = await supabase
+        .from('evolution_configs')
+        .insert({
+          ...configData,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
 
       if (error) {
-        console.error('useEvolutionConfig: RPC error, trying direct insert:', error);
-        
-        // Se RPC falhar, tentar inserção direta
-        const { data: directData, error: directError } = await supabase
-          .from('evolution_configs')
-          .insert({
-            ...configData,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
-          .select()
-          .single();
-
-        if (directError) {
-          console.error('useEvolutionConfig: Error creating config:', directError);
-          logError(`Erro ao criar configuração Evolution: ${directError.message}`, 'useEvolutionConfig', directError);
-          throw directError;
-        }
-
-        console.log('useEvolutionConfig: Config created successfully with direct insert:', directData);
-        const newConfig = {
-          ...directData,
-          status: directData.status as 'connected' | 'disconnected' | 'testing'
-        };
-        setConfig(newConfig);
-        
-        logInfo('Configuração da Evolution API criada com sucesso', 'useEvolutionConfig', { configId: directData.id });
-        toast({
-          title: "Sucesso",
-          description: "Configuração da Evolution API criada com sucesso!"
-        });
-        
-        return directData;
+        console.error('useEvolutionConfig: Error creating config:', error);
+        logError(`Erro ao criar configuração Evolution: ${error.message}`, 'useEvolutionConfig', error);
+        throw error;
       }
 
-      console.log('useEvolutionConfig: Config created successfully with RPC:', data);
+      console.log('useEvolutionConfig: Config created successfully:', data);
       const newConfig = {
         ...data,
         status: data.status as 'connected' | 'disconnected' | 'testing'
