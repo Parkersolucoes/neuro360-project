@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 
 interface WebhookIntegration {
@@ -22,6 +23,7 @@ export function useWebhookIntegration(companyId?: string) {
   const [integration, setIntegration] = useState<WebhookIntegration | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { userLogin } = useAuth();
 
   const fetchIntegration = async () => {
     if (!companyId) {
@@ -63,7 +65,6 @@ export function useWebhookIntegration(companyId?: string) {
     } catch (error: any) {
       console.error('❌ Erro ao carregar configuração:', error);
       
-      // Mensagem de erro mais específica baseada no tipo de erro
       let errorMessage = "Erro ao carregar configuração";
       if (error?.code === 'PGRST116') {
         errorMessage = "Configuração não encontrada";
@@ -85,16 +86,18 @@ export function useWebhookIntegration(companyId?: string) {
     try {
       console.log('💾 Salvando configuração:', data);
 
-      // Verificar se usuário está autenticado
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      // Verificar se usuário está autenticado usando nosso sistema customizado
+      if (!userLogin) {
         throw new Error('Usuário não autenticado');
       }
+
+      console.log('👤 Usuário autenticado:', userLogin.name, 'ID:', userLogin.id);
 
       let result;
       
       if (integration) {
         // Atualizar existente
+        console.log('🔄 Atualizando configuração existente ID:', integration.id);
         result = await supabase
           .from('webhook_integrations')
           .update({
@@ -107,6 +110,7 @@ export function useWebhookIntegration(companyId?: string) {
           .single();
       } else {
         // Criar novo
+        console.log('➕ Criando nova configuração');
         result = await supabase
           .from('webhook_integrations')
           .insert({
@@ -152,7 +156,7 @@ export function useWebhookIntegration(companyId?: string) {
         errorMessage = "Erro de permissão: Acesso negado";
       } else if (error?.message?.includes('violates row-level security')) {
         errorMessage = "Erro de permissão: Política de segurança violada";
-      } else if (error?.message?.includes('not authenticated')) {
+      } else if (error?.message?.includes('not authenticated') || error?.message?.includes('Usuário não autenticado')) {
         errorMessage = "Erro de autenticação: Faça login novamente";
       } else if (error?.message?.includes('duplicate')) {
         errorMessage = "Erro: Configuração já existe para esta empresa";
