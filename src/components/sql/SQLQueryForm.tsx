@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -132,7 +133,6 @@ export function SQLQueryForm({ query, onSubmit, onCancel }: SQLQueryFormProps) {
                   <SelectValue placeholder="Selecione uma conexão" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Nenhuma conexão</SelectItem>
                   {connections.map((connection) => (
                     <SelectItem key={connection.id} value={connection.id}>
                       {connection.name} ({connection.host})
