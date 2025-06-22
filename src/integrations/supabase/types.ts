@@ -760,10 +760,6 @@ export type Database = {
         Args: { user_uuid?: string }
         Returns: boolean
       }
-      is_master_user_check: {
-        Args: { user_uuid?: string }
-        Returns: boolean
-      }
       user_has_company_access: {
         Args: { company_uuid: string; user_uuid?: string }
         Returns: boolean
