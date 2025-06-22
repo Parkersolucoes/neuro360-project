@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useSystemConfig } from '@/hooks/useSystemConfig';
 import { useSystemUpdates } from '@/hooks/useSystemUpdates';
-import { Database, BarChart3, TrendingUp, Calendar, CheckCircle } from 'lucide-react';
+import { Database, BarChart3, TrendingUp, Calendar, CheckCircle, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
@@ -167,47 +167,66 @@ export default function Auth() {
       </div>
 
       {/* Área das Atualizações do Sistema - Lado Direito */}
-      <div className="hidden md:block md:w-1/2 lg:w-3/5 bg-gradient-to-br from-gray-50 to-gray-100 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.03)_1px,transparent_1px)] bg-[size:20px_20px]"></div>
+      <div className="hidden md:block md:w-1/2 lg:w-3/5 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-950 relative overflow-hidden">
+        {/* Background decorative elements */}
+        <div className="absolute inset-0">
+          <div className="absolute top-10 right-10 w-80 h-80 bg-yellow-500/5 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-20 left-20 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl"></div>
+          <div className="absolute top-1/3 left-1/3 w-64 h-64 bg-yellow-400/3 rounded-full blur-2xl"></div>
+        </div>
+        
+        {/* Subtle grid pattern */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,215,0,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,215,0,0.03)_1px,transparent_1px)] bg-[size:30px_30px]"></div>
         
         <div className="relative z-10 h-full flex flex-col p-8">
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Atualizações do Sistema
-            </h2>
-            <p className="text-lg text-gray-600">
+            <div className="flex items-center justify-center mb-4">
+              <div className="p-3 bg-yellow-500/20 rounded-2xl mr-3">
+                <Sparkles className="w-8 h-8 text-yellow-400" />
+              </div>
+              <h2 className="text-4xl font-bold text-yellow-400 tracking-tight">
+                Atualizações do Sistema
+              </h2>
+            </div>
+            <p className="text-xl text-yellow-200/80 font-light">
               Acompanhe as últimas melhorias e novidades da plataforma
             </p>
+            <div className="w-24 h-1 bg-gradient-to-r from-yellow-400 to-yellow-600 mx-auto mt-4 rounded-full"></div>
           </div>
 
-          <div className="flex-1 overflow-y-auto space-y-4 max-h-[calc(100vh-200px)]">
+          <div className="flex-1 overflow-y-auto space-y-6 max-h-[calc(100vh-250px)] pr-2">
             {updatesLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <div className="flex items-center justify-center py-16">
+                <div className="flex items-center space-x-3">
+                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-yellow-400/30 border-t-yellow-400"></div>
+                  <span className="text-yellow-300 font-medium">Carregando atualizações...</span>
+                </div>
               </div>
             ) : updates.length > 0 ? (
-              updates.map((update) => (
-                <Card key={update.id} className="bg-white shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-3">
+              updates.map((update, index) => (
+                <Card key={update.id} className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 shadow-xl border border-yellow-500/20 hover:border-yellow-400/40 transition-all duration-300 hover:shadow-2xl backdrop-blur-sm">
+                  <CardHeader className="pb-4">
                     <div className="flex items-start justify-between">
-                      <CardTitle className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
-                        <CheckCircle className="w-5 h-5 text-green-500" />
-                        <span>{update.title}</span>
+                      <CardTitle className="text-xl font-bold text-yellow-400 flex items-center space-x-3">
+                        <div className="p-2 bg-yellow-500/20 rounded-lg">
+                          <CheckCircle className="w-6 h-6 text-yellow-400" />
+                        </div>
+                        <span className="leading-tight">{update.title}</span>
                       </CardTitle>
                       {update.version && (
-                        <Badge variant="outline" className="text-blue-600 border-blue-200">
+                        <Badge className="bg-yellow-500/20 text-yellow-300 border-yellow-500/30 font-semibold px-3 py-1">
                           {update.version}
                         </Badge>
                       )}
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-gray-600 mb-3 leading-relaxed">
+                    <p className="text-yellow-100/90 mb-4 leading-relaxed text-lg">
                       {update.description}
                     </p>
-                    <div className="flex items-center text-sm text-gray-500">
-                      <Calendar className="w-4 h-4 mr-1" />
-                      <span>
+                    <div className="flex items-center text-yellow-300/80 bg-slate-900/50 p-3 rounded-lg">
+                      <Calendar className="w-5 h-5 mr-2" />
+                      <span className="font-medium">
                         {format(new Date(update.update_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
                       </span>
                     </div>
@@ -215,14 +234,14 @@ export default function Auth() {
                 </Card>
               ))
             ) : (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                  <CheckCircle className="w-8 h-8 text-gray-400" />
+              <div className="text-center py-20">
+                <div className="w-20 h-20 mx-auto mb-6 bg-yellow-500/10 rounded-full flex items-center justify-center">
+                  <CheckCircle className="w-10 h-10 text-yellow-400/60" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                <h3 className="text-2xl font-bold text-yellow-400 mb-3">
                   Nenhuma atualização disponível
                 </h3>
-                <p className="text-gray-600">
+                <p className="text-yellow-200/70 text-lg">
                   As atualizações do sistema aparecerão aqui quando disponíveis
                 </p>
               </div>
