@@ -513,46 +513,46 @@ export type Database = {
       }
       templates: {
         Row: {
-          category: string | null
-          company_id: string | null
+          category: string
+          company_id: string
           content: string
           created_at: string
           description: string | null
           id: string
-          is_active: boolean | null
+          is_active: boolean
           name: string
-          status: string | null
-          type: string | null
+          status: string
+          type: string
           updated_at: string
           user_id: string | null
           variables: Json | null
         }
         Insert: {
-          category?: string | null
-          company_id?: string | null
+          category?: string
+          company_id: string
           content: string
           created_at?: string
           description?: string | null
           id?: string
-          is_active?: boolean | null
+          is_active?: boolean
           name: string
-          status?: string | null
-          type?: string | null
+          status?: string
+          type?: string
           updated_at?: string
           user_id?: string | null
           variables?: Json | null
         }
         Update: {
-          category?: string | null
-          company_id?: string | null
+          category?: string
+          company_id?: string
           content?: string
           created_at?: string
           description?: string | null
           id?: string
-          is_active?: boolean | null
+          is_active?: boolean
           name?: string
-          status?: string | null
-          type?: string | null
+          status?: string
+          type?: string
           updated_at?: string
           user_id?: string | null
           variables?: Json | null

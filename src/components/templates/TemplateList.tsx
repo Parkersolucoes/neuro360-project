@@ -1,114 +1,157 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, Edit, Trash2 } from "lucide-react";
+import { MessageSquare, CheckCircle, XCircle, Eye, Edit, Trash2, Hash } from "lucide-react";
 import { Template } from "@/hooks/useTemplates";
 
 interface TemplateListProps {
   templates: Template[];
-  onEditTemplate: (template: Template) => void;
-  onDeleteTemplate: (templateId: string) => void;
+  onEdit: (template: Template) => void;
+  onDelete: (templateId: string) => Promise<void>;
+  onView: (template: Template) => void;
   getTypeLabel: (type: string) => string;
-  getAssociatedPlans: (templateId: string) => any[];
 }
 
-export function TemplateList({
-  templates,
-  onEditTemplate,
-  onDeleteTemplate,
-  getTypeLabel,
-  getAssociatedPlans
+export function TemplateList({ 
+  templates, 
+  onEdit, 
+  onDelete, 
+  onView,
+  getTypeLabel
 }: TemplateListProps) {
+  const getStatusIcon = (status: string, isActive: boolean) => {
+    if (!isActive) {
+      return <XCircle className="w-3 h-3 text-gray-500" />;
+    }
+    
+    switch (status) {
+      case 'active':
+        return <CheckCircle className="w-3 h-3 text-green-600" />;
+      default:
+        return <XCircle className="w-3 h-3 text-red-600" />;
+    }
+  };
+
+  if (templates.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-8 text-gray-500">
+        <MessageSquare className="w-12 h-12 mb-3 text-gray-300" />
+        <p className="text-base font-medium mb-1">Nenhum template cadastrado</p>
+        <p className="text-sm">Clique em "Novo Template" para começar</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-0">
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-gray-100 border-b border-gray-200">
-            <TableHead className="font-semibold text-gray-700 py-4">Nome</TableHead>
-            <TableHead className="font-semibold text-gray-700 py-4">Tipo</TableHead>
-            <TableHead className="font-semibold text-gray-700 py-4">Categoria</TableHead>
-            <TableHead className="font-semibold text-gray-700 py-4">Planos Associados</TableHead>
-            <TableHead className="font-semibold text-gray-700 py-4">Status</TableHead>
-            <TableHead className="font-semibold text-gray-700 py-4">Criado em</TableHead>
-            <TableHead className="font-semibold text-gray-700 py-4 text-center">Ações</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {templates.map((template, index) => (
-            <TableRow 
-              key={template.id} 
-              className={`hover:bg-blue-50 border-b border-gray-100 ${
-                index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-              }`}
-            >
-              <TableCell className="py-4">
-                <div>
-                  <div className="font-medium text-gray-900">{template.name}</div>
-                  {template.description && (
-                    <div className="text-sm text-gray-500 mt-1">{template.description}</div>
-                  )}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {templates.map((template) => (
+        <Card key={template.id} className="h-auto transition-all hover:shadow-md border border-gray-200">
+          <CardHeader className="pb-2">
+            <div className="flex items-start justify-between">
+              <CardTitle className="text-sm font-semibold text-gray-900 line-clamp-1 flex-1">
+                {template.name}
+              </CardTitle>
+              <div className="flex items-center space-x-1 ml-2">
+                {getStatusIcon(template.status, template.is_active)}
+              </div>
+            </div>
+          </CardHeader>
+          
+          <CardContent className="pt-0 space-y-3">
+            {template.description && (
+              <p className="text-gray-600 text-xs line-clamp-2">{template.description}</p>
+            )}
+            
+            <div className="flex items-center justify-between text-xs">
+              <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+                {getTypeLabel(template.type)}
+              </Badge>
+              <Badge variant="outline" className="capitalize border-gray-300 text-gray-700 bg-gray-50">
+                {template.category.replace('_', ' ')}
+              </Badge>
+            </div>
+            
+            <div className="bg-gray-50 rounded-md p-2">
+              <div className="flex items-center space-x-1 mb-1">
+                <MessageSquare className="w-3 h-3 text-gray-600" />
+                <span className="text-xs font-medium text-gray-700">Conteúdo:</span>
+              </div>
+              <p className="text-xs text-gray-600 line-clamp-3">
+                {template.content.length > 80 
+                  ? `${template.content.substring(0, 80)}...` 
+                  : template.content
+                }
+              </p>
+            </div>
+
+            {template.variables && template.variables.length > 0 && (
+              <div className="bg-orange-50 rounded-md p-2">
+                <div className="flex items-center space-x-1 mb-1">
+                  <Hash className="w-3 h-3 text-orange-600" />
+                  <span className="text-xs font-medium text-orange-700">Variáveis:</span>
                 </div>
-              </TableCell>
-              <TableCell className="py-4">
-                <Badge className="bg-blue-100 text-blue-800 border-blue-200">
-                  {getTypeLabel(template.type)}
-                </Badge>
-              </TableCell>
-              <TableCell className="py-4">
-                <Badge variant="outline" className="capitalize border-gray-300 text-gray-700 bg-gray-50">
-                  {template.category.replace('_', ' ')}
-                </Badge>
-              </TableCell>
-              <TableCell className="py-4">
                 <div className="flex flex-wrap gap-1">
-                  {getAssociatedPlans(template.id).map((plan) => (
-                    <Badge key={plan.id} variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                      {plan.name}
+                  {template.variables.slice(0, 3).map((variable, index) => (
+                    <Badge key={index} variant="outline" className="text-xs bg-orange-100 text-orange-700 border-orange-200">
+                      {variable}
                     </Badge>
                   ))}
-                  {getAssociatedPlans(template.id).length === 0 && (
-                    <span className="text-sm text-gray-500">Nenhum plano</span>
+                  {template.variables.length > 3 && (
+                    <Badge variant="outline" className="text-xs bg-orange-100 text-orange-700 border-orange-200">
+                      +{template.variables.length - 3}
+                    </Badge>
                   )}
                 </div>
-              </TableCell>
-              <TableCell className="py-4">
-                <Badge className={
-                  template.is_active 
-                    ? "bg-green-100 text-green-800 border-green-200" 
-                    : "bg-gray-100 text-gray-800 border-gray-200"
-                }>
-                  {template.is_active ? "Ativo" : "Inativo"}
-                </Badge>
-              </TableCell>
-              <TableCell className="text-gray-600 py-4">
-                {new Date(template.created_at).toLocaleDateString('pt-BR')}
-              </TableCell>
-              <TableCell className="py-4">
-                <div className="flex justify-center space-x-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => onEditTemplate(template)}
-                    className="border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300"
-                  >
-                    <Edit className="w-3 h-3" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300"
-                    onClick={() => onDeleteTemplate(template.id)}
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+              </div>
+            )}
+            
+            <Badge 
+              className={`text-xs ${
+                template.is_active && template.status === "active" 
+                  ? "bg-green-100 text-green-800 border-green-200" 
+                  : "bg-gray-100 text-gray-800 border-gray-200"
+              }`}
+            >
+              {template.is_active && template.status === "active" ? "Ativo" : "Inativo"}
+            </Badge>
+            
+            <div className="flex items-center justify-between space-x-1">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onView(template)}
+                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 flex-1 text-xs h-7"
+              >
+                <Eye className="w-3 h-3 mr-1" />
+                Ver
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onEdit(template)}
+                className="text-gray-600 hover:text-gray-700 hover:bg-gray-50 h-7 px-2"
+              >
+                <Edit className="w-3 h-3" />
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 h-7 px-2"
+                onClick={() => onDelete(template.id)}
+              >
+                <Trash2 className="w-3 h-3" />
+              </Button>
+            </div>
+            
+            {template.updated_at && (
+              <p className="text-xs text-gray-500 text-center">
+                {new Date(template.updated_at).toLocaleDateString('pt-BR')}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 }

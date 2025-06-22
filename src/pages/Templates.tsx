@@ -2,39 +2,37 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
-import { Plus } from "lucide-react";
+import { Plus, Palette } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTemplates } from "@/hooks/useTemplates";
-import { usePlans } from "@/hooks/usePlans";
 import { useAuth } from "@/hooks/useAuth";
 import { useCompanies } from "@/hooks/useCompanies";
 import { TemplateDialog } from "@/components/templates/TemplateDialog";
 import { TemplateList } from "@/components/templates/TemplateList";
-import { TemplateEmptyState } from "@/components/templates/TemplateEmptyState";
+import { TemplateDetails } from "@/components/templates/TemplateDetails";
 
 export default function Templates() {
   const { toast } = useToast();
-  const { templates, planTemplates, loading, createTemplate, updateTemplate, deleteTemplate, linkTemplateToPlan, unlinkTemplateFromPlan, createDefaultTemplates } = useTemplates();
-  const { plans } = usePlans();
+  const { templates, loading, createTemplate, updateTemplate, deleteTemplate, createDefaultTemplates } = useTemplates();
   const { userLogin } = useAuth();
   const { currentCompany } = useCompanies();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<any>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'details'>('list');
   const [newTemplate, setNewTemplate] = useState({
     name: "",
     description: "",
     content: "",
     type: "message",
     category: "general",
-    is_active: true,
-    status: "active",
     variables: [],
-    company_id: null,
-    user_id: null
+    status: "active",
+    is_active: true,
+    company_id: "",
+    user_id: ""
   });
-
-  const [selectedPlans, setSelectedPlans] = useState<string[]>([]);
 
   const templateTypes = [
     { value: "message", label: "Mensagem" },
@@ -76,36 +74,17 @@ export default function Templates() {
         content: newTemplate.content.trim(),
         type: newTemplate.type,
         category: newTemplate.category,
-        is_active: newTemplate.is_active,
-        status: newTemplate.status,
         variables: newTemplate.variables || [],
-        company_id: currentCompany?.id || null,
-        user_id: userLogin?.id || null
+        status: newTemplate.status,
+        is_active: newTemplate.is_active,
+        company_id: currentCompany?.id || "",
+        user_id: userLogin?.id || ""
       };
 
-      let template;
-      
       if (editingTemplate) {
-        template = await updateTemplate(editingTemplate.id, templateData);
+        await updateTemplate(editingTemplate.id, templateData);
       } else {
-        template = await createTemplate(templateData);
-      }
-
-      if (template && selectedPlans.length > 0) {
-        const currentAssociations = planTemplates.filter(pt => pt.template_id === template.id);
-        const currentPlanIds = currentAssociations.map(ca => ca.plan_id);
-
-        for (const planId of currentPlanIds) {
-          if (!selectedPlans.includes(planId)) {
-            await unlinkTemplateFromPlan(template.id, planId);
-          }
-        }
-
-        for (const planId of selectedPlans) {
-          if (!currentPlanIds.includes(planId)) {
-            await linkTemplateToPlan(template.id, planId);
-          }
-        }
+        await createTemplate(templateData);
       }
       
       setNewTemplate({ 
@@ -114,13 +93,12 @@ export default function Templates() {
         content: "", 
         type: "message",
         category: "general", 
-        is_active: true,
-        status: "active",
         variables: [],
-        company_id: null,
-        user_id: null
+        status: "active",
+        is_active: true,
+        company_id: "",
+        user_id: ""
       });
-      setSelectedPlans([]);
       setEditingTemplate(null);
       setIsDialogOpen(false);
     } catch (error) {
@@ -141,17 +119,12 @@ export default function Templates() {
       content: template.content || "",
       type: template.type || "message",
       category: template.category || "general",
-      is_active: template.is_active !== false,
-      status: template.status || "active",
       variables: template.variables || [],
-      company_id: template.company_id,
-      user_id: template.user_id
+      status: template.status || "active",
+      is_active: template.is_active !== false,
+      company_id: template.company_id || "",
+      user_id: template.user_id || ""
     });
-    
-    const associatedPlans = planTemplates
-      .filter(pt => pt.template_id === template.id)
-      .map(pt => pt.plan_id);
-    setSelectedPlans(associatedPlans);
     
     setIsDialogOpen(true);
   };
@@ -160,6 +133,10 @@ export default function Templates() {
     if (confirm("Tem certeza que deseja remover este template?")) {
       try {
         await deleteTemplate(templateId);
+        if (selectedTemplateId === templateId) {
+          setViewMode('list');
+          setSelectedTemplateId(null);
+        }
       } catch (error) {
         console.error('Error deleting template:', error);
       }
@@ -171,29 +148,25 @@ export default function Templates() {
     return typeObj ? typeObj.label : type;
   };
 
-  const getAssociatedPlans = (templateId: string) => {
-    const associatedPlanIds = planTemplates
-      .filter(pt => pt.template_id === templateId)
-      .map(pt => pt.plan_id);
-    
-    return plans.filter(plan => associatedPlanIds.includes(plan.id));
+  const handleViewTemplate = (template: any) => {
+    setSelectedTemplateId(template.id);
+    setViewMode('details');
   };
 
   const handleDialogClose = () => {
     setIsDialogOpen(false);
     setEditingTemplate(null);
-    setSelectedPlans([]);
     setNewTemplate({ 
       name: "", 
       description: "", 
       content: "", 
       type: "message",
       category: "general", 
-      is_active: true,
-      status: "active",
       variables: [],
-      company_id: null,
-      user_id: null
+      status: "active",
+      is_active: true,
+      company_id: "",
+      user_id: ""
     });
   };
 
@@ -213,44 +186,66 @@ export default function Templates() {
       <div className="max-w-7xl mx-auto">
         <div className="bg-blue-600 rounded-t-lg px-6 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-white">Templates</h1>
+            <h1 className="text-2xl font-bold text-white">Templates de Mensagens</h1>
             <p className="text-blue-100 mt-1">Gerencie os templates de mensagens para WhatsApp</p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-white text-blue-600 hover:bg-gray-100 shadow-lg font-medium">
-                <Plus className="w-4 h-4 mr-2" />
-                Novo Template
+          <div className="flex space-x-3">
+            {viewMode === 'details' && (
+              <Button 
+                onClick={() => {
+                  setViewMode('list');
+                  setSelectedTemplateId(null);
+                }}
+                className="bg-white text-blue-600 hover:bg-gray-100 shadow-lg font-medium"
+              >
+                Voltar à Lista
               </Button>
-            </DialogTrigger>
-            <TemplateDialog
-              isOpen={isDialogOpen}
-              onClose={handleDialogClose}
-              editingTemplate={editingTemplate}
-              newTemplate={newTemplate}
-              setNewTemplate={setNewTemplate}
-              selectedPlans={selectedPlans}
-              setSelectedPlans={setSelectedPlans}
-              plans={plans}
-              onSave={saveTemplate}
-              templateTypes={templateTypes}
-            />
-          </Dialog>
+            )}
+            <Button
+              onClick={createDefaultTemplates}
+              className="bg-green-600 text-white hover:bg-green-700 shadow-lg font-medium"
+            >
+              <Palette className="w-4 h-4 mr-2" />
+              Templates Padrão
+            </Button>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-white text-blue-600 hover:bg-gray-100 shadow-lg font-medium">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Novo Template
+                </Button>
+              </DialogTrigger>
+              <TemplateDialog
+                isOpen={isDialogOpen}
+                onClose={handleDialogClose}
+                editingTemplate={editingTemplate}
+                newTemplate={newTemplate}
+                setNewTemplate={setNewTemplate}
+                onSave={saveTemplate}
+                templateTypes={templateTypes}
+              />
+            </Dialog>
+          </div>
         </div>
 
-        <div className="bg-white rounded-b-lg shadow-lg">
-          {templates.length === 0 && !loading && (
-            <TemplateEmptyState onCreateTemplate={() => setIsDialogOpen(true)} />
-          )}
-
-          {templates.length > 0 && (
+        <div className="bg-white rounded-b-lg shadow-lg p-6">
+          {viewMode === 'list' ? (
             <TemplateList
               templates={templates}
-              onEditTemplate={editTemplate}
-              onDeleteTemplate={handleDeleteTemplate}
+              onEdit={editTemplate}
+              onDelete={handleDeleteTemplate}
+              onView={handleViewTemplate}
               getTypeLabel={getTypeLabel}
-              getAssociatedPlans={getAssociatedPlans}
             />
+          ) : (
+            selectedTemplateId && (
+              <TemplateDetails
+                templateId={selectedTemplateId}
+                templates={templates}
+                onEdit={editTemplate}
+                getTypeLabel={getTypeLabel}
+              />
+            )
           )}
         </div>
       </div>
