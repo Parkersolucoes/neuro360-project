@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,7 +12,7 @@ import SQLServer from "./pages/SQLServer";
 import ConsultasSQL from "./pages/ConsultasSQL";
 import Agendamento from "./pages/Agendamento";
 import Agendamentos from "./pages/Agendamentos";
-import WhatsApp from "./pages/WhatsApp";
+import WhatsAppConnection from "./pages/WhatsAppConnection";
 import Webhooks from "./pages/Webhooks";
 import Relatorios from "./pages/Relatorios";
 import Usuarios from "./pages/Usuarios";
@@ -97,7 +96,7 @@ function App() {
                 <Route path="/whatsapp" element={
                   <ProtectedRoute>
                     <DashboardLayout>
-                      <WhatsApp />
+                      <WhatsAppConnection />
                     </DashboardLayout>
                   </ProtectedRoute>
                 } />

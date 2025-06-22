@@ -59,6 +59,11 @@ const menuItems = [
     icon: Calendar,
   },
   {
+    title: "Conexão WhatsApp",
+    url: "/whatsapp",
+    icon: MessageSquare,
+  },
+  {
     title: "Usuários",
     url: "/usuarios",
     icon: Users,
