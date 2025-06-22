@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 export function useDemoSQLConnections() {
   const { companies } = useCompanies();
   const { connections, createDemoConnection } = useSQLConnections();
-  const { logMessage } = useSystemLogsDB();
+  const { logInfo, logError } = useSystemLogsDB();
   const { toast } = useToast();
 
   const createDemoConnectionsForNewCompanies = async () => {
@@ -31,13 +31,13 @@ export function useDemoSQLConnections() {
               description: `Conexão de demonstração criada para ${company.name}`,
             });
             
-            await logMessage('info', `Conexão de demonstração criada automaticamente para empresa: ${company.name}`, 'useDemoSQLConnections', {
+            logInfo(`Conexão de demonstração criada automaticamente para empresa: ${company.name}`, 'useDemoSQLConnections', {
               company_id: company.id,
               company_name: company.name
             });
           } catch (error) {
             console.error(`Erro ao criar conexão demo para ${company.name}:`, error);
-            await logMessage('error', `Falha ao criar conexão de demonstração para empresa ${company.name}: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'useDemoSQLConnections', {
+            logError(`Falha ao criar conexão de demonstração para empresa ${company.name}: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'useDemoSQLConnections', {
               company_id: company.id,
               company_name: company.name,
               error: error instanceof Error ? error.message : 'Erro desconhecido'
@@ -47,7 +47,7 @@ export function useDemoSQLConnections() {
       }
     } catch (error) {
       console.error('Erro ao verificar/criar conexões de demonstração:', error);
-      await logMessage('error', `Erro geral ao processar conexões de demonstração: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'useDemoSQLConnections', {
+      logError(`Erro geral ao processar conexões de demonstração: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'useDemoSQLConnections', {
         error: error instanceof Error ? error.message : 'Erro desconhecido'
       });
     }

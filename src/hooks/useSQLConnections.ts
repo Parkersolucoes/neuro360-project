@@ -28,7 +28,7 @@ export function useSQLConnections() {
   const { toast } = useToast();
   const { userLogin } = useAuth();
   const { currentCompany } = useCompanies();
-  const { logMessage } = useSystemLogsDB();
+  const { logInfo, logError } = useSystemLogsDB();
 
   const validateConnectionData = (connectionData: Partial<SQLConnection>): string[] => {
     const errors: string[] = [];
@@ -87,7 +87,7 @@ export function useSQLConnections() {
 
       if (error) {
         console.error('Error fetching SQL connections:', error);
-        await logMessage('error', `Erro ao carregar conexões SQL: ${error.message}`, 'useSQLConnections', {
+        logError(`Erro ao carregar conexões SQL: ${error.message}`, 'useSQLConnections', {
           company_id: currentCompany.id,
           error: error.message
         });
@@ -103,7 +103,7 @@ export function useSQLConnections() {
       setConnections(data || []);
     } catch (error) {
       console.error('Error fetching SQL connections:', error);
-      await logMessage('error', `Erro inesperado ao carregar conexões SQL: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'useSQLConnections', {
+      logError(`Erro inesperado ao carregar conexões SQL: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'useSQLConnections', {
         company_id: currentCompany?.id,
         error: error instanceof Error ? error.message : 'Erro desconhecido'
       });
@@ -134,7 +134,7 @@ export function useSQLConnections() {
           description: errorMessage,
           variant: "destructive"
         });
-        await logMessage('error', `Validação falhou ao criar conexão SQL: ${errorMessage}`, 'useSQLConnections', {
+        logError(`Validação falhou ao criar conexão SQL: ${errorMessage}`, 'useSQLConnections', {
           company_id: currentCompany.id,
           validation_errors: validationErrors,
           connection_data: connectionData
@@ -143,7 +143,7 @@ export function useSQLConnections() {
       }
 
       console.log('✅ Dados validados com sucesso, criando conexão SQL...');
-      await logMessage('info', `Iniciando criação de conexão SQL: ${connectionData.name}`, 'useSQLConnections', {
+      logInfo(`Iniciando criação de conexão SQL: ${connectionData.name}`, 'useSQLConnections', {
         company_id: currentCompany.id,
         connection_name: connectionData.name,
         connection_type: connectionData.connection_type,
@@ -169,7 +169,7 @@ export function useSQLConnections() {
 
       if (error) {
         console.error('Error creating SQL connection:', error);
-        await logMessage('error', `Erro ao criar conexão SQL: ${error.message}`, 'useSQLConnections', {
+        logError(`Erro ao criar conexão SQL: ${error.message}`, 'useSQLConnections', {
           company_id: currentCompany.id,
           connection_data: connectionData,
           error: error.message
@@ -178,7 +178,7 @@ export function useSQLConnections() {
       }
 
       console.log('✅ SQL connection created successfully:', data);
-      await logMessage('info', `Conexão SQL criada com sucesso: ${data.name}`, 'useSQLConnections', {
+      logInfo(`Conexão SQL criada com sucesso: ${data.name}`, 'useSQLConnections', {
         company_id: currentCompany.id,
         connection_id: data.id,
         connection_name: data.name
@@ -194,7 +194,7 @@ export function useSQLConnections() {
     } catch (error) {
       console.error('Error creating SQL connection:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-      await logMessage('error', `Falha ao criar conexão SQL: ${errorMessage}`, 'useSQLConnections', {
+      logError(`Falha ao criar conexão SQL: ${errorMessage}`, 'useSQLConnections', {
         company_id: currentCompany?.id,
         connection_data: connectionData,
         error: errorMessage
@@ -221,7 +221,7 @@ export function useSQLConnections() {
           description: errorMessage,
           variant: "destructive"
         });
-        await logMessage('error', `Validação falhou ao atualizar conexão SQL: ${errorMessage}`, 'useSQLConnections', {
+        logError(`Validação falhou ao atualizar conexão SQL: ${errorMessage}`, 'useSQLConnections', {
           company_id: currentCompany?.id,
           connection_id: id,
           validation_errors: validationErrors,
@@ -231,7 +231,7 @@ export function useSQLConnections() {
       }
 
       console.log('✅ Dados validados, atualizando conexão SQL:', id);
-      await logMessage('info', `Iniciando atualização de conexão SQL: ${id}`, 'useSQLConnections', {
+      logInfo(`Iniciando atualização de conexão SQL: ${id}`, 'useSQLConnections', {
         company_id: currentCompany?.id,
         connection_id: id,
         updates
@@ -250,7 +250,7 @@ export function useSQLConnections() {
 
       if (error) {
         console.error('Error updating SQL connection:', error);
-        await logMessage('error', `Erro ao atualizar conexão SQL: ${error.message}`, 'useSQLConnections', {
+        logError(`Erro ao atualizar conexão SQL: ${error.message}`, 'useSQLConnections', {
           company_id: currentCompany?.id,
           connection_id: id,
           error: error.message
@@ -259,7 +259,7 @@ export function useSQLConnections() {
       }
 
       console.log('✅ SQL connection updated successfully:', data);
-      await logMessage('info', `Conexão SQL atualizada com sucesso: ${data.name}`, 'useSQLConnections', {
+      logInfo(`Conexão SQL atualizada com sucesso: ${data.name}`, 'useSQLConnections', {
         company_id: currentCompany?.id,
         connection_id: data.id,
         connection_name: data.name
@@ -275,7 +275,7 @@ export function useSQLConnections() {
     } catch (error) {
       console.error('Error updating SQL connection:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-      await logMessage('error', `Falha ao atualizar conexão SQL: ${errorMessage}`, 'useSQLConnections', {
+      logError(`Falha ao atualizar conexão SQL: ${errorMessage}`, 'useSQLConnections', {
         company_id: currentCompany?.id,
         connection_id: id,
         error: errorMessage
@@ -292,7 +292,7 @@ export function useSQLConnections() {
   const deleteConnection = async (id: string) => {
     try {
       console.log('🗑️ Deletando conexão SQL:', id);
-      await logMessage('info', `Iniciando exclusão de conexão SQL: ${id}`, 'useSQLConnections', {
+      logInfo(`Iniciando exclusão de conexão SQL: ${id}`, 'useSQLConnections', {
         company_id: currentCompany?.id,
         connection_id: id
       });
@@ -305,7 +305,7 @@ export function useSQLConnections() {
 
       if (error) {
         console.error('Error deleting SQL connection:', error);
-        await logMessage('error', `Erro ao excluir conexão SQL: ${error.message}`, 'useSQLConnections', {
+        logError(`Erro ao excluir conexão SQL: ${error.message}`, 'useSQLConnections', {
           company_id: currentCompany?.id,
           connection_id: id,
           error: error.message
@@ -314,7 +314,7 @@ export function useSQLConnections() {
       }
 
       console.log('✅ SQL connection deleted successfully');
-      await logMessage('info', `Conexão SQL excluída com sucesso: ${id}`, 'useSQLConnections', {
+      logInfo(`Conexão SQL excluída com sucesso: ${id}`, 'useSQLConnections', {
         company_id: currentCompany?.id,
         connection_id: id
       });
@@ -328,7 +328,7 @@ export function useSQLConnections() {
     } catch (error) {
       console.error('Error deleting SQL connection:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-      await logMessage('error', `Falha ao excluir conexão SQL: ${errorMessage}`, 'useSQLConnections', {
+      logError(`Falha ao excluir conexão SQL: ${errorMessage}`, 'useSQLConnections', {
         company_id: currentCompany?.id,
         connection_id: id,
         error: errorMessage
@@ -346,7 +346,7 @@ export function useSQLConnections() {
     try {
       setTesting(true);
       console.log('🔍 Testando conexão SQL:', connectionData);
-      await logMessage('info', `Iniciando teste de conexão SQL: ${connectionData.name}`, 'useSQLConnections', {
+      logInfo(`Iniciando teste de conexão SQL: ${connectionData.name}`, 'useSQLConnections', {
         company_id: currentCompany?.id,
         connection_name: connectionData.name,
         host: connectionData.host,
@@ -361,7 +361,7 @@ export function useSQLConnections() {
         throw new Error('Falha simulada no teste de conexão');
       }
       
-      await logMessage('info', `Teste de conexão SQL bem-sucedido: ${connectionData.name}`, 'useSQLConnections', {
+      logInfo(`Teste de conexão SQL bem-sucedido: ${connectionData.name}`, 'useSQLConnections', {
         company_id: currentCompany?.id,
         connection_name: connectionData.name,
         host: connectionData.host
@@ -376,7 +376,7 @@ export function useSQLConnections() {
     } catch (error) {
       console.error('Error testing SQL connection:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-      await logMessage('error', `Falha no teste de conexão SQL: ${errorMessage}`, 'useSQLConnections', {
+      logError(`Falha no teste de conexão SQL: ${errorMessage}`, 'useSQLConnections', {
         company_id: currentCompany?.id,
         connection_name: connectionData.name,
         error: errorMessage
@@ -408,7 +408,7 @@ export function useSQLConnections() {
         status: 'active'
       };
 
-      await logMessage('info', `Criando conexão de demonstração para empresa: ${companyName}`, 'useSQLConnections', {
+      logInfo(`Criando conexão de demonstração para empresa: ${companyName}`, 'useSQLConnections', {
         company_id: companyId,
         company_name: companyName,
         demo_connection: demoConnection
@@ -422,7 +422,7 @@ export function useSQLConnections() {
 
       if (error) {
         console.error('Error creating demo connection:', error);
-        await logMessage('error', `Erro ao criar conexão de demonstração: ${error.message}`, 'useSQLConnections', {
+        logError(`Erro ao criar conexão de demonstração: ${error.message}`, 'useSQLConnections', {
           company_id: companyId,
           company_name: companyName,
           error: error.message
@@ -431,7 +431,7 @@ export function useSQLConnections() {
       }
 
       console.log('✅ Demo connection created successfully:', data);
-      await logMessage('info', `Conexão de demonstração criada com sucesso: ${data.name}`, 'useSQLConnections', {
+      logInfo(`Conexão de demonstração criada com sucesso: ${data.name}`, 'useSQLConnections', {
         company_id: companyId,
         connection_id: data.id,
         connection_name: data.name
@@ -441,7 +441,7 @@ export function useSQLConnections() {
     } catch (error) {
       console.error('Error creating demo connection:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-      await logMessage('error', `Falha ao criar conexão de demonstração: ${errorMessage}`, 'useSQLConnections', {
+      logError(`Falha ao criar conexão de demonstração: ${errorMessage}`, 'useSQLConnections', {
         company_id: companyId,
         error: errorMessage
       });
