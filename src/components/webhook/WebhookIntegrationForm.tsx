@@ -7,19 +7,20 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Webhook, Save } from "lucide-react";
 import { useWebhookIntegration } from "@/hooks/useWebhookIntegration";
+import { useToast } from "@/hooks/use-toast";
 
 interface WebhookIntegrationFormProps {
   companyId: string;
 }
 
 export function WebhookIntegrationForm({ companyId }: WebhookIntegrationFormProps) {
-  const { integration, saveIntegration, loading } = useWebhookIntegration(companyId);
+  const { integration, loading } = useWebhookIntegration(companyId);
+  const { toast } = useToast();
   
   const [qrcodeWebhookUrl, setQrcodeWebhookUrl] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    console.log('🔄 WebhookIntegrationForm: Integration updated:', integration);
     if (integration) {
       setQrcodeWebhookUrl(integration.qrcode_webhook_url || "");
     }
@@ -28,27 +29,50 @@ export function WebhookIntegrationForm({ companyId }: WebhookIntegrationFormProp
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('📤 WebhookIntegrationForm: Form submitted with URL:', qrcodeWebhookUrl);
-    console.log('📤 WebhookIntegrationForm: Company ID:', companyId);
-    
     if (!qrcodeWebhookUrl.trim()) {
-      console.warn('⚠️ WebhookIntegrationForm: URL Gerar QrCode is required');
+      toast({
+        title: "Erro",
+        description: "URL Gerar QrCode é obrigatório",
+        variant: "destructive"
+      });
       return;
     }
     
     try {
       setIsSaving(true);
-      console.log('💾 WebhookIntegrationForm: Saving integration...');
       
-      await saveIntegration({
-        qrcode_webhook_url: qrcodeWebhookUrl,
+      const integrationData = {
         company_id: companyId,
+        qrcode_webhook_url: qrcodeWebhookUrl.trim(),
         is_active: true
+      };
+
+      console.log('💾 Salvando integração webhook:', integrationData);
+
+      // Salvar diretamente usando o service
+      const { WebhookIntegrationService } = await import('@/services/webhookIntegrationService');
+      
+      if (integration && integration.id) {
+        await WebhookIntegrationService.update(integration.id, {
+          qrcode_webhook_url: integrationData.qrcode_webhook_url,
+          is_active: integrationData.is_active
+        });
+      } else {
+        await WebhookIntegrationService.create(integrationData);
+      }
+      
+      toast({
+        title: "Sucesso",
+        description: "Configuração webhook salva com sucesso!"
       });
       
-      console.log('✅ WebhookIntegrationForm: Integration saved successfully');
     } catch (error) {
-      console.error('❌ WebhookIntegrationForm: Error saving webhook integration:', error);
+      console.error('❌ Erro ao salvar webhook:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao salvar configuração webhook",
+        variant: "destructive"
+      });
     } finally {
       setIsSaving(false);
     }
