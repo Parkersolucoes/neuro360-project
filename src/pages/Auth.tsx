@@ -1,15 +1,21 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useSystemConfig } from '@/hooks/useSystemConfig';
-import { Database, BarChart3, TrendingUp } from 'lucide-react';
+import { useSystemUpdates } from '@/hooks/useSystemUpdates';
+import { Database, BarChart3, TrendingUp, Calendar, CheckCircle } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export default function Auth() {
   const { userLogin, login } = useAuth();
   const { config } = useSystemConfig();
+  const { updates, loading: updatesLoading } = useSystemUpdates();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -36,9 +42,6 @@ export default function Auth() {
       setLoading(false);
     }
   };
-
-  // Verificar se há imagem de fundo configurada
-  const hasBackgroundImage = config?.login_background_image && config.login_background_image.trim() !== '';
 
   return (
     <div className="min-h-screen flex">
@@ -163,31 +166,69 @@ export default function Auth() {
         </div>
       </div>
 
-      {/* Área da Imagem de Fundo - Lado Direito */}
-      <div className="hidden md:block md:w-1/2 lg:w-3/5 relative">
-        {hasBackgroundImage ? (
-          <div 
-            className="w-full h-full bg-cover bg-center bg-no-repeat"
-            style={{
-              backgroundImage: `url(${config.login_background_image})`
-            }}
-          >
-            {/* Overlay sutil para melhor contraste */}
-            <div className="absolute inset-0 bg-black/20"></div>
+      {/* Área das Atualizações do Sistema - Lado Direito */}
+      <div className="hidden md:block md:w-1/2 lg:w-3/5 bg-gradient-to-br from-gray-50 to-gray-100 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.03)_1px,transparent_1px)] bg-[size:20px_20px]"></div>
+        
+        <div className="relative z-10 h-full flex flex-col p-8">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              Atualizações do Sistema
+            </h2>
+            <p className="text-lg text-gray-600">
+              Acompanhe as últimas melhorias e novidades da plataforma
+            </p>
           </div>
-        ) : (
-          <div className="w-full h-full bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-800 flex items-center justify-center">
-            <div className="text-center text-white p-8">
-              <div className="w-32 h-32 mx-auto mb-6 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-sm">
-                <Database className="w-16 h-16 text-white/80" />
+
+          <div className="flex-1 overflow-y-auto space-y-4 max-h-[calc(100vh-200px)]">
+            {updatesLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
               </div>
-              <h3 className="text-2xl font-bold mb-4">Bem-vindo ao {config?.system_name || 'Visão 360'}</h3>
-              <p className="text-lg text-white/80 max-w-md mx-auto">
-                Configure uma imagem de fundo personalizada nas configurações do sistema
-              </p>
-            </div>
+            ) : updates.length > 0 ? (
+              updates.map((update) => (
+                <Card key={update.id} className="bg-white shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <CardTitle className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                        <span>{update.title}</span>
+                      </CardTitle>
+                      {update.version && (
+                        <Badge variant="outline" className="text-blue-600 border-blue-200">
+                          {update.version}
+                        </Badge>
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-gray-600 mb-3 leading-relaxed">
+                      {update.description}
+                    </p>
+                    <div className="flex items-center text-sm text-gray-500">
+                      <Calendar className="w-4 h-4 mr-1" />
+                      <span>
+                        {format(new Date(update.update_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                  <CheckCircle className="w-8 h-8 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Nenhuma atualização disponível
+                </h3>
+                <p className="text-gray-600">
+                  As atualizações do sistema aparecerão aqui quando disponíveis
+                </p>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

@@ -528,6 +528,50 @@ export type Database = {
           },
         ]
       }
+      system_updates: {
+        Row: {
+          company_id: string
+          created_at: string
+          description: string
+          id: string
+          is_active: boolean
+          title: string
+          update_date: string
+          updated_at: string
+          version: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          description: string
+          id?: string
+          is_active?: boolean
+          title: string
+          update_date: string
+          updated_at?: string
+          version?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          description?: string
+          id?: string
+          is_active?: boolean
+          title?: string
+          update_date?: string
+          updated_at?: string
+          version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_updates_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           amount: number

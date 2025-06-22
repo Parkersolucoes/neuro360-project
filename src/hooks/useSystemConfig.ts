@@ -7,7 +7,6 @@ import { useCompanies } from '@/hooks/useCompanies';
 interface SystemConfig {
   system_name: string;
   system_description: string;
-  login_background_image: string;
 }
 
 export function useSystemConfig() {
@@ -42,21 +41,18 @@ export function useSystemConfig() {
         if (configValue && typeof configValue === 'object') {
           setConfig({
             system_name: configValue.system_name || "Visão 360 - Soluções em Dados",
-            system_description: configValue.system_description || "Plataforma completa para análise e gestão de dados empresariais", 
-            login_background_image: configValue.login_background_image || ""
+            system_description: configValue.system_description || "Plataforma completa para análise e gestão de dados empresariais"
           });
         } else {
           setConfig({
             system_name: "Visão 360 - Soluções em Dados",
-            system_description: "Plataforma completa para análise e gestão de dados empresariais",
-            login_background_image: ""
+            system_description: "Plataforma completa para análise e gestão de dados empresariais"
           });
         }
       } else {
         setConfig({
           system_name: "Visão 360 - Soluções em Dados",
-          system_description: "Plataforma completa para análise e gestão de dados empresariais",
-          login_background_image: ""
+          system_description: "Plataforma completa para análise e gestão de dados empresariais"
         });
       }
     } catch (error) {
@@ -84,8 +80,7 @@ export function useSystemConfig() {
     try {
       const jsonConfigValue = {
         system_name: configData.system_name,
-        system_description: configData.system_description,
-        login_background_image: configData.login_background_image
+        system_description: configData.system_description
       };
 
       const { data: existingConfig } = await supabase
@@ -136,70 +131,6 @@ export function useSystemConfig() {
     }
   };
 
-  const uploadImage = async (file: File): Promise<string> => {
-    if (!currentCompany?.id) {
-      throw new Error('Nenhuma empresa selecionada');
-    }
-
-    try {
-      // Validações do arquivo
-      if (!file.type.startsWith('image/')) {
-        throw new Error('Arquivo deve ser uma imagem');
-      }
-
-      if (file.size > 5 * 1024 * 1024) {
-        throw new Error('Imagem deve ter no máximo 5MB');
-      }
-
-      // Criar nome único para o arquivo
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${currentCompany.id}/login-bg-${Date.now()}.${fileExt}`;
-      
-      // Remover imagem anterior se existir
-      if (config?.login_background_image) {
-        try {
-          const oldUrl = new URL(config.login_background_image);
-          const oldPath = oldUrl.pathname.split('/').pop();
-          if (oldPath) {
-            const oldFilePath = `${currentCompany.id}/${oldPath}`;
-            await supabase.storage
-              .from('system-images')
-              .remove([oldFilePath]);
-          }
-        } catch (removeError) {
-          console.warn('Erro ao remover imagem anterior:', removeError);
-        }
-      }
-
-      // Upload para o storage do Supabase
-      const { data, error } = await supabase.storage
-        .from('system-images')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
-
-      if (error) {
-        console.error('Storage upload error:', error);
-        throw new Error('Erro no upload da imagem: ' + error.message);
-      }
-
-      // Obter URL pública da imagem
-      const { data: publicUrl } = supabase.storage
-        .from('system-images')
-        .getPublicUrl(fileName);
-
-      if (!publicUrl?.publicUrl) {
-        throw new Error('Erro ao obter URL pública da imagem');
-      }
-
-      return publicUrl.publicUrl;
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      throw error;
-    }
-  };
-
   useEffect(() => {
     fetchConfig();
   }, [currentCompany?.id]);
@@ -208,7 +139,6 @@ export function useSystemConfig() {
     config,
     loading,
     saveConfig,
-    uploadImage,
     refetch: fetchConfig
   };
 }
