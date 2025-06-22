@@ -45,13 +45,26 @@ export function useEvolutionConfigActions() {
     return null;
   };
 
-  const validateConfigWithQRGeneration = async (config: {
+  const generateSessionName = (companyName: string): string => {
+    // Pegar primeiro nome da empresa
+    const firstName = companyName.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+    
+    // Adicionar data no formato YYYYMMDD
+    const date = new Date();
+    const dateStr = date.getFullYear().toString() + 
+                   (date.getMonth() + 1).toString().padStart(2, '0') + 
+                   date.getDate().toString().padStart(2, '0');
+    
+    return `${firstName}_${dateStr}`;
+  };
+
+  const createInstanceWithValidation = async (config: {
     instance_name: string;
     api_key: string;
   }): Promise<boolean> => {
     try {
-      console.log('useEvolutionConfigActions: Validating config with QR generation:', config);
-      logInfo('Validando configuração Evolution API com geração de QR Code', 'useEvolutionConfigActions', { 
+      console.log('useEvolutionConfigActions: Creating Evolution instance:', config);
+      logInfo('Criando nova instância Evolution API', 'useEvolutionConfigActions', { 
         instance_name: config.instance_name 
       });
 
@@ -76,23 +89,24 @@ export function useEvolutionConfigActions() {
         status: 'testing' as const
       });
 
-      // Tentar gerar QR Code para validar a configuração
-      const qrResponse = await tempEvolutionService.generateQRCode();
+      // Tentar criar a instância para validar a configuração
+      const createResponse = await tempEvolutionService.createInstance();
       
-      if (qrResponse.qrCode) {
-        console.log('useEvolutionConfigActions: QR Code generated successfully, config is valid');
-        logInfo('QR Code gerado com sucesso - configuração validada', 'useEvolutionConfigActions', {
-          instance_name: config.instance_name
+      if (createResponse.instance && createResponse.instance.instanceName) {
+        console.log('useEvolutionConfigActions: Instance created successfully:', createResponse);
+        logInfo('Instância Evolution API criada com sucesso', 'useEvolutionConfigActions', {
+          instance_name: config.instance_name,
+          response: createResponse
         });
         return true;
       } else {
-        console.log('useEvolutionConfigActions: No QR Code returned, config may be invalid');
-        logError('QR Code não foi retornado - configuração pode estar inválida', 'useEvolutionConfigActions');
+        console.log('useEvolutionConfigActions: Instance creation failed, invalid response');
+        logError('Falha na criação da instância - resposta inválida', 'useEvolutionConfigActions');
         return false;
       }
     } catch (error) {
-      console.error('useEvolutionConfigActions: QR Code validation failed:', error);
-      logError(`Falha na validação com QR Code: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'useEvolutionConfigActions', error);
+      console.error('useEvolutionConfigActions: Instance creation failed:', error);
+      logError(`Falha na criação da instância: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'useEvolutionConfigActions', error);
       return false;
     }
   };
@@ -117,24 +131,31 @@ export function useEvolutionConfigActions() {
         throw new Error('Configuração global da Evolution API não encontrada. Configure primeiro nas Configurações do Sistema.');
       }
 
-      // Validar configuração gerando QR Code
+      // Gerar nome da sessão baseado no nome da empresa
+      const sessionName = generateSessionName(currentCompany.name);
+      
+      // Usar o nome da sessão gerado se não foi fornecido um nome de instância
+      const instanceName = configData.instance_name || sessionName;
+
+      // Validar configuração criando instância
       toast({
-        title: "Validando configuração",
-        description: "Testando conexão e gerando QR Code para validar a configuração..."
+        title: "Criando instância",
+        description: "Criando nova instância WhatsApp na Evolution API..."
       });
 
-      const isValid = await validateConfigWithQRGeneration({
-        instance_name: configData.instance_name,
+      const isValid = await createInstanceWithValidation({
+        instance_name: instanceName,
         api_key: configData.api_key
       });
 
       if (!isValid) {
-        throw new Error('Configuração inválida: não foi possível gerar QR Code. Verifique o nome da instância e token.');
+        throw new Error('Configuração inválida: não foi possível criar a instância. Verifique o nome da instância e token.');
       }
 
       // Se a validação passou, criar a configuração com dados globais + específicos da empresa
       const configToCreate = {
         ...configData,
+        instance_name: instanceName,
         api_url: globalConfig.base_url, // Usar URL da configuração global
         company_id: currentCompany.id,
         status: 'connected' as const
@@ -143,11 +164,11 @@ export function useEvolutionConfigActions() {
       const newConfig = await EvolutionConfigService.create(configToCreate);
       
       console.log('useEvolutionConfigActions: Config created successfully:', newConfig);
-      logInfo('Configuração da Evolution API criada e validada com sucesso', 'useEvolutionConfigActions', { configId: newConfig.id });
+      logInfo('Configuração da Evolution API criada e instância validada com sucesso', 'useEvolutionConfigActions', { configId: newConfig.id });
       
       toast({
         title: "Sucesso",
-        description: "Configuração da Evolution API criada e validada com sucesso! QR Code pode ser gerado."
+        description: "Configuração da Evolution API criada e instância criada com sucesso! Agora você pode gerar QR Code."
       });
       
       return newConfig;
@@ -181,7 +202,7 @@ export function useEvolutionConfigActions() {
         throw new Error('Configuração global da Evolution API não encontrada. Configure primeiro nas Configurações do Sistema.');
       }
 
-      // Se estamos atualizando dados críticos, validar com QR Code
+      // Se estamos atualizando dados críticos, validar criando nova instância
       if (updates.instance_name || updates.api_key) {
         // Buscar configuração atual para ter dados completos
         const currentConfig = await EvolutionConfigService.fetchByCompanyId(currentCompany.id);
@@ -190,20 +211,28 @@ export function useEvolutionConfigActions() {
           throw new Error('Configuração atual não encontrada');
         }
 
+        let instanceName = updates.instance_name || currentConfig.instance_name;
+        
+        // Se não há nome de instância definido, gerar um novo
+        if (!instanceName) {
+          instanceName = generateSessionName(currentCompany.name);
+          updates.instance_name = instanceName;
+        }
+
         const configToValidate = {
-          instance_name: updates.instance_name || currentConfig.instance_name,
+          instance_name: instanceName,
           api_key: updates.api_key || currentConfig.api_key
         };
 
         toast({
           title: "Validando alterações",
-          description: "Testando conexão e gerando QR Code para validar as alterações..."
+          description: "Criando nova instância para validar as alterações..."
         });
 
-        const isValid = await validateConfigWithQRGeneration(configToValidate);
+        const isValid = await createInstanceWithValidation(configToValidate);
 
         if (!isValid) {
-          throw new Error('Alterações inválidas: não foi possível gerar QR Code com as novas configurações. Verifique os dados informados.');
+          throw new Error('Alterações inválidas: não foi possível criar instância com as novas configurações. Verifique os dados informados.');
         }
 
         // Se a validação passou, definir status como 'connected' e atualizar URL da API
@@ -239,6 +268,7 @@ export function useEvolutionConfigActions() {
   return {
     createConfig,
     updateConfig,
-    validateConfigWithQRGeneration
+    createInstanceWithValidation,
+    generateSessionName
   };
 }

@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface EvolutionConfig {
@@ -22,6 +21,22 @@ export interface InstanceStatus {
   instance: string;
   status: 'open' | 'close' | 'connecting';
   qrCode?: string;
+}
+
+export interface CreateInstanceResponse {
+  instance: {
+    instanceName: string;
+    status: string;
+  };
+  hash: {
+    apikey: string;
+  };
+  webhook?: string;
+  qrcode?: {
+    pairingCode?: string;
+    code?: string;
+    base64?: string;
+  };
 }
 
 export interface SendMessageResponse {
@@ -70,12 +85,42 @@ export class EvolutionApiService {
     }
   }
 
-  async createInstance(): Promise<any> {
-    return this.makeRequest(`/instance/create`, 'POST', {
+  async createInstance(): Promise<CreateInstanceResponse> {
+    console.log('Evolution API: Creating instance:', this.config.instance_name);
+    
+    const requestBody = {
       instanceName: this.config.instance_name,
+      token: this.config.api_key,
       qrcode: true,
-      integration: 'WHATSAPP-BAILEYS'
-    });
+      integration: 'WHATSAPP-BAILEYS',
+      webhookUrl: this.config.webhook_url || undefined,
+      webhookByEvents: false,
+      webhookBase64: false,
+      events: [
+        'APPLICATION_STARTUP',
+        'QRCODE_UPDATED',
+        'MESSAGES_UPSERT',
+        'MESSAGES_UPDATE',
+        'MESSAGES_DELETE',
+        'SEND_MESSAGE',
+        'CONTACTS_SET',
+        'CONTACTS_UPSERT',
+        'CONTACTS_UPDATE',
+        'PRESENCE_UPDATE',
+        'CHATS_SET',
+        'CHATS_UPSERT',
+        'CHATS_UPDATE',
+        'CHATS_DELETE',
+        'GROUPS_UPSERT',
+        'GROUP_UPDATE',
+        'GROUP_PARTICIPANTS_UPDATE',
+        'CONNECTION_UPDATE',
+        'CALL',
+        'NEW_JWT_TOKEN'
+      ]
+    };
+
+    return this.makeRequest(`/instance/create`, 'POST', requestBody);
   }
 
   async getInstanceStatus(): Promise<InstanceStatus> {
@@ -84,15 +129,20 @@ export class EvolutionApiService {
 
   async generateQRCode(): Promise<QRCodeResponse> {
     try {
-      // Primeiro, verificar se a instância existe
-      await this.createInstance();
-      
-      // Gerar QR Code
+      // Gerar QR Code para a instância já criada
       const response = await this.makeRequest(`/instance/connect/${this.config.instance_name}`, 'GET');
       
-      if (response.qrcode) {
+      if (response.base64) {
         return {
-          qrCode: response.qrcode,
+          qrCode: response.base64,
+          status: 'waiting',
+          message: 'QR Code gerado com sucesso'
+        };
+      }
+      
+      if (response.code) {
+        return {
+          qrCode: response.code,
           status: 'waiting',
           message: 'QR Code gerado com sucesso'
         };

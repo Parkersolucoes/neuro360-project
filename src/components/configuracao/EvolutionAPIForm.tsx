@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, Save } from "lucide-react";
+import { MessageSquare, Save, Smartphone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useEvolutionConfig } from "@/hooks/useEvolutionConfig";
 import { useSystemLogs } from "@/hooks/useSystemLogs";
+import { useCompanies } from "@/hooks/useCompanies";
+import { useEvolutionConfigActions } from "@/hooks/useEvolutionConfigActions";
 
 interface EvolutionAPIFormProps {
   companyId: string;
@@ -17,11 +19,14 @@ interface EvolutionAPIFormProps {
 export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
   const { toast } = useToast();
   const { logError, logInfo } = useSystemLogs();
+  const { currentCompany } = useCompanies();
   const { config: evolutionConfig, saveConfig, loading } = useEvolutionConfig(companyId);
+  const { generateSessionName } = useEvolutionConfigActions();
 
   const [evolutionForm, setEvolutionForm] = useState({
     instance_name: "",
-    instance_token: ""
+    instance_token: "",
+    webhook_url: ""
   });
 
   const [isSaving, setIsSaving] = useState(false);
@@ -32,16 +37,28 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
       console.log('EvolutionAPIForm: Loading existing config:', evolutionConfig);
       setEvolutionForm({
         instance_name: evolutionConfig.instance_name || "",
-        instance_token: evolutionConfig.api_key || ""
+        instance_token: evolutionConfig.api_key || "",
+        webhook_url: evolutionConfig.webhook_url || ""
       });
     } else {
-      console.log('EvolutionAPIForm: No existing config, using defaults');
-      setEvolutionForm({
-        instance_name: "",
-        instance_token: ""
-      });
+      console.log('EvolutionAPIForm: No existing config, generating session name');
+      // Gerar nome da sessão automaticamente
+      if (currentCompany) {
+        const sessionName = generateSessionName(currentCompany.name);
+        setEvolutionForm({
+          instance_name: sessionName,
+          instance_token: "",
+          webhook_url: ""
+        });
+      } else {
+        setEvolutionForm({
+          instance_name: "",
+          instance_token: "",
+          webhook_url: ""
+        });
+      }
     }
-  }, [evolutionConfig]);
+  }, [evolutionConfig, currentCompany, generateSessionName]);
 
   const handleEvolutionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,24 +99,25 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
     try {
       setIsSaving(true);
 
-      console.log('EvolutionAPIForm: Saving config with integrated validation:', {
+      console.log('EvolutionAPIForm: Saving config with instance creation:', {
         instance_name: evolutionForm.instance_name,
         api_key: evolutionForm.instance_token,
+        webhook_url: evolutionForm.webhook_url,
         company_id: companyId
       });
 
-      // O saveConfig agora inclui validação automática com QR Code usando configurações globais + empresa
+      // O saveConfig agora inclui criação automática da instância usando configurações globais + empresa
       await saveConfig({
         instance_name: evolutionForm.instance_name,
         api_key: evolutionForm.instance_token,
         api_url: '', // Será preenchido automaticamente com configuração global
-        webhook_url: null,
+        webhook_url: evolutionForm.webhook_url || null,
         company_id: companyId,
         is_active: true,
-        status: 'connected' as const // Será definido automaticamente se a validação passar
+        status: 'connected' as const // Será definido automaticamente se a criação da instância passar
       });
 
-      logInfo('Configuração Evolution API da instância salva e validada com sucesso', 'EvolutionAPIForm', {
+      logInfo('Configuração Evolution API da instância salva e instância criada com sucesso', 'EvolutionAPIForm', {
         companyId,
         instanceName: evolutionForm.instance_name
       });
@@ -109,6 +127,17 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
       logError(`Erro ao salvar configuração Evolution API: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'EvolutionAPIForm', error);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const generateNewSessionName = () => {
+    if (currentCompany) {
+      const newSessionName = generateSessionName(currentCompany.name);
+      setEvolutionForm(prev => ({ ...prev, instance_name: newSessionName }));
+      toast({
+        title: "Nome gerado",
+        description: `Novo nome de sessão: ${newSessionName}`
+      });
     }
   };
 
@@ -141,7 +170,7 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
                 ? "bg-yellow-100 text-yellow-800"
                 : "bg-red-100 text-red-800"
             }>
-              {evolutionConfig.status === 'connected' ? 'Conectado e Validado' : 
+              {evolutionConfig.status === 'connected' ? 'Instância Criada' : 
                evolutionConfig.status === 'testing' ? 'Testando' : 'Desconectado'}
             </Badge>
           )}
@@ -150,30 +179,42 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
       <CardContent>
         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-blue-800">
-            <strong>Integração Automática:</strong> Esta configuração utiliza automaticamente os dados globais 
+            <strong>Criação Automática de Instância:</strong> Esta configuração utilizará automaticamente os dados globais 
             (URL base e chave principal) configurados nas <strong>Configurações do Sistema</strong> junto com 
-            os dados específicos desta instância.
+            os dados específicos desta instância para criar uma nova instância no Evolution API.
             <br /><br />
-            <strong>Validação Automática:</strong> Ao salvar, o sistema irá validar automaticamente a configuração 
-            tentando gerar um QR Code através da Evolution API.
+            <strong>Nome da Sessão:</strong> O nome da instância será gerado automaticamente no formato: 
+            <strong>primeiro_nome_da_empresa_YYYYMMDD</strong> ou você pode personalizar.
           </p>
         </div>
         
         <form onSubmit={handleEvolutionSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="evolution_instance">Nome da Instância *</Label>
-            <Input
-              id="evolution_instance"
-              value={evolutionForm.instance_name}
-              onChange={(e) => setEvolutionForm({...evolutionForm, instance_name: e.target.value})}
-              placeholder="Ex: minha-instancia"
-              className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-              required
-            />
+            <div className="flex space-x-2">
+              <Input
+                id="evolution_instance"
+                value={evolutionForm.instance_name}
+                onChange={(e) => setEvolutionForm({...evolutionForm, instance_name: e.target.value})}
+                placeholder="Ex: minha-empresa_20241222"
+                className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                required
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={generateNewSessionName}
+                className="whitespace-nowrap"
+              >
+                <Smartphone className="w-4 h-4 mr-1" />
+                Gerar
+              </Button>
+            </div>
             <p className="text-sm text-gray-500">
-              Nome único da instância WhatsApp
+              Nome único da instância WhatsApp (será usado para criar nova instância)
             </p>
           </div>
+
           <div className="space-y-2">
             <Label htmlFor="instance_token">Token da Instância *</Label>
             <Input
@@ -189,6 +230,21 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
               Token de acesso específico desta instância
             </p>
           </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="webhook_url">URL do Webhook (Opcional)</Label>
+            <Input
+              id="webhook_url"
+              type="url"
+              value={evolutionForm.webhook_url}
+              onChange={(e) => setEvolutionForm({...evolutionForm, webhook_url: e.target.value})}
+              placeholder="https://seu-dominio.com/webhook/evolution"
+              className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+            />
+            <p className="text-sm text-gray-500">
+              URL para receber notificações de eventos do WhatsApp
+            </p>
+          </div>
           
           <div className="flex space-x-2">
             <Button 
@@ -197,15 +253,16 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
               disabled={isSaving}
             >
               <Save className="w-4 h-4 mr-2" />
-              {isSaving ? "Salvando e Validando..." : "Salvar e Validar Configuração"}
+              {isSaving ? "Criando Instância..." : "Criar Instância WhatsApp"}
             </Button>
           </div>
           
           {evolutionConfig?.status === 'connected' && (
             <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
               <p className="text-sm text-green-800">
-                <strong>✓ Configuração validada com sucesso!</strong> A instância foi testada através da geração de QR Code 
-                usando as configurações globais do sistema. Agora você pode acessar a página <strong>QR Code</strong> no menu principal para conectar sua instância WhatsApp.
+                <strong>✓ Instância criada com sucesso!</strong> A instância foi criada no Evolution API 
+                usando as configurações globais do sistema. Agora você pode acessar a página <strong>QR Code</strong> 
+                no menu principal para conectar sua instância WhatsApp.
               </p>
             </div>
           )}

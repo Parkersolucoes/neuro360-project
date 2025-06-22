@@ -81,7 +81,7 @@ export function QRCodeGenerator({
         currentSession = await createSession(evolutionConfigId, instanceName, currentCompanyId);
       }
 
-      // Gerar QR Code através da Evolution API
+      // Gerar QR Code através da Evolution API (instância já deve estar criada)
       const qrResponse = await evolutionService.generateQRCode();
       
       setQrCode(qrResponse.qrCode);
@@ -104,7 +104,7 @@ export function QRCodeGenerator({
       console.error('Error generating QR code:', error);
       toast({
         title: "Erro",
-        description: "Erro ao gerar QR Code. Verifique as configurações da Evolution API.",
+        description: "Erro ao gerar QR Code. Verifique se a instância foi criada corretamente nas configurações.",
         variant: "destructive"
       });
     } finally {
@@ -199,6 +199,14 @@ export function QRCodeGenerator({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <strong>Instância:</strong> {instanceName}
+              <br />
+              <strong>Importante:</strong> A instância deve estar criada nas configurações da empresa antes de gerar o QR Code.
+            </p>
+          </div>
+          
           <QRCodeDisplay
             sessionStatus={sessionStatus}
             qrCode={qrCode}
