@@ -65,12 +65,11 @@ export class EvolutionApiService {
       console.log(JSON.stringify(body, null, 2));
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       
-      // Log específico do número formatado
+      // Log específico do número sem formatação
       if (body?.number) {
-        console.log('📱 DETALHES DO NÚMERO FORMATADO:');
+        console.log('📱 DETALHES DO NÚMERO SEM FORMATAÇÃO:');
         console.log('   • Número no body:', body.number);
-        console.log('   • Formato esperado: 55 + DDD + Número');
-        console.log('   • Exemplo: 5511999999999');
+        console.log('   • Enviado sem formatação (como cadastrado na empresa)');
         console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       }
     }
@@ -108,45 +107,13 @@ export class EvolutionApiService {
       throw new Error('Número de telefone é obrigatório para criar a instância');
     }
     
+    // Estrutura exata conforme especificado
     const requestBody = {
       instanceName: this.config.instance_name,
-      token: this.config.api_key,
-      number: numberToUse, // Número formatado da empresa no body da requisição
+      token: "", // Enviado em branco conforme especificado
       qrcode: true,
-      integration: 'WHATSAPP-BAILEYS',
-      webhookUrl: this.config.webhook_url || undefined,
-      webhookByEvents: false,
-      webhookBase64: false,
-      events: [
-        'APPLICATION_STARTUP',
-        'QRCODE_UPDATED',
-        'MESSAGES_UPSERT',
-        'MESSAGES_UPDATE',
-        'MESSAGES_DELETE',
-        'SEND_MESSAGE',
-        'CONTACTS_SET',
-        'CONTACTS_UPSERT',
-        'CONTACTS_UPDATE',
-        'PRESENCE_UPDATE',
-        'CHATS_SET',
-        'CHATS_UPSERT',
-        'CHATS_UPDATE',
-        'CHATS_DELETE',
-        'GROUPS_UPSERT',
-        'GROUP_UPDATE',
-        'GROUP_PARTICIPANTS_UPDATE',
-        'CONNECTION_UPDATE',
-        'CALL',
-        'NEW_JWT_TOKEN'
-      ],
-      // Parâmetros da instância seguindo o modelo especificado
-      instance: {
-        instanceName: this.config.instance_name,
-        instanceId: undefined, // Será gerado pela API
-        webhook_wa_business: this.config.webhook_url || null,
-        access_token_wa_business: "",
-        status: "created"
-      }
+      number: numberToUse, // Número sem formatação (como cadastrado na empresa)
+      integration: "Baileys" // Tipo Baileys conforme especificado
     };
 
     const response = await this.makeRequest(`/instance/create`, 'POST', requestBody);
@@ -173,45 +140,13 @@ export class EvolutionApiService {
       throw new Error('Número de telefone é obrigatório para criar a instância');
     }
     
+    // Estrutura exata conforme especificado
     const requestBody = {
       instanceName: this.config.instance_name,
-      token: this.config.api_key,
-      number: numberToUse, // Número formatado da empresa no body da requisição
+      token: "", // Enviado em branco conforme especificado
       qrcode: true,
-      integration: 'WHATSAPP-BAILEYS',
-      webhookUrl: this.config.webhook_url || undefined,
-      webhookByEvents: false,
-      webhookBase64: false,
-      events: [
-        'APPLICATION_STARTUP',
-        'QRCODE_UPDATED',
-        'MESSAGES_UPSERT',
-        'MESSAGES_UPDATE',
-        'MESSAGES_DELETE',
-        'SEND_MESSAGE',
-        'CONTACTS_SET',
-        'CONTACTS_UPSERT',
-        'CONTACTS_UPDATE',
-        'PRESENCE_UPDATE',
-        'CHATS_SET',
-        'CHATS_UPSERT',
-        'CHATS_UPDATE',
-        'CHATS_DELETE',
-        'GROUPS_UPSERT',
-        'GROUP_UPDATE',
-        'GROUP_PARTICIPANTS_UPDATE',
-        'CONNECTION_UPDATE',
-        'CALL',
-        'NEW_JWT_TOKEN'
-      ],
-      // Parâmetros da instância seguindo o modelo especificado
-      instance: {
-        instanceName: this.config.instance_name,
-        instanceId: undefined, // Será gerado pela API
-        webhook_wa_business: this.config.webhook_url || null,
-        access_token_wa_business: "",
-        status: "created"
-      }
+      number: numberToUse, // Número sem formatação (como cadastrado na empresa)
+      integration: "Baileys" // Tipo Baileys conforme especificado
     };
 
     return this.makeRequest(`/instance/create`, 'POST', requestBody);

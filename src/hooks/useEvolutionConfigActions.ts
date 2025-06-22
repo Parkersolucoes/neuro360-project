@@ -1,3 +1,4 @@
+
 import { useToast } from '@/hooks/use-toast';
 import { useSystemLogs } from '@/hooks/useSystemLogs';
 import { useAuth } from '@/hooks/useAuth';
@@ -53,19 +54,6 @@ export function useEvolutionConfigActions() {
     return `${firstName}_${dateStr}`;
   };
 
-  const formatPhoneNumber = (phone: string): string => {
-    // Remove todos os caracteres não numéricos
-    const cleanPhone = phone.replace(/\D/g, '');
-    
-    // Se já começa com 55, retorna como está
-    if (cleanPhone.startsWith('55')) {
-      return cleanPhone;
-    }
-    
-    // Adiciona 55 no início
-    return `55${cleanPhone}`;
-  };
-
   const createInstanceWithQRCode = async (config: {
     instance_name: string;
     company_phone: string;
@@ -93,25 +81,25 @@ export function useEvolutionConfigActions() {
 
       console.log('useEvolutionConfigActions: Using global config:', { base_url: globalConfig.base_url });
 
-      // Passo 2: Formatar número de telefone
+      // Passo 2: Preparar número sem formatação
       toast({
-        title: "Passo 2/5 - Formatando Telefone",
-        description: `📱 Número original: ${config.company_phone}`
+        title: "Passo 2/5 - Preparando Número",
+        description: `📱 Número da empresa: ${config.company_phone}\n📋 Será enviado SEM formatação conforme especificado`
       });
 
-      const phoneNumber = formatPhoneNumber(config.company_phone);
+      const phoneNumber = config.company_phone; // Sem formatação, como cadastrado
       
       toast({
-        title: "✓ Telefone Formatado",
-        description: `📱 Número formatado: ${phoneNumber}\n🌍 Código do país (55) adicionado automaticamente`
+        title: "✓ Número Preparado",
+        description: `📱 Número: ${phoneNumber}\n✅ Enviado sem formatação (como cadastrado na empresa)`
       });
       
-      console.log('useEvolutionConfigActions: Formatted phone number:', phoneNumber);
+      console.log('useEvolutionConfigActions: Phone number without formatting:', phoneNumber);
 
       // Passo 3: Preparar parâmetros da instância
       toast({
         title: "Passo 3/5 - Preparando Instância",
-        description: `⚙️ Nome da instância: ${config.instance_name}\n🔧 Integração: WhatsApp Baileys`
+        description: `⚙️ Nome da instância: ${config.instance_name}\n🔧 Integração: Baileys\n🎯 Token: (em branco)\n📱 QRCode: true`
       });
 
       const tempEvolutionService = new EvolutionApiService({
@@ -121,7 +109,7 @@ export function useEvolutionConfigActions() {
         api_key: globalConfig.global_api_key,
         instance_name: config.instance_name,
         webhook_url: null,
-        number: phoneNumber,
+        number: phoneNumber, // Número sem formatação
         is_active: true,
         status: 'testing' as const,
         created_at: new Date().toISOString(),
@@ -131,13 +119,13 @@ export function useEvolutionConfigActions() {
       // Mostrar parâmetros completos antes da criação
       toast({
         title: "✓ Parâmetros da Instância Preparados",
-        description: `📦 Instância: ${config.instance_name}\n📡 URL: ${globalConfig.base_url}\n📞 Telefone: ${phoneNumber}\n🔧 Integração: WHATSAPP-BAILEYS`
+        description: `📦 instanceName: ${config.instance_name}\n📡 server-url: ${globalConfig.base_url}\n🔑 apikey: ${globalConfig.global_api_key.substring(0, 8)}...\n🎯 token: (em branco)\n📱 qrcode: true\n📞 number: ${phoneNumber}\n🔧 integration: Baileys`
       });
 
       // Passo 4: Criar instância na Evolution API
       toast({
         title: "Passo 4/5 - Criando Instância",
-        description: "🚀 Enviando solicitação para Evolution API..."
+        description: "🚀 Enviando solicitação para Evolution API com parâmetros exatos..."
       });
 
       const createResponse = await tempEvolutionService.createInstanceWithQRCode();
@@ -269,7 +257,7 @@ export function useEvolutionConfigActions() {
 
       const sessionName = generateSessionName(currentCompany.name);
       const instanceName = configData.instance_name || sessionName;
-      const formattedNumber = formatPhoneNumber(currentCompany.phone);
+      const phoneNumber = currentCompany.phone; // Sem formatação
 
       // Criar instância com QR Code e feedback passo a passo
       const createResult = await createInstanceWithQRCode({
@@ -286,7 +274,7 @@ export function useEvolutionConfigActions() {
         instance_name: instanceName,
         api_url: globalConfig.base_url,
         api_key: globalConfig.global_api_key,
-        number: formattedNumber,
+        number: phoneNumber, // Sem formatação
         company_id: currentCompany.id,
         status: 'connected' as const
       };
@@ -340,7 +328,7 @@ export function useEvolutionConfigActions() {
             updates.instance_name = instanceName;
           }
 
-          const formattedNumber = formatPhoneNumber(currentCompany.phone);
+          const phoneNumber = currentCompany.phone; // Sem formatação
 
           toast({
             title: "Validando alterações",
@@ -359,7 +347,7 @@ export function useEvolutionConfigActions() {
           updates.status = 'connected';
           updates.api_url = globalConfig.base_url;
           updates.api_key = globalConfig.global_api_key;
-          updates.number = formattedNumber;
+          updates.number = phoneNumber; // Sem formatação
         }
 
         const updatedConfig = await EvolutionConfigService.update(id, updates);
@@ -389,6 +377,6 @@ export function useEvolutionConfigActions() {
     createInstanceWithQRCode,
     generateSessionName,
     getGlobalEvolutionConfig,
-    formatPhoneNumber
+    formatPhoneNumber: (phone: string) => phone // Agora retorna sem formatação
   };
 }
