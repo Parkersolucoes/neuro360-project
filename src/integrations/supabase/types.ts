@@ -378,7 +378,9 @@ export type Database = {
       sql_queries: {
         Row: {
           company_id: string | null
+          connection_id: string | null
           created_at: string
+          created_by: string | null
           description: string | null
           id: string
           name: string
@@ -389,7 +391,9 @@ export type Database = {
         }
         Insert: {
           company_id?: string | null
+          connection_id?: string | null
           created_at?: string
+          created_by?: string | null
           description?: string | null
           id?: string
           name: string
@@ -400,7 +404,9 @@ export type Database = {
         }
         Update: {
           company_id?: string | null
+          connection_id?: string | null
           created_at?: string
+          created_by?: string | null
           description?: string | null
           id?: string
           name?: string
@@ -415,6 +421,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sql_queries_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "sql_connections"
             referencedColumns: ["id"]
           },
           {
