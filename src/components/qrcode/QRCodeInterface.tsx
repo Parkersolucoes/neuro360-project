@@ -6,10 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { QrCode, RefreshCw, Smartphone } from 'lucide-react';
 import { useCompanies } from '@/hooks/useCompanies';
+import { useWebhookIntegration } from '@/hooks/useWebhookIntegration';
 import { useToast } from '@/hooks/use-toast';
 
 export function QRCodeInterface() {
   const { currentCompany } = useCompanies();
+  const { integration } = useWebhookIntegration(currentCompany?.id);
   const { toast } = useToast();
   
   const [instanceName, setInstanceName] = useState('');
@@ -20,7 +22,7 @@ export function QRCodeInterface() {
 
   // Preencher automaticamente o nome da instância com base no nome da empresa
   useEffect(() => {
-    if (currentCompany?.name) {
+    if (currentCompany?.name && instanceName === '') {
       const firstName = currentCompany.name.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
       const date = new Date();
       const dateStr = date.getFullYear().toString() + 
@@ -29,7 +31,7 @@ export function QRCodeInterface() {
       
       setInstanceName(`${firstName}_${dateStr}`);
     }
-  }, [currentCompany]);
+  }, [currentCompany, instanceName]);
 
   // Timer para regenerar QR Code a cada 30 segundos
   useEffect(() => {
@@ -54,6 +56,59 @@ export function QRCodeInterface() {
     };
   }, [timer, qrCodeData, connectionStatus]);
 
+  const sendInstanceToWebhook = async (instanceName: string) => {
+    if (!integration?.webhook_url) {
+      console.log('Nenhuma URL de webhook configurada');
+      return;
+    }
+
+    try {
+      console.log('Enviando nome da instância para webhook:', instanceName);
+      console.log('URL do webhook:', integration.webhook_url);
+
+      const payload = {
+        event: 'qr_code_generated',
+        timestamp: new Date().toISOString(),
+        company_id: currentCompany?.id,
+        data: {
+          instance_name: instanceName,
+          company_name: currentCompany?.name,
+          status: 'waiting_connection'
+        }
+      };
+
+      const response = await fetch(integration.webhook_url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.ok) {
+        console.log('✅ Nome da instância enviado com sucesso para o webhook');
+        toast({
+          title: "Webhook Enviado",
+          description: "Nome da instância enviado para o webhook com sucesso!"
+        });
+      } else {
+        console.error('❌ Erro ao enviar para webhook:', response.status, response.statusText);
+        toast({
+          title: "Aviso",
+          description: `Erro ao enviar para webhook: ${response.status}`,
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('❌ Erro ao enviar para webhook:', error);
+      toast({
+        title: "Aviso",
+        description: "Erro de conexão com o webhook",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleGenerateQRCode = async () => {
     if (!instanceName.trim()) {
       toast({
@@ -77,6 +132,9 @@ export function QRCodeInterface() {
     setConnectionStatus('waiting');
     
     try {
+      // Enviar nome da instância para o webhook antes de gerar o QR Code
+      await sendInstanceToWebhook(instanceName.trim());
+
       // Simular geração de QR Code (substituir pela integração real)
       const mockQRCode = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==`;
       
@@ -154,6 +212,28 @@ export function QRCodeInterface() {
                 Nome único para identificar sua instância WhatsApp
               </p>
             </div>
+
+            {integration?.webhook_url && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800">
+                  ✅ Webhook configurado: {integration.webhook_url}
+                </p>
+                <p className="text-xs text-blue-600 mt-1">
+                  O nome da instância será enviado para este webhook ao gerar o QR Code
+                </p>
+              </div>
+            )}
+
+            {!integration?.webhook_url && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <p className="text-sm text-yellow-800">
+                  ⚠️ Nenhum webhook configurado
+                </p>
+                <p className="text-xs text-yellow-600 mt-1">
+                  Configure um webhook na aba "Webhook Integração" para receber notificações
+                </p>
+              </div>
+            )}
 
             <Button
               onClick={handleGenerateQRCode}
