@@ -6,6 +6,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { CompaniesProvider } from "@/providers/CompaniesProvider";
+import { AuthProvider } from "@/hooks/useAuth";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Index from "@/pages/Index";
@@ -37,111 +38,113 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <CompaniesProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/" element={<Index />} />
-              <Route path="/dashboard" element={
-                <ProtectedRoute>
-                  <DashboardLayout>
-                    <Dashboard />
-                  </DashboardLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/empresas" element={
-                <ProtectedRoute>
-                  <DashboardLayout>
-                    <Empresas />
-                  </DashboardLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/usuarios" element={
-                <ProtectedRoute>
-                  <DashboardLayout>
-                    <Usuarios />
-                  </DashboardLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/consultas-sql" element={
-                <ProtectedRoute>
-                  <DashboardLayout>
-                    <ConsultasSQL />
-                  </DashboardLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/sql-server" element={
-                <ProtectedRoute>
-                  <DashboardLayout>
-                    <SQLServer />
-                  </DashboardLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/relatorios" element={
-                <ProtectedRoute>
-                  <DashboardLayout>
-                    <Relatorios />
-                  </DashboardLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/planos" element={
-                <ProtectedRoute>
-                  <DashboardLayout>
-                    <Planos />
-                  </DashboardLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/financeiro" element={
-                <ProtectedRoute>
-                  <DashboardLayout>
-                    <Financeiro />
-                  </DashboardLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/webhooks" element={
-                <ProtectedRoute>
-                  <DashboardLayout>
-                    <Webhooks />
-                  </DashboardLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/configuracao" element={
-                <ProtectedRoute>
-                  <DashboardLayout>
-                    <Configuracao />
-                  </DashboardLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/configuracao-sistema" element={
-                <ProtectedRoute>
-                  <DashboardLayout>
-                    <ConfiguracaoSistema />
-                  </DashboardLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/agendamentos" element={
-                <ProtectedRoute>
-                  <DashboardLayout>
-                    <Agendamentos />
-                  </DashboardLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/agendamento/:id?" element={
-                <ProtectedRoute>
-                  <DashboardLayout>
-                    <Agendamento />
-                  </DashboardLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/404" element={<NotFound />} />
-              <Route path="*" element={<Navigate to="/404" replace />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </CompaniesProvider>
+      <AuthProvider>
+        <CompaniesProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/" element={<Index />} />
+                <Route path="/dashboard" element={
+                  <ProtectedRoute>
+                    <DashboardLayout>
+                      <Dashboard />
+                    </DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/empresas" element={
+                  <ProtectedRoute>
+                    <DashboardLayout>
+                      <Empresas />
+                    </DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/usuarios" element={
+                  <ProtectedRoute>
+                    <DashboardLayout>
+                      <Usuarios />
+                    </DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/consultas-sql" element={
+                  <ProtectedRoute>
+                    <DashboardLayout>
+                      <ConsultasSQL />
+                    </DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/sql-server" element={
+                  <ProtectedRoute>
+                    <DashboardLayout>
+                      <SQLServer />
+                    </DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/relatorios" element={
+                  <ProtectedRoute>
+                    <DashboardLayout>
+                      <Relatorios />
+                    </DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/planos" element={
+                  <ProtectedRoute>
+                    <DashboardLayout>
+                      <Planos />
+                    </DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/financeiro" element={
+                  <ProtectedRoute>
+                    <DashboardLayout>
+                      <Financeiro />
+                    </DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/webhooks" element={
+                  <ProtectedRoute>
+                    <DashboardLayout>
+                      <Webhooks />
+                    </DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/configuracao" element={
+                  <ProtectedRoute>
+                    <DashboardLayout>
+                      <Configuracao />
+                    </DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/configuracao-sistema" element={
+                  <ProtectedRoute>
+                    <DashboardLayout>
+                      <ConfiguracaoSistema />
+                    </DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/agendamentos" element={
+                  <ProtectedRoute>
+                    <DashboardLayout>
+                      <Agendamentos />
+                    </DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/agendamento/:id?" element={
+                  <ProtectedRoute>
+                    <DashboardLayout>
+                      <Agendamento />
+                    </DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/404" element={<NotFound />} />
+                <Route path="*" element={<Navigate to="/404" replace />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </CompaniesProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
