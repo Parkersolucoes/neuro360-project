@@ -2,10 +2,12 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { useCompanies } from '@/hooks/useCompanies';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface SystemConfig {
   id: string;
+  company_id: string;
   config_key: string;
   config_value: any;
   description: string | null;
@@ -19,14 +21,22 @@ export function useSystemConfigs() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { isAdmin } = useAdminAuth();
+  const { currentCompany } = useCompanies();
 
   const fetchConfigs = async () => {
+    if (!currentCompany?.id) {
+      setConfigs([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
 
       const { data, error } = await supabase
         .from('system_configs')
         .select('*')
+        .eq('company_id', currentCompany.id)
         .order('config_key', { ascending: true });
 
       if (error) throw error;
@@ -52,13 +62,16 @@ export function useSystemConfigs() {
     return config ? config.config_value : defaultValue;
   };
 
-  const createConfig = async (configData: Omit<SystemConfig, 'id' | 'created_at' | 'updated_at'>) => {
+  const createConfig = async (configData: Omit<SystemConfig, 'id' | 'created_at' | 'updated_at' | 'company_id'>) => {
     try {
-      if (!isAdmin) throw new Error('Acesso negado');
+      if (!isAdmin || !currentCompany?.id) throw new Error('Acesso negado');
 
       const { data, error } = await supabase
         .from('system_configs')
-        .insert(configData)
+        .insert({
+          ...configData,
+          company_id: currentCompany.id
+        })
         .select()
         .single();
 
@@ -84,12 +97,13 @@ export function useSystemConfigs() {
 
   const updateConfig = async (id: string, updates: Partial<SystemConfig>) => {
     try {
-      if (!isAdmin) throw new Error('Acesso negado');
+      if (!isAdmin || !currentCompany?.id) throw new Error('Acesso negado');
 
       const { data, error } = await supabase
         .from('system_configs')
         .update(updates)
         .eq('id', id)
+        .eq('company_id', currentCompany.id)
         .select()
         .single();
 
@@ -115,12 +129,13 @@ export function useSystemConfigs() {
 
   const deleteConfig = async (id: string) => {
     try {
-      if (!isAdmin) throw new Error('Acesso negado');
+      if (!isAdmin || !currentCompany?.id) throw new Error('Acesso negado');
 
       const { error } = await supabase
         .from('system_configs')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('company_id', currentCompany.id);
 
       if (error) throw error;
 
@@ -143,7 +158,7 @@ export function useSystemConfigs() {
 
   useEffect(() => {
     fetchConfigs();
-  }, []);
+  }, [currentCompany?.id]);
 
   return {
     configs,

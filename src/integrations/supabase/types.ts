@@ -441,6 +441,7 @@ export type Database = {
       }
       system_configs: {
         Row: {
+          company_id: string
           config_key: string
           config_value: Json
           created_at: string
@@ -450,6 +451,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          company_id: string
           config_key: string
           config_value?: Json
           created_at?: string
@@ -459,6 +461,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          company_id?: string
           config_key?: string
           config_value?: Json
           created_at?: string
@@ -467,7 +470,15 @@ export type Database = {
           is_public?: boolean
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "system_configs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       system_logs: {
         Row: {

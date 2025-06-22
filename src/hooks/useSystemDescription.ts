@@ -1,22 +1,31 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useCompanies } from '@/hooks/useCompanies';
 
 export function useSystemDescription() {
   const [systemDescription, setSystemDescription] = useState<string>('Soluções em Dados');
   const [loading, setLoading] = useState(true);
+  const { currentCompany } = useCompanies();
 
   const fetchSystemDescription = async () => {
+    if (!currentCompany?.id) {
+      setSystemDescription('Soluções em Dados');
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       
       const { data, error } = await supabase
         .from('system_configs')
         .select('config_value')
+        .eq('company_id', currentCompany.id)
         .eq('config_key', 'system_appearance')
         .single();
 
-      if (error) {
+      if (error && error.code !== 'PGRST116') {
         console.log('System appearance config not found, using default');
         setSystemDescription('Soluções em Dados');
         return;
@@ -44,7 +53,7 @@ export function useSystemDescription() {
 
   useEffect(() => {
     fetchSystemDescription();
-  }, []);
+  }, [currentCompany?.id]);
 
   return {
     systemDescription,
