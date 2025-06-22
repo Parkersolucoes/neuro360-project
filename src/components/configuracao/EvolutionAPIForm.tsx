@@ -22,8 +22,7 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
 
   const [evolutionForm, setEvolutionForm] = useState({
     instance_name: "",
-    instance_token: "",
-    webhook_url: ""
+    instance_token: ""
   });
 
   const [isTesting, setIsTesting] = useState(false);
@@ -34,15 +33,13 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
       console.log('EvolutionAPIForm: Loading existing config:', evolutionConfig);
       setEvolutionForm({
         instance_name: evolutionConfig.instance_name || "",
-        instance_token: evolutionConfig.api_key || "", // Reutilizando o campo api_key como token da instância
-        webhook_url: evolutionConfig.webhook_url || ""
+        instance_token: evolutionConfig.api_key || "" // Reutilizando o campo api_key como token da instância
       });
     } else {
       console.log('EvolutionAPIForm: No existing config, using defaults');
       setEvolutionForm({
         instance_name: "",
-        instance_token: "",
-        webhook_url: ""
+        instance_token: ""
       });
     }
   }, [evolutionConfig]);
@@ -96,7 +93,6 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
         instance_name: evolutionForm.instance_name,
         api_key: evolutionForm.instance_token,
         api_url: base_url,
-        webhook_url: evolutionForm.webhook_url,
         company_id: companyId
       });
 
@@ -104,7 +100,7 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
         instance_name: evolutionForm.instance_name,
         api_key: evolutionForm.instance_token, // Salvando como api_key para compatibilidade
         api_url: base_url, // Usando a URL base global
-        webhook_url: evolutionForm.webhook_url,
+        webhook_url: null, // Não mais necessário
         company_id: companyId,
         is_active: true,
         status: 'disconnected' as const
@@ -157,23 +153,21 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
       if (isConnected) {
         toast({
           title: "Sucesso",
-          description: "Conexão com a instância Evolution API estabelecida com sucesso!",
+          description: "Conexão com a instância Evolution API estabelecida com sucesso! Agora você pode gerar o QR Code na página QR Code.",
         });
         
         logInfo('Conexão com instância Evolution API estabelecida com sucesso', 'EvolutionAPIForm');
         
-        // Atualizar status no banco se a configuração já existe
-        if (evolutionConfig) {
-          await saveConfig({
-            instance_name: evolutionForm.instance_name,
-            api_key: evolutionForm.instance_token,
-            api_url: base_url,
-            webhook_url: evolutionForm.webhook_url,
-            company_id: companyId,
-            is_active: true,
-            status: 'connected' as const
-          });
-        }
+        // Salvar configuração com status conectado após teste bem-sucedido
+        await saveConfig({
+          instance_name: evolutionForm.instance_name,
+          api_key: evolutionForm.instance_token,
+          api_url: base_url,
+          webhook_url: null,
+          company_id: companyId,
+          is_active: true,
+          status: 'connected' as const
+        });
       } else {
         const errorMsg = "Não foi possível conectar com a instância Evolution API. Verifique o token da instância.";
         logError(errorMsg, 'EvolutionAPIForm');
@@ -269,19 +263,7 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
               Token de acesso específico desta instância
             </p>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="evolution_webhook">Webhook URL (Opcional)</Label>
-            <Input
-              id="evolution_webhook"
-              value={evolutionForm.webhook_url}
-              onChange={(e) => setEvolutionForm({...evolutionForm, webhook_url: e.target.value})}
-              placeholder="https://seusite.com/webhook"
-              className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-            />
-            <p className="text-sm text-gray-500">
-              URL para receber eventos desta instância
-            </p>
-          </div>
+          
           <div className="flex space-x-2">
             <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
               <Save className="w-4 h-4 mr-2" />
@@ -298,6 +280,14 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
               {isTesting ? "Testando..." : "Testar Conexão"}
             </Button>
           </div>
+          
+          {evolutionConfig?.status === 'connected' && (
+            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-sm text-green-800">
+                <strong>✓ Configuração validada!</strong> Agora você pode acessar a página <strong>QR Code</strong> no menu principal para gerar e conectar sua instância WhatsApp.
+              </p>
+            </div>
+          )}
         </form>
       </CardContent>
     </Card>
