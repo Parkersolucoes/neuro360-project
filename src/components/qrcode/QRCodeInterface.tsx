@@ -57,14 +57,14 @@ export function QRCodeInterface() {
   }, [timer, qrCodeData, connectionStatus]);
 
   const sendInstanceToWebhook = async (instanceName: string) => {
-    if (!integration?.webhook_url) {
+    if (!integration?.qrcode_webhook_url) {
       console.log('Nenhuma URL de webhook configurada');
       return;
     }
 
     try {
       console.log('Enviando nome da instância para webhook:', instanceName);
-      console.log('URL do webhook:', integration.webhook_url);
+      console.log('URL do webhook:', integration.qrcode_webhook_url);
 
       const payload = {
         event: 'qr_code_generated',
@@ -77,7 +77,7 @@ export function QRCodeInterface() {
         }
       };
 
-      const response = await fetch(integration.webhook_url, {
+      const response = await fetch(integration.qrcode_webhook_url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -213,10 +213,10 @@ export function QRCodeInterface() {
               </p>
             </div>
 
-            {integration?.webhook_url && (
+            {integration?.qrcode_webhook_url && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <p className="text-sm text-blue-800">
-                  ✅ Webhook configurado: {integration.webhook_url}
+                  ✅ Webhook configurado: {integration.qrcode_webhook_url}
                 </p>
                 <p className="text-xs text-blue-600 mt-1">
                   O nome da instância será enviado para este webhook ao gerar o QR Code
@@ -224,7 +224,7 @@ export function QRCodeInterface() {
               </div>
             )}
 
-            {!integration?.webhook_url && (
+            {!integration?.qrcode_webhook_url && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                 <p className="text-sm text-yellow-800">
                   ⚠️ Nenhum webhook configurado

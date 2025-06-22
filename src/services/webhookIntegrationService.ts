@@ -24,18 +24,14 @@ export class WebhookIntegrationService {
   static async create(integrationData: CreateWebhookIntegrationData): Promise<WebhookIntegration> {
     console.log('📝 WebhookIntegrationService: Creating webhook integration with data:', integrationData);
     
-    // Verificar se o usuário está autenticado
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       throw new Error('Usuário não autenticado');
     }
 
-    console.log('👤 WebhookIntegrationService: Authenticated user:', user.id);
-
     const insertData = {
       company_id: integrationData.company_id,
-      webhook_name: integrationData.webhook_name,
-      webhook_url: integrationData.webhook_url,
+      qrcode_webhook_url: integrationData.qrcode_webhook_url,
       is_active: integrationData.is_active,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -51,9 +47,6 @@ export class WebhookIntegrationService {
 
     if (error) {
       console.error('❌ WebhookIntegrationService: Error creating webhook integration:', error);
-      console.error('❌ WebhookIntegrationService: Error details:', error.details);
-      console.error('❌ WebhookIntegrationService: Error hint:', error.hint);
-      console.error('❌ WebhookIntegrationService: Error message:', error.message);
       throw error;
     }
 
@@ -64,17 +57,13 @@ export class WebhookIntegrationService {
   static async update(id: string, updates: UpdateWebhookIntegrationData): Promise<WebhookIntegration> {
     console.log('🔄 WebhookIntegrationService: Updating webhook integration:', id, 'with data:', updates);
     
-    // Verificar se o usuário está autenticado
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       throw new Error('Usuário não autenticado');
     }
 
-    console.log('👤 WebhookIntegrationService: Authenticated user:', user.id);
-
     const updateData = {
-      webhook_name: updates.webhook_name,
-      webhook_url: updates.webhook_url,
+      qrcode_webhook_url: updates.qrcode_webhook_url,
       is_active: updates.is_active,
       updated_at: new Date().toISOString()
     };
@@ -90,9 +79,6 @@ export class WebhookIntegrationService {
 
     if (error) {
       console.error('❌ WebhookIntegrationService: Error updating webhook integration:', error);
-      console.error('❌ WebhookIntegrationService: Error details:', error.details);
-      console.error('❌ WebhookIntegrationService: Error hint:', error.hint);
-      console.error('❌ WebhookIntegrationService: Error message:', error.message);
       throw error;
     }
 

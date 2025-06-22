@@ -29,7 +29,7 @@ export function useWebhookIntegration(companyId?: string) {
       console.error('❌ useWebhookIntegration: Error fetching webhook integration:', error);
       toast({
         title: "Erro",
-        description: "Erro ao carregar integração webhook",
+        description: "Erro ao carregar configuração webhook",
         variant: "destructive"
       });
     } finally {
@@ -37,7 +37,7 @@ export function useWebhookIntegration(companyId?: string) {
     }
   };
 
-  const saveIntegration = async (integrationData: UpdateWebhookIntegrationData & { company_id: string; webhook_url: string }) => {
+  const saveIntegration = async (integrationData: UpdateWebhookIntegrationData & { company_id: string; qrcode_webhook_url: string }) => {
     if (!companyId) {
       console.error('❌ useWebhookIntegration: Company ID is required');
       throw new Error('Company ID is required');
@@ -52,16 +52,14 @@ export function useWebhookIntegration(companyId?: string) {
       if (integration && integration.id) {
         console.log('🔄 useWebhookIntegration: Updating existing integration:', integration.id);
         savedIntegration = await WebhookIntegrationService.update(integration.id, {
-          webhook_name: integrationData.webhook_name,
-          webhook_url: integrationData.webhook_url,
+          qrcode_webhook_url: integrationData.qrcode_webhook_url,
           is_active: integrationData.is_active !== undefined ? integrationData.is_active : true
         });
       } else {
         console.log('📝 useWebhookIntegration: Creating new integration for company:', companyId);
         savedIntegration = await WebhookIntegrationService.create({
           company_id: companyId,
-          webhook_name: integrationData.webhook_name || "Webhook Integração QrCode",
-          webhook_url: integrationData.webhook_url,
+          qrcode_webhook_url: integrationData.qrcode_webhook_url,
           is_active: integrationData.is_active !== undefined ? integrationData.is_active : true
         });
       }
@@ -72,14 +70,14 @@ export function useWebhookIntegration(companyId?: string) {
       
       toast({
         title: "Sucesso",
-        description: "Integração webhook salva com sucesso!"
+        description: "Configuração webhook salva com sucesso!"
       });
       
       return savedIntegration;
     } catch (error) {
       console.error('❌ useWebhookIntegration: Error saving webhook integration:', error);
       
-      let errorMessage = "Erro ao salvar integração webhook";
+      let errorMessage = "Erro ao salvar configuração webhook";
       
       if (error instanceof Error) {
         if (error.message.includes('violates row-level security')) {

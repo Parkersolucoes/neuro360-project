@@ -15,31 +15,24 @@ interface WebhookIntegrationFormProps {
 export function WebhookIntegrationForm({ companyId }: WebhookIntegrationFormProps) {
   const { integration, saveIntegration, loading } = useWebhookIntegration(companyId);
   
-  const [form, setForm] = useState({
-    webhook_name: "",
-    webhook_url: ""
-  });
-
+  const [qrcodeWebhookUrl, setQrcodeWebhookUrl] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     console.log('🔄 WebhookIntegrationForm: Integration updated:', integration);
     if (integration) {
-      setForm({
-        webhook_name: integration.webhook_name || "",
-        webhook_url: integration.webhook_url || ""
-      });
+      setQrcodeWebhookUrl(integration.qrcode_webhook_url || "");
     }
   }, [integration]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('📤 WebhookIntegrationForm: Form submitted with data:', form);
+    console.log('📤 WebhookIntegrationForm: Form submitted with URL:', qrcodeWebhookUrl);
     console.log('📤 WebhookIntegrationForm: Company ID:', companyId);
     
-    if (!form.webhook_url.trim()) {
-      console.warn('⚠️ WebhookIntegrationForm: Webhook URL is required');
+    if (!qrcodeWebhookUrl.trim()) {
+      console.warn('⚠️ WebhookIntegrationForm: URL Gerar QrCode is required');
       return;
     }
     
@@ -48,8 +41,7 @@ export function WebhookIntegrationForm({ companyId }: WebhookIntegrationFormProp
       console.log('💾 WebhookIntegrationForm: Saving integration...');
       
       await saveIntegration({
-        webhook_name: form.webhook_name || "Webhook Integração QrCode",
-        webhook_url: form.webhook_url,
+        qrcode_webhook_url: qrcodeWebhookUrl,
         company_id: companyId,
         is_active: true
       });
@@ -81,9 +73,9 @@ export function WebhookIntegrationForm({ companyId }: WebhookIntegrationFormProp
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Webhook className="w-5 h-5 text-blue-600" />
-            <span>Webhook Integração</span>
+            <span>Webhook QR Code</span>
           </div>
-          {integration && integration.webhook_url && (
+          {integration && integration.qrcode_webhook_url && (
             <Badge className="bg-green-100 text-green-800">
               Configurado
             </Badge>
@@ -91,50 +83,29 @@ export function WebhookIntegrationForm({ companyId }: WebhookIntegrationFormProp
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {/* Debug info - Remover em produção */}
-        <div className="mb-4 p-2 bg-gray-100 rounded text-xs">
-          <p>Company ID: {companyId}</p>
-          <p>Integration ID: {integration?.id || 'Novo'}</p>
-          <p>Current URL: {integration?.webhook_url || 'Não configurado'}</p>
-        </div>
-        
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="webhook_name">Nome da Integração</Label>
+            <Label htmlFor="qrcode_webhook_url">URL Gerar QrCode *</Label>
             <Input
-              id="webhook_name"
-              value={form.webhook_name}
-              onChange={(e) => setForm({...form, webhook_name: e.target.value})}
+              id="qrcode_webhook_url"
+              value={qrcodeWebhookUrl}
+              onChange={(e) => setQrcodeWebhookUrl(e.target.value)}
               className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-              placeholder="Webhook Integração QrCode"
-            />
-            <p className="text-sm text-gray-500">
-              Nome identificador para a integração webhook
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="webhook_url">URL do Webhook *</Label>
-            <Input
-              id="webhook_url"
-              value={form.webhook_url}
-              onChange={(e) => setForm({...form, webhook_url: e.target.value})}
-              className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-              placeholder="https://seu-servidor.com/webhook/whatsapp"
+              placeholder="https://seu-servidor.com/webhook/qrcode"
               required
             />
             <p className="text-sm text-gray-500">
-              URL completa onde os webhooks serão enviados
+              URL onde será enviado o nome da instância ao gerar QR Code
             </p>
           </div>
           
           <Button 
             type="submit" 
             className="bg-blue-600 hover:bg-blue-700"
-            disabled={isSaving || !form.webhook_url.trim()}
+            disabled={isSaving || !qrcodeWebhookUrl.trim()}
           >
             <Save className="w-4 h-4 mr-2" />
-            {isSaving ? "Salvando..." : "Salvar Integração"}
+            {isSaving ? "Salvando..." : "Salvar Configuração"}
           </Button>
         </form>
       </CardContent>
