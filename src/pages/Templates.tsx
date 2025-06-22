@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { Plus } from "lucide-react";
@@ -14,7 +14,7 @@ import { TemplateEmptyState } from "@/components/templates/TemplateEmptyState";
 
 export default function Templates() {
   const { toast } = useToast();
-  const { templates, planTemplates, loading, createTemplate, updateTemplate, deleteTemplate, linkTemplateToPlan, unlinkTemplateFromPlan } = useTemplates();
+  const { templates, planTemplates, loading, createTemplate, updateTemplate, deleteTemplate, linkTemplateToPlan, unlinkTemplateFromPlan, createDefaultTemplates } = useTemplates();
   const { plans } = usePlans();
   const { userLogin } = useAuth();
   const { currentCompany } = useCompanies();
@@ -43,9 +43,15 @@ export default function Templates() {
     { value: "notification", label: "Notificação" }
   ];
 
+  // Criar templates padrão ao carregar a página se não houver nenhum
+  useEffect(() => {
+    if (!loading && templates.length === 0 && currentCompany) {
+      createDefaultTemplates();
+    }
+  }, [loading, templates.length, currentCompany]);
+
   const saveTemplate = async () => {
     try {
-      // Validações básicas
       if (!newTemplate.name.trim()) {
         toast({
           title: "Erro",
@@ -64,7 +70,6 @@ export default function Templates() {
         return;
       }
 
-      // Preparar dados do template
       const templateData = {
         name: newTemplate.name.trim(),
         description: newTemplate.description.trim() || undefined,
@@ -86,19 +91,16 @@ export default function Templates() {
         template = await createTemplate(templateData);
       }
 
-      // Gerenciar associações com planos apenas se o template foi criado/atualizado com sucesso
       if (template && selectedPlans.length > 0) {
         const currentAssociations = planTemplates.filter(pt => pt.template_id === template.id);
         const currentPlanIds = currentAssociations.map(ca => ca.plan_id);
 
-        // Remover associações que não estão mais selecionadas
         for (const planId of currentPlanIds) {
           if (!selectedPlans.includes(planId)) {
             await unlinkTemplateFromPlan(template.id, planId);
           }
         }
 
-        // Adicionar novas associações
         for (const planId of selectedPlans) {
           if (!currentPlanIds.includes(planId)) {
             await linkTemplateToPlan(template.id, planId);
@@ -106,7 +108,6 @@ export default function Templates() {
         }
       }
       
-      // Resetar formulário
       setNewTemplate({ 
         name: "", 
         description: "", 
@@ -147,7 +148,6 @@ export default function Templates() {
       user_id: template.user_id
     });
     
-    // Carregar planos associados
     const associatedPlans = planTemplates
       .filter(pt => pt.template_id === template.id)
       .map(pt => pt.plan_id);
@@ -201,7 +201,7 @@ export default function Templates() {
     return (
       <div className="flex items-center justify-center min-h-96">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
           <p className="text-gray-600 mt-2">Carregando templates...</p>
         </div>
       </div>
@@ -209,16 +209,16 @@ export default function Templates() {
   }
 
   return (
-    <div className="space-y-6 bg-gray-50 min-h-screen p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Templates</h1>
-          <p className="text-gray-600 mt-2">Gerencie os templates de mensagens para WhatsApp</p>
-        </div>
-        <div className="flex space-x-3">
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="bg-blue-600 rounded-t-lg px-6 py-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Templates</h1>
+            <p className="text-blue-100 mt-1">Gerencie os templates de mensagens para WhatsApp</p>
+          </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg">
+              <Button className="bg-white text-blue-600 hover:bg-gray-100 shadow-lg font-medium">
                 <Plus className="w-4 h-4 mr-2" />
                 Novo Template
               </Button>
@@ -237,21 +237,23 @@ export default function Templates() {
             />
           </Dialog>
         </div>
+
+        <div className="bg-white rounded-b-lg shadow-lg">
+          {templates.length === 0 && !loading && (
+            <TemplateEmptyState onCreateTemplate={() => setIsDialogOpen(true)} />
+          )}
+
+          {templates.length > 0 && (
+            <TemplateList
+              templates={templates}
+              onEditTemplate={editTemplate}
+              onDeleteTemplate={handleDeleteTemplate}
+              getTypeLabel={getTypeLabel}
+              getAssociatedPlans={getAssociatedPlans}
+            />
+          )}
+        </div>
       </div>
-
-      {templates.length === 0 && !loading && (
-        <TemplateEmptyState onCreateTemplate={() => setIsDialogOpen(true)} />
-      )}
-
-      {templates.length > 0 && (
-        <TemplateList
-          templates={templates}
-          onEditTemplate={editTemplate}
-          onDeleteTemplate={handleDeleteTemplate}
-          getTypeLabel={getTypeLabel}
-          getAssociatedPlans={getAssociatedPlans}
-        />
-      )}
     </div>
   );
 }

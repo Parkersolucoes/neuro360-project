@@ -46,40 +46,40 @@ export function TemplateDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white">
-        <DialogHeader className="bg-indigo-50 -mx-6 -mt-6 px-6 py-4 border-b">
-          <DialogTitle className="text-indigo-800 text-xl font-semibold">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto bg-white">
+        <DialogHeader className="bg-blue-50 -mx-6 -mt-6 px-6 py-4 border-b border-blue-200">
+          <DialogTitle className="text-blue-800 text-xl font-semibold">
             {editingTemplate ? "Editar Template" : "Novo Template"}
           </DialogTitle>
         </DialogHeader>
-        <div className="grid grid-cols-2 gap-6 pt-6">
-          <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-8 pt-6">
+          <div className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="name" className="text-gray-700 font-medium">Nome do Template *</Label>
+              <Label htmlFor="name" className="text-gray-700 font-medium text-sm">Nome do Template *</Label>
               <Input
                 id="name"
                 placeholder="Nome do template"
                 value={newTemplate.name}
                 onChange={(e) => setNewTemplate({...newTemplate, name: e.target.value})}
-                className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 bg-white"
+                className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 bg-white"
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="description" className="text-gray-700 font-medium">Descrição</Label>
+              <Label htmlFor="description" className="text-gray-700 font-medium text-sm">Descrição</Label>
               <Input
                 id="description"
                 placeholder="Descrição do template"
                 value={newTemplate.description}
                 onChange={(e) => setNewTemplate({...newTemplate, description: e.target.value})}
-                className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 bg-white"
+                className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 bg-white"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="type" className="text-gray-700 font-medium">Tipo</Label>
+              <Label htmlFor="type" className="text-gray-700 font-medium text-sm">Tipo</Label>
               <Select value={newTemplate.type} onValueChange={(value) => setNewTemplate({...newTemplate, type: value})}>
-                <SelectTrigger className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 bg-white">
+                <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 bg-white">
                   <SelectValue placeholder="Selecione o tipo" />
                 </SelectTrigger>
                 <SelectContent className="bg-white">
@@ -93,33 +93,34 @@ export function TemplateDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="content" className="text-gray-700 font-medium">Conteúdo *</Label>
+              <Label htmlFor="content" className="text-gray-700 font-medium text-sm">Conteúdo *</Label>
               <Textarea
                 id="content"
                 placeholder="Digite o conteúdo do template..."
                 value={newTemplate.content}
                 onChange={(e) => setNewTemplate({...newTemplate, content: e.target.value})}
-                className="min-h-32 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 bg-white"
+                className="min-h-40 border-gray-300 focus:border-blue-500 focus:ring-blue-500 bg-white resize-none"
+                rows={8}
               />
             </div>
 
-            <div className="flex items-center space-x-2 p-3 bg-indigo-50 rounded-lg">
+            <div className="flex items-center space-x-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
               <Switch
                 id="is_active"
                 checked={newTemplate.is_active}
                 onCheckedChange={(checked) => setNewTemplate({...newTemplate, is_active: checked})}
               />
-              <Label htmlFor="is_active" className="text-indigo-700 font-medium">Template Ativo</Label>
+              <Label htmlFor="is_active" className="text-blue-700 font-medium text-sm">Template Ativo</Label>
             </div>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div>
               <Label className="text-base font-medium mb-3 block text-gray-700">Planos Associados</Label>
               <p className="text-sm text-gray-600 mb-4">Selecione os planos que terão acesso a este template:</p>
-              <div className="space-y-3 border border-gray-200 rounded-lg p-4 max-h-64 overflow-y-auto bg-gray-50">
+              <div className="space-y-3 border border-gray-200 rounded-lg p-4 max-h-80 overflow-y-auto bg-gray-50">
                 {plans.map((plan) => (
-                  <div key={plan.id} className="flex items-center space-x-3 p-2 bg-white rounded border">
+                  <div key={plan.id} className="flex items-center space-x-3 p-3 bg-white rounded-md border border-gray-100 hover:border-blue-200 transition-colors">
                     <Checkbox
                       id={`plan-${plan.id}`}
                       checked={selectedPlans.includes(plan.id)}
@@ -128,7 +129,7 @@ export function TemplateDialog({
                     <Label htmlFor={`plan-${plan.id}`} className="flex-1 cursor-pointer">
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-gray-800">{plan.name}</span>
-                        <Badge variant="outline" className="text-xs bg-indigo-100 text-indigo-800">
+                        <Badge variant="outline" className="text-xs bg-blue-100 text-blue-800 border-blue-200">
                           R$ {plan.price.toFixed(2)}
                         </Badge>
                       </div>
@@ -138,19 +139,26 @@ export function TemplateDialog({
                     </Label>
                   </div>
                 ))}
+                {plans.length === 0 && (
+                  <p className="text-gray-500 text-center py-4">Nenhum plano disponível</p>
+                )}
               </div>
             </div>
           </div>
         </div>
         
-        <div className="flex justify-end space-x-2 mt-6 pt-4 border-t bg-gray-50 -mx-6 -mb-6 px-6 pb-6">
-          <Button variant="outline" onClick={onClose} className="border-gray-300 text-gray-700 hover:bg-gray-50">
+        <div className="flex justify-end space-x-3 mt-8 pt-6 border-t border-gray-200 bg-gray-50 -mx-6 -mb-6 px-6 pb-6">
+          <Button 
+            variant="outline" 
+            onClick={onClose} 
+            className="border-gray-300 text-gray-700 hover:bg-gray-100 px-6"
+          >
             Cancelar
           </Button>
           <Button 
             onClick={onSave} 
             disabled={!newTemplate.name.trim() || !newTemplate.content.trim()}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg"
+            className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg px-6 font-medium"
           >
             {editingTemplate ? "Atualizar" : "Criar"} Template
           </Button>
