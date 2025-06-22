@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { MessageSquare, Save, TestTube } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useEvolutionConfig } from "@/hooks/useEvolutionConfig";
-import { EvolutionApiService } from "@/services/evolutionApiService";
 import { useSystemLogs } from "@/hooks/useSystemLogs";
 
 interface EvolutionAPIFormProps {
@@ -25,7 +24,7 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
     instance_token: ""
   });
 
-  const [isTesting, setIsTesting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Preencher o formulário da Evolution com dados existentes
   useEffect(() => {
@@ -33,7 +32,7 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
       console.log('EvolutionAPIForm: Loading existing config:', evolutionConfig);
       setEvolutionForm({
         instance_name: evolutionConfig.instance_name || "",
-        instance_token: evolutionConfig.api_key || "" // Reutilizando o campo api_key como token da instância
+        instance_token: evolutionConfig.api_key || ""
       });
     } else {
       console.log('EvolutionAPIForm: No existing config, using defaults');
@@ -81,6 +80,8 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
     }
 
     try {
+      setIsSaving(true);
+
       // Obter configuração global
       const globalConfig = localStorage.getItem('evolution_global_config');
       if (!globalConfig) {
@@ -89,24 +90,25 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
 
       const { base_url } = JSON.parse(globalConfig);
 
-      console.log('EvolutionAPIForm: Saving config with data:', {
+      console.log('EvolutionAPIForm: Saving config with validation:', {
         instance_name: evolutionForm.instance_name,
         api_key: evolutionForm.instance_token,
         api_url: base_url,
         company_id: companyId
       });
 
+      // O saveConfig agora inclui validação automática com QR Code
       await saveConfig({
         instance_name: evolutionForm.instance_name,
-        api_key: evolutionForm.instance_token, // Salvando como api_key para compatibilidade
-        api_url: base_url, // Usando a URL base global
-        webhook_url: null, // Não mais necessário
+        api_key: evolutionForm.instance_token,
+        api_url: base_url,
+        webhook_url: null,
         company_id: companyId,
         is_active: true,
-        status: 'disconnected' as const
+        status: 'connected' as const // Será definido automaticamente se a validação passar
       });
 
-      logInfo('Configuração Evolution API da instância salva com sucesso', 'EvolutionAPIForm', {
+      logInfo('Configuração Evolution API da instância salva e validada com sucesso', 'EvolutionAPIForm', {
         companyId,
         instanceName: evolutionForm.instance_name
       });
@@ -114,79 +116,8 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
     } catch (error) {
       console.error('EvolutionAPIForm: Error saving Evolution config:', error);
       logError(`Erro ao salvar configuração Evolution API: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'EvolutionAPIForm', error);
-    }
-  };
-
-  const handleTestConnection = async () => {
-    if (!evolutionForm.instance_name || !evolutionForm.instance_token) {
-      const errorMsg = "Nome da instância e token são obrigatórios para o teste";
-      logError(errorMsg, 'EvolutionAPIForm');
-      toast({
-        title: "Erro",
-        description: errorMsg,
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsTesting(true);
-    
-    try {
-      // Obter configuração global
-      const globalConfig = localStorage.getItem('evolution_global_config');
-      if (!globalConfig) {
-        throw new Error('Configuração global da Evolution API não encontrada. Configure primeiro nas Configurações do Sistema.');
-      }
-
-      const { base_url } = JSON.parse(globalConfig);
-
-      logInfo('Testando conexão com instância Evolution API', 'EvolutionAPIForm', {
-        api_url: base_url,
-        instance_name: evolutionForm.instance_name
-      });
-
-      const isConnected = await EvolutionApiService.testConnection({
-        api_url: base_url,
-        api_key: evolutionForm.instance_token
-      });
-
-      if (isConnected) {
-        toast({
-          title: "Sucesso",
-          description: "Conexão com a instância Evolution API estabelecida com sucesso! Agora você pode gerar o QR Code na página QR Code.",
-        });
-        
-        logInfo('Conexão com instância Evolution API estabelecida com sucesso', 'EvolutionAPIForm');
-        
-        // Salvar configuração com status conectado após teste bem-sucedido
-        await saveConfig({
-          instance_name: evolutionForm.instance_name,
-          api_key: evolutionForm.instance_token,
-          api_url: base_url,
-          webhook_url: null,
-          company_id: companyId,
-          is_active: true,
-          status: 'connected' as const
-        });
-      } else {
-        const errorMsg = "Não foi possível conectar com a instância Evolution API. Verifique o token da instância.";
-        logError(errorMsg, 'EvolutionAPIForm');
-        toast({
-          title: "Erro de Conexão",
-          description: errorMsg,
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error('EvolutionAPIForm: Connection test failed:', error);
-      logError(`Erro ao testar conexão com instância Evolution API: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'EvolutionAPIForm', error);
-      toast({
-        title: "Erro",
-        description: error instanceof Error ? error.message : "Erro ao testar conexão com a instância Evolution API",
-        variant: "destructive"
-      });
     } finally {
-      setIsTesting(false);
+      setIsSaving(false);
     }
   };
 
@@ -219,7 +150,7 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
                 ? "bg-yellow-100 text-yellow-800"
                 : "bg-red-100 text-red-800"
             }>
-              {evolutionConfig.status === 'connected' ? 'Conectado' : 
+              {evolutionConfig.status === 'connected' ? 'Conectado e Validado' : 
                evolutionConfig.status === 'testing' ? 'Testando' : 'Desconectado'}
             </Badge>
           )}
@@ -230,6 +161,9 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
           <p className="text-sm text-blue-800">
             <strong>Nota:</strong> Configure primeiro a URL base e chave global da Evolution API nas 
             <strong> Configurações do Sistema</strong> antes de configurar as instâncias por empresa.
+            <br /><br />
+            <strong>Validação Automática:</strong> Ao salvar, o sistema irá validar automaticamente a configuração 
+            tentando gerar um QR Code através da Evolution API.
           </p>
         </div>
         
@@ -265,26 +199,21 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
           </div>
           
           <div className="flex space-x-2">
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-              <Save className="w-4 h-4 mr-2" />
-              Salvar Configuração
-            </Button>
             <Button 
-              type="button" 
-              variant="outline" 
-              onClick={handleTestConnection}
-              disabled={isTesting}
-              className="border-blue-600 text-blue-600 hover:bg-blue-50"
+              type="submit" 
+              className="bg-blue-600 hover:bg-blue-700"
+              disabled={isSaving}
             >
-              <TestTube className="w-4 h-4 mr-2" />
-              {isTesting ? "Testando..." : "Testar Conexão"}
+              <Save className="w-4 h-4 mr-2" />
+              {isSaving ? "Salvando e Validando..." : "Salvar e Validar Configuração"}
             </Button>
           </div>
           
           {evolutionConfig?.status === 'connected' && (
             <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
               <p className="text-sm text-green-800">
-                <strong>✓ Configuração validada!</strong> Agora você pode acessar a página <strong>QR Code</strong> no menu principal para gerar e conectar sua instância WhatsApp.
+                <strong>✓ Configuração validada com sucesso!</strong> A instância foi testada através da geração de QR Code. 
+                Agora você pode acessar a página <strong>QR Code</strong> no menu principal para conectar sua instância WhatsApp.
               </p>
             </div>
           )}
