@@ -211,6 +211,28 @@ export function useSystemConfig() {
         }
       );
 
+      // Remover imagem anterior se existir
+      if (config?.login_background_image) {
+        try {
+          const oldFileName = config.login_background_image.split('/').pop();
+          if (oldFileName) {
+            const oldFilePath = `${currentCompany.id}/${oldFileName}`;
+            await supabase.storage
+              .from('system-images')
+              .remove([oldFilePath]);
+            
+            logInfo(
+              'Imagem anterior removida',
+              'SystemConfig',
+              { oldFilePath, company_id: currentCompany.id }
+            );
+          }
+        } catch (removeError) {
+          console.warn('Erro ao remover imagem anterior:', removeError);
+          // Não falhar o upload por erro na remoção
+        }
+      }
+
       // Upload para o storage do Supabase
       const { data, error } = await supabase.storage
         .from('system-images')
