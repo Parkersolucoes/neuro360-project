@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import type { SMTPConfig, CreateSMTPConfigData, UpdateSMTPConfigData } from '@/types/smtpConfig';
 
@@ -18,7 +19,10 @@ export class SMTPConfigService {
         throw error;
       }
 
-      return data;
+      return {
+        ...data,
+        status: data.status as 'connected' | 'disconnected' | 'testing'
+      };
     } catch (error) {
       console.error('Error fetching SMTP config:', error);
       throw error;
