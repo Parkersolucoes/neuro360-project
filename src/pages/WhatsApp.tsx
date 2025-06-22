@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,34 +45,72 @@ export default function WhatsApp() {
       console.log('Enviando requisição para webhook:', currentCompany.qr_code);
       console.log('Nome da instância:', instanceName);
       
-      const response = await fetch(currentCompany.qr_code, {
+      // Validar se a URL do webhook é válida
+      let webhookUrl: URL;
+      try {
+        webhookUrl = new URL(currentCompany.qr_code);
+      } catch (urlError) {
+        throw new Error(`URL do webhook inválida: ${currentCompany.qr_code}`);
+      }
+
+      const response = await fetch(webhookUrl.toString(), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
         body: JSON.stringify({
-          instanceName: instanceName,
+          instanceName: instanceName.trim(),
           action: 'generateQR'
         }),
+        // Adicionar timeout para evitar travamento
+        signal: AbortSignal.timeout(30000), // 30 segundos timeout
       });
 
-      console.log('Resposta do webhook:', response.status);
+      console.log('Status da resposta:', response.status);
+      console.log('Headers da resposta:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
-        throw new Error(`Erro do servidor: ${response.status}`);
+        const errorText = await response.text().catch(() => 'Resposta não disponível');
+        console.error('Erro da resposta:', errorText);
+        throw new Error(`Erro do servidor: ${response.status} - ${response.statusText}`);
       }
 
-      const data = await response.json();
+      const contentType = response.headers.get('content-type');
+      let data;
+
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        // Se não for JSON, tentar como texto
+        const textData = await response.text();
+        console.log('Resposta como texto:', textData);
+        
+        // Verificar se é um base64 direto
+        if (textData.startsWith('data:image') || textData.match(/^[A-Za-z0-9+/]+=*$/)) {
+          data = { qrCode: textData };
+        } else {
+          throw new Error('Formato de resposta não reconhecido');
+        }
+      }
+      
       console.log('Dados recebidos:', data);
       
-      // Verificar se a resposta contém o QR code
-      if (data.qrCode || data.base64 || data.image) {
-        const qrCodeBase64 = data.qrCode || data.base64 || data.image;
-        
+      // Verificar se a resposta contém o QR code em diferentes formatos possíveis
+      const qrCodeBase64 = data.qrCode || data.base64 || data.image || data.qr_code || data.data;
+      
+      if (qrCodeBase64) {
         // Verificar se já é um data URL completo ou apenas o base64
-        const qrCodeUrl = qrCodeBase64.startsWith('data:') 
-          ? qrCodeBase64 
-          : `data:image/png;base64,${qrCodeBase64}`;
+        let qrCodeUrl: string;
+        
+        if (qrCodeBase64.startsWith('data:')) {
+          qrCodeUrl = qrCodeBase64;
+        } else if (qrCodeBase64.startsWith('/9j/') || qrCodeBase64.startsWith('iVBORw0KGgoAAAANSUhEUgAA')) {
+          // Base64 de imagem comum
+          qrCodeUrl = `data:image/png;base64,${qrCodeBase64}`;
+        } else {
+          qrCodeUrl = `data:image/png;base64,${qrCodeBase64}`;
+        }
         
         setQrCodeData(qrCodeUrl);
         
@@ -82,15 +119,32 @@ export default function WhatsApp() {
           description: "QR Code gerado com sucesso!",
         });
       } else {
+        console.error('Estrutura da resposta:', data);
         throw new Error("Resposta do servidor não contém QR Code válido");
       }
     } catch (error) {
-      console.error('Erro ao gerar QR Code:', error);
+      console.error('Erro completo ao gerar QR Code:', error);
+      
+      let errorMessage = 'Erro desconhecido';
+      
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        errorMessage = 'Erro de conexão. Verifique se o webhook está acessível e se a URL está correta.';
+      } else if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          errorMessage = 'Timeout: O webhook demorou muito para responder (mais de 30 segundos).';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Erro",
-        description: `Erro ao gerar QR Code: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
+        description: `Erro ao gerar QR Code: ${errorMessage}`,
         variant: "destructive",
       });
+      
+      // Limpar QR code em caso de erro
+      setQrCodeData(null);
     } finally {
       setIsGenerating(false);
     }
@@ -253,6 +307,14 @@ export default function WhatsApp() {
                     src={qrCodeData} 
                     alt="QR Code" 
                     className="w-64 h-64 object-contain"
+                    onError={(e) => {
+                      console.error('Erro ao carregar imagem do QR Code:', e);
+                      toast({
+                        title: "Erro",
+                        description: "Erro ao exibir o QR Code. Formato de imagem inválido.",
+                        variant: "destructive",
+                      });
+                    }}
                   />
                 </div>
                 <p className="text-sm text-gray-600 text-center">
