@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import type { EvolutionConfig } from '@/types/evolutionConfig';
 
@@ -88,7 +89,7 @@ export class EvolutionApiService {
     const requestBody = {
       instanceName: this.config.instance_name,
       token: this.config.api_key,
-      number: numberToUse,
+      number: numberToUse, // Número formatado da empresa no body da requisição
       qrcode: true,
       integration: 'WHATSAPP-BAILEYS',
       webhookUrl: this.config.webhook_url || undefined,
@@ -119,7 +120,7 @@ export class EvolutionApiService {
       // Parâmetros da instância seguindo o modelo especificado
       instance: {
         instanceName: this.config.instance_name,
-        phone: numberToUse,
+        instanceId: undefined, // Será gerado pela API
         webhook_wa_business: this.config.webhook_url || null,
         access_token_wa_business: "",
         status: "created"
@@ -153,7 +154,7 @@ export class EvolutionApiService {
     const requestBody = {
       instanceName: this.config.instance_name,
       token: this.config.api_key,
-      number: numberToUse,
+      number: numberToUse, // Número formatado da empresa no body da requisição
       qrcode: true,
       integration: 'WHATSAPP-BAILEYS',
       webhookUrl: this.config.webhook_url || undefined,
@@ -184,7 +185,7 @@ export class EvolutionApiService {
       // Parâmetros da instância seguindo o modelo especificado
       instance: {
         instanceName: this.config.instance_name,
-        phone: numberToUse,
+        instanceId: undefined, // Será gerado pela API
         webhook_wa_business: this.config.webhook_url || null,
         access_token_wa_business: "",
         status: "created"
