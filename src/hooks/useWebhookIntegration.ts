@@ -35,6 +35,7 @@ export function useWebhookIntegration(companyId?: string) {
     try {
       setLoading(true);
       console.log('🔍 Carregando configuração para empresa:', companyId);
+      console.log('👤 Usuário logado:', userLogin?.name, 'Master:', userLogin?.is_admin === '0');
       
       const { data, error } = await supabase
         .from('webhook_integrations')
@@ -85,13 +86,18 @@ export function useWebhookIntegration(companyId?: string) {
   const saveIntegration = async (data: SaveWebhookData) => {
     try {
       console.log('💾 Salvando configuração:', data);
+      console.log('👤 Usuário:', userLogin?.name, 'ID:', userLogin?.id, 'Master:', userLogin?.is_admin === '0');
 
-      // Verificar se usuário está autenticado usando nosso sistema customizado
+      // Verificar se usuário está autenticado
       if (!userLogin) {
         throw new Error('Usuário não autenticado');
       }
 
-      console.log('👤 Usuário autenticado:', userLogin.name, 'ID:', userLogin.id);
+      // Log detalhado para debug
+      console.log('🔍 Verificando permissões...');
+      console.log('- Usuário ID:', userLogin.id);
+      console.log('- É Master:', userLogin.is_admin === '0');
+      console.log('- Empresa ID:', data.company_id);
 
       let result;
       
@@ -124,6 +130,12 @@ export function useWebhookIntegration(companyId?: string) {
       
       if (result.error) {
         console.error('❌ Erro ao salvar configuração:', result.error);
+        console.error('❌ Detalhes do erro:', {
+          code: result.error.code,
+          message: result.error.message,
+          details: result.error.details,
+          hint: result.error.hint
+        });
         throw result.error;
       }
       
@@ -148,14 +160,15 @@ export function useWebhookIntegration(companyId?: string) {
       return mappedData;
     } catch (error: any) {
       console.error('❌ Erro ao salvar configuração:', error);
+      console.error('❌ Stack trace:', error.stack);
       
       let errorMessage = "Erro ao salvar caminho";
       
       // Tratamento de erros específicos
       if (error?.code === '42501') {
-        errorMessage = "Erro de permissão: Acesso negado";
+        errorMessage = `Erro de permissão: Acesso negado. Usuário: ${userLogin?.name} (Master: ${userLogin?.is_admin === '0'})`;
       } else if (error?.message?.includes('violates row-level security')) {
-        errorMessage = "Erro de permissão: Política de segurança violada";
+        errorMessage = `Erro de política de segurança. Verifique se o usuário ${userLogin?.name} tem permissão para esta empresa.`;
       } else if (error?.message?.includes('not authenticated') || error?.message?.includes('Usuário não autenticado')) {
         errorMessage = "Erro de autenticação: Faça login novamente";
       } else if (error?.message?.includes('duplicate')) {
