@@ -24,10 +24,20 @@ export class WebhookIntegrationService {
   static async create(integrationData: CreateWebhookIntegrationData): Promise<WebhookIntegration> {
     console.log('Creating webhook integration with data:', integrationData);
     
+    // Verificar se o usuário está autenticado
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('Usuário não autenticado');
+    }
+    
+    console.log('Authenticated user:', user.id);
+    
     const { data, error } = await supabase
       .from('webhook_integrations')
       .insert({
-        ...integrationData,
+        company_id: integrationData.company_id,
+        webhook_name: integrationData.webhook_name,
+        is_active: integrationData.is_active,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
@@ -46,10 +56,19 @@ export class WebhookIntegrationService {
   static async update(id: string, updates: UpdateWebhookIntegrationData): Promise<WebhookIntegration> {
     console.log('Updating webhook integration:', id, 'with data:', updates);
     
+    // Verificar se o usuário está autenticado
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('Usuário não autenticado');
+    }
+    
+    console.log('Authenticated user:', user.id);
+    
     const { data, error } = await supabase
       .from('webhook_integrations')
       .update({
-        ...updates,
+        webhook_name: updates.webhook_name,
+        is_active: updates.is_active,
         updated_at: new Date().toISOString()
       })
       .eq('id', id)

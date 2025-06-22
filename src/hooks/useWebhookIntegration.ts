@@ -38,21 +38,21 @@ export function useWebhookIntegration(companyId?: string) {
     }
 
     try {
-      console.log('Saving webhook integration with data:', {
-        ...integrationData,
-        company_id: companyId // Garantir que sempre use o companyId correto
-      });
+      console.log('Saving webhook integration with companyId:', companyId);
+      console.log('Integration data:', integrationData);
 
       let savedIntegration: WebhookIntegration;
       
       if (integration && integration.id) {
+        console.log('Updating existing integration:', integration.id);
         savedIntegration = await WebhookIntegrationService.update(integration.id, {
-          ...integrationData,
-          company_id: companyId // Garantir company_id correto
+          webhook_name: integrationData.webhook_name,
+          is_active: integrationData.is_active !== undefined ? integrationData.is_active : true
         });
       } else {
+        console.log('Creating new integration for company:', companyId);
         savedIntegration = await WebhookIntegrationService.create({
-          company_id: companyId, // Usar o companyId do prop, não do integrationData
+          company_id: companyId,
           webhook_name: integrationData.webhook_name || 'Webhook Integração QrCode',
           is_active: integrationData.is_active !== undefined ? integrationData.is_active : true
         });
