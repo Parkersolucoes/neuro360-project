@@ -2,12 +2,10 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { QrCode, CheckCircle, AlertCircle, Smartphone } from "lucide-react";
+import { QrCode, CheckCircle, AlertCircle, Smartphone, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQRSessions } from "@/hooks/useQRSessions";
-import { QRCodeDisplay } from "./QRCodeDisplay";
 import { QRCodeForm } from "./QRCodeForm";
-import { SessionInfo } from "./SessionInfo";
 import { EvolutionApiService } from "@/services/evolutionApiService";
 
 interface QRCodeGeneratorProps {
@@ -105,7 +103,7 @@ export function QRCodeGenerator({
       startStatusPolling();
     } catch (error) {
       console.error('Error generating QR code:', error);
-      throw error; // Re-throw para que o QRCodeForm possa tratar
+      throw error;
     } finally {
       setIsGenerating(false);
     }
@@ -164,85 +162,70 @@ export function QRCodeGenerator({
     }
   };
 
-  const refreshQRCode = () => {
-    generateQRCode(session?.instance_name || currentCompanyName);
-  };
-
-  // Verificar se há QR Code disponível automaticamente na sessão
-  const hasQRCodeAvailable = session?.qr_code_data && session.qr_code_data.length > 0;
-
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Interface Moderna de Geração de QR Code */}
-      <div className="space-y-6">
-        <QRCodeForm
-          companyName={currentCompanyName}
-          onGenerateQRCode={generateQRCode}
-          isGenerating={isGenerating}
-          qrCodeData={qrCode}
-        />
-        
-        {/* Card de Status da Conexão */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <QrCode className="w-5 h-5 text-blue-500" />
-                <span>Status da Conexão</span>
-              </div>
-              <Badge className={`${
-                sessionStatus === "connected" ? "bg-green-100 text-green-800" :
-                sessionStatus === "waiting" ? "bg-blue-100 text-blue-800" :
-                "bg-red-100 text-red-800"
-              }`}>
-                {sessionStatus === "connected" ? "Conectado" :
-                 sessionStatus === "waiting" ? "Aguardando" : "Desconectado"}
-                {sessionStatus === "connected" && <CheckCircle className="w-3 h-3 ml-1" />}
-                {sessionStatus === "disconnected" && <AlertCircle className="w-3 h-3 ml-1" />}
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800">
-                <strong>Instância:</strong> {session?.instance_name || instanceName}
-                <br />
-                {hasQRCodeAvailable ? (
-                  <span><strong>✓ QR Code disponível:</strong> A instância foi criada automaticamente e o QR Code está pronto para uso.</span>
-                ) : (
-                  <span><strong>Importante:</strong> A instância deve estar criada nas configurações da empresa antes de gerar o QR Code.</span>
-                )}
-              </p>
-            </div>
-            
-            <QRCodeDisplay
-              sessionStatus={hasQRCodeAvailable ? "waiting" : sessionStatus}
-              qrCode={qrCode}
-              currentCompanyName={currentCompanyName}
-              onGenerateQRCode={() => generateQRCode(currentCompanyName)}
-              onRefreshQRCode={refreshQRCode}
-              onDisconnectSession={handleDisconnectSession}
-              isGenerating={isGenerating}
-            />
-          </CardContent>
-        </Card>
-      </div>
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Interface Principal - QR Code Form */}
+      <QRCodeForm
+        companyName={currentCompanyName}
+        onGenerateQRCode={generateQRCode}
+        isGenerating={isGenerating}
+        qrCodeData={qrCode}
+      />
 
-      {/* Informações da Sessão */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Smartphone className="w-5 h-5 text-green-500" />
-            <span>Informações da Sessão</span>
+      {/* Card de Informações da Sessão - Compacto */}
+      <Card className="bg-gradient-to-r from-gray-50 to-blue-50 border-gray-200">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center justify-between text-lg">
+            <div className="flex items-center space-x-2">
+              <Info className="w-5 h-5 text-blue-600" />
+              <span>Status da Conexão</span>
+            </div>
+            <Badge className={`${
+              sessionStatus === "connected" ? "bg-green-100 text-green-800 border-green-300" :
+              sessionStatus === "waiting" ? "bg-blue-100 text-blue-800 border-blue-300" :
+              "bg-red-100 text-red-800 border-red-300"
+            }`}>
+              {sessionStatus === "connected" && <CheckCircle className="w-3 h-3 mr-1" />}
+              {sessionStatus === "disconnected" && <AlertCircle className="w-3 h-3 mr-1" />}
+              {sessionStatus === "connected" ? "Conectado" :
+               sessionStatus === "waiting" ? "Aguardando Conexão" : "Desconectado"}
+            </Badge>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <SessionInfo
-            sessionStatus={sessionStatus}
-            instanceName={session?.instance_name || instanceName}
-            currentCompanyName={currentCompanyName}
-            session={session}
-          />
+        
+        <CardContent className="pt-0">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div className="flex flex-col">
+              <span className="text-gray-600 font-medium">Instância:</span>
+              <span className="text-gray-800">{session?.instance_name || instanceName}</span>
+            </div>
+            
+            <div className="flex flex-col">
+              <span className="text-gray-600 font-medium">Empresa:</span>
+              <span className="text-gray-800">{currentCompanyName}</span>
+            </div>
+            
+            <div className="flex flex-col">
+              <span className="text-gray-600 font-medium">Última Atividade:</span>
+              <span className="text-gray-800">
+                {session?.last_activity ? 
+                  new Date(session.last_activity).toLocaleString() : 
+                  'Nunca conectado'
+                }
+              </span>
+            </div>
+          </div>
+
+          {sessionStatus === "connected" && (
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <button
+                onClick={handleDisconnectSession}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium"
+              >
+                Desconectar Sessão
+              </button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
