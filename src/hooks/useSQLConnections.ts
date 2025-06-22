@@ -7,14 +7,14 @@ import { useAuth } from '@/hooks/useAuth';
 export interface SQLConnection {
   id: string;
   name: string;
-  server: string;
-  database: string;
+  host: string;
+  database_name: string;
   username: string;
-  password: string;
+  password_encrypted: string;
   port: number;
   company_id: string;
-  is_active: boolean;
-  connection_string?: string;
+  connection_type: string;
+  status: string;
   created_at: string;
   updated_at: string;
 }
@@ -22,6 +22,7 @@ export interface SQLConnection {
 export function useSQLConnections() {
   const [connections, setConnections] = useState<SQLConnection[]>([]);
   const [loading, setLoading] = useState(true);
+  const [testing, setTesting] = useState(false);
   const { toast } = useToast();
   const { userLogin } = useAuth();
 
@@ -60,11 +61,7 @@ export function useSQLConnections() {
       
       const { data, error } = await supabase
         .from('sql_connections')
-        .insert({
-          ...connectionData,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
+        .insert(connectionData)
         .select()
         .single();
 
@@ -99,23 +96,19 @@ export function useSQLConnections() {
       
       const demoConnectionData = {
         name: `Demo SQL - ${companyName}`,
-        server: 'demo-server.exemplo.com',
-        database: 'DemoDatabase',
+        host: 'demo-server.exemplo.com',
+        database_name: 'DemoDatabase',
         username: 'demo_user',
-        password: 'demo_password',
+        password_encrypted: 'demo_password',
         port: 1433,
         company_id: companyId,
-        is_active: true,
-        connection_string: `Server=demo-server.exemplo.com,1433;Database=DemoDatabase;User Id=demo_user;Password=demo_password;`
+        connection_type: 'sqlserver',
+        status: 'active'
       };
 
       const { data, error } = await supabase
         .from('sql_connections')
-        .insert({
-          ...demoConnectionData,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
+        .insert(demoConnectionData)
         .select()
         .single();
 
@@ -139,10 +132,7 @@ export function useSQLConnections() {
       
       const { data, error } = await supabase
         .from('sql_connections')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
+        .update(updates)
         .eq('id', id)
         .select()
         .single();
@@ -204,8 +194,9 @@ export function useSQLConnections() {
     }
   };
 
-  const testConnection = async (connectionData: Omit<SQLConnection, 'id' | 'created_at' | 'updated_at'>) => {
+  const testConnection = async (connection: SQLConnection) => {
     try {
+      setTesting(true);
       console.log('useSQLConnections: Testing connection...');
       
       // Simular teste de conexão
@@ -227,6 +218,8 @@ export function useSQLConnections() {
       });
       
       return { success: false, message: "Falha na conexão" };
+    } finally {
+      setTesting(false);
     }
   };
 
@@ -239,6 +232,7 @@ export function useSQLConnections() {
   return {
     connections,
     loading,
+    testing,
     createConnection,
     createDemoConnection,
     updateConnection,
