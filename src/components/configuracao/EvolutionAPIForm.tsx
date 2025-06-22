@@ -25,7 +25,6 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
 
   const [evolutionForm, setEvolutionForm] = useState({
     instance_name: "",
-    instance_token: "",
     webhook_url: ""
   });
 
@@ -37,7 +36,6 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
       console.log('EvolutionAPIForm: Loading existing config:', evolutionConfig);
       setEvolutionForm({
         instance_name: evolutionConfig.instance_name || "",
-        instance_token: evolutionConfig.api_key || "",
         webhook_url: evolutionConfig.webhook_url || ""
       });
     } else {
@@ -47,13 +45,11 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
         const sessionName = generateSessionName(currentCompany.name);
         setEvolutionForm({
           instance_name: sessionName,
-          instance_token: "",
           webhook_url: ""
         });
       } else {
         setEvolutionForm({
           instance_name: "",
-          instance_token: "",
           webhook_url: ""
         });
       }
@@ -65,17 +61,6 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
     
     if (!evolutionForm.instance_name.trim()) {
       const errorMsg = "Nome da instância é obrigatório";
-      logError(errorMsg, 'EvolutionAPIForm');
-      toast({
-        title: "Erro",
-        description: errorMsg,
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!evolutionForm.instance_token.trim()) {
-      const errorMsg = "Token da instância é obrigatório";
       logError(errorMsg, 'EvolutionAPIForm');
       toast({
         title: "Erro",
@@ -101,7 +86,6 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
 
       console.log('EvolutionAPIForm: Saving config with instance creation:', {
         instance_name: evolutionForm.instance_name,
-        api_key: evolutionForm.instance_token,
         webhook_url: evolutionForm.webhook_url,
         company_id: companyId
       });
@@ -109,7 +93,7 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
       // O saveConfig agora inclui criação automática da instância usando configurações globais + empresa
       await saveConfig({
         instance_name: evolutionForm.instance_name,
-        api_key: evolutionForm.instance_token,
+        api_key: '', // Será preenchido automaticamente com configuração global
         api_url: '', // Será preenchido automaticamente com configuração global
         webhook_url: evolutionForm.webhook_url || null,
         company_id: companyId,
@@ -180,11 +164,13 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-blue-800">
             <strong>Criação Automática de Instância:</strong> Esta configuração utilizará automaticamente os dados globais 
-            (URL base e chave principal) configurados nas <strong>Configurações do Sistema</strong> junto com 
-            os dados específicos desta instância para criar uma nova instância no Evolution API.
+            (URL base e chave principal) configurados nas <strong>Configurações do Sistema</strong> para 
+            criar uma nova instância no Evolution API com integração <strong>Baileys</strong>.
             <br /><br />
             <strong>Nome da Sessão:</strong> O nome da instância será gerado automaticamente no formato: 
             <strong>primeiro_nome_da_empresa_YYYYMMDD</strong> ou você pode personalizar.
+            <br /><br />
+            <strong>Token da Instância:</strong> Será gerado automaticamente pela Evolution API durante a criação.
           </p>
         </div>
         
@@ -211,23 +197,7 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
               </Button>
             </div>
             <p className="text-sm text-gray-500">
-              Nome único da instância WhatsApp (será usado para criar nova instância)
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="instance_token">Token da Instância *</Label>
-            <Input
-              id="instance_token"
-              type="password"
-              value={evolutionForm.instance_token}
-              onChange={(e) => setEvolutionForm({...evolutionForm, instance_token: e.target.value})}
-              placeholder="Token específico da instância"
-              className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-              required
-            />
-            <p className="text-sm text-gray-500">
-              Token de acesso específico desta instância
+              Nome único da instância WhatsApp (será usado para criar nova instância com integração Baileys)
             </p>
           </div>
 
@@ -261,7 +231,8 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
             <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
               <p className="text-sm text-green-800">
                 <strong>✓ Instância criada com sucesso!</strong> A instância foi criada no Evolution API 
-                usando as configurações globais do sistema. Agora você pode acessar a página <strong>QR Code</strong> 
+                usando as configurações globais do sistema com integração <strong>Baileys</strong>. 
+                Agora você pode acessar a página <strong>QR Code</strong> 
                 no menu principal para conectar sua instância WhatsApp.
               </p>
             </div>

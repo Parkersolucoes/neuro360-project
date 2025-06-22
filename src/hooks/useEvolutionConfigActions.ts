@@ -60,7 +60,6 @@ export function useEvolutionConfigActions() {
 
   const createInstanceWithValidation = async (config: {
     instance_name: string;
-    api_key: string;
   }): Promise<boolean> => {
     try {
       console.log('useEvolutionConfigActions: Creating Evolution instance:', config);
@@ -144,12 +143,11 @@ export function useEvolutionConfigActions() {
       });
 
       const isValid = await createInstanceWithValidation({
-        instance_name: instanceName,
-        api_key: configData.api_key
+        instance_name: instanceName
       });
 
       if (!isValid) {
-        throw new Error('Configuração inválida: não foi possível criar a instância. Verifique o nome da instância e token.');
+        throw new Error('Configuração inválida: não foi possível criar a instância. Verifique o nome da instância.');
       }
 
       // Se a validação passou, criar a configuração com dados globais + específicos da empresa
@@ -157,6 +155,7 @@ export function useEvolutionConfigActions() {
         ...configData,
         instance_name: instanceName,
         api_url: globalConfig.base_url, // Usar URL da configuração global
+        api_key: globalConfig.global_api_key, // Usar chave global
         company_id: currentCompany.id,
         status: 'connected' as const
       };
@@ -203,7 +202,7 @@ export function useEvolutionConfigActions() {
       }
 
       // Se estamos atualizando dados críticos, validar criando nova instância
-      if (updates.instance_name || updates.api_key) {
+      if (updates.instance_name) {
         // Buscar configuração atual para ter dados completos
         const currentConfig = await EvolutionConfigService.fetchByCompanyId(currentCompany.id);
         
@@ -211,7 +210,7 @@ export function useEvolutionConfigActions() {
           throw new Error('Configuração atual não encontrada');
         }
 
-        let instanceName = updates.instance_name || currentConfig.instance_name;
+        let instanceName = updates.instance_name;
         
         // Se não há nome de instância definido, gerar um novo
         if (!instanceName) {
@@ -219,17 +218,14 @@ export function useEvolutionConfigActions() {
           updates.instance_name = instanceName;
         }
 
-        const configToValidate = {
-          instance_name: instanceName,
-          api_key: updates.api_key || currentConfig.api_key
-        };
-
         toast({
           title: "Validando alterações",
           description: "Criando nova instância para validar as alterações..."
         });
 
-        const isValid = await createInstanceWithValidation(configToValidate);
+        const isValid = await createInstanceWithValidation({
+          instance_name: instanceName
+        });
 
         if (!isValid) {
           throw new Error('Alterações inválidas: não foi possível criar instância com as novas configurações. Verifique os dados informados.');
@@ -238,6 +234,7 @@ export function useEvolutionConfigActions() {
         // Se a validação passou, definir status como 'connected' e atualizar URL da API
         updates.status = 'connected';
         updates.api_url = globalConfig.base_url;
+        updates.api_key = globalConfig.global_api_key;
       }
 
       const updatedConfig = await EvolutionConfigService.update(id, updates);

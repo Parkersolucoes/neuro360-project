@@ -90,9 +90,8 @@ export class EvolutionApiService {
     
     const requestBody = {
       instanceName: this.config.instance_name,
-      token: this.config.api_key,
       qrcode: true,
-      integration: 'WHATSAPP-BAILEYS',
+      integration: 'WHATSAPP-BAILEYS', // Baileys como padrão
       webhookUrl: this.config.webhook_url || undefined,
       webhookByEvents: false,
       webhookBase64: false,
