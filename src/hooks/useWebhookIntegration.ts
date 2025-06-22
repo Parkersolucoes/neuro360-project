@@ -33,14 +33,26 @@ export function useWebhookIntegration(companyId?: string) {
   };
 
   const saveIntegration = async (integrationData: UpdateWebhookIntegrationData & { company_id: string }) => {
+    if (!companyId) {
+      throw new Error('Company ID is required');
+    }
+
     try {
+      console.log('Saving webhook integration with data:', {
+        ...integrationData,
+        company_id: companyId // Garantir que sempre use o companyId correto
+      });
+
       let savedIntegration: WebhookIntegration;
       
       if (integration && integration.id) {
-        savedIntegration = await WebhookIntegrationService.update(integration.id, integrationData);
+        savedIntegration = await WebhookIntegrationService.update(integration.id, {
+          ...integrationData,
+          company_id: companyId // Garantir company_id correto
+        });
       } else {
         savedIntegration = await WebhookIntegrationService.create({
-          company_id: integrationData.company_id,
+          company_id: companyId, // Usar o companyId do prop, não do integrationData
           webhook_name: integrationData.webhook_name || 'Webhook Integração QrCode',
           is_active: integrationData.is_active !== undefined ? integrationData.is_active : true
         });
