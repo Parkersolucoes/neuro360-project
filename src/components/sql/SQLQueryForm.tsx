@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Save, X } from "lucide-react";
-import { useSQLConnections } from "@/hooks/useSQLConnections";
 import { useCompanies } from "@/hooks/useCompanies";
 
 interface SQLQueryFormProps {
@@ -17,14 +16,12 @@ interface SQLQueryFormProps {
 }
 
 export function SQLQueryForm({ query, onSubmit, onCancel }: SQLQueryFormProps) {
-  const { connections } = useSQLConnections();
   const { currentCompany } = useCompanies();
   
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     query_text: "",
-    connection_id: "",
     status: "active"
   });
 
@@ -34,7 +31,6 @@ export function SQLQueryForm({ query, onSubmit, onCancel }: SQLQueryFormProps) {
         name: query.name || "",
         description: query.description || "",
         query_text: query.query_text || "",
-        connection_id: query.connection_id || "",
         status: query.status || "active"
       });
     }
@@ -47,10 +43,6 @@ export function SQLQueryForm({ query, onSubmit, onCancel }: SQLQueryFormProps) {
       company_id: currentCompany?.id
     });
   };
-
-  const availableConnections = connections.filter(conn => 
-    conn.company_id === currentCompany?.id && conn.status === 'active'
-  );
 
   return (
     <Card>
@@ -71,20 +63,17 @@ export function SQLQueryForm({ query, onSubmit, onCancel }: SQLQueryFormProps) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="connection_id">Conexão de Banco *</Label>
+              <Label htmlFor="status">Status</Label>
               <Select 
-                value={formData.connection_id}
-                onValueChange={(value) => setFormData({...formData, connection_id: value})}
+                value={formData.status}
+                onValueChange={(value) => setFormData({...formData, status: value})}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione uma conexão" />
+                  <SelectValue placeholder="Selecione o status" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableConnections.map((connection) => (
-                    <SelectItem key={connection.id} value={connection.id}>
-                      {connection.name}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="active">Ativa</SelectItem>
+                  <SelectItem value="inactive">Inativa</SelectItem>
                 </SelectContent>
               </Select>
             </div>

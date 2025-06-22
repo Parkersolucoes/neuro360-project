@@ -39,6 +39,7 @@ export function Sidebar() {
   const menuItems = [
     { path: "/dashboard", icon: Home, label: "Dashboard" },
     { path: "/agendamentos", icon: Calendar, label: "Agendamentos" },
+    { path: "/consultas-sql", icon: Database, label: "Consultas SQL" },
     { path: "/whatsapp", icon: QrCode, label: "WhatsApp" },
     { path: "/webhooks", icon: Webhook, label: "Webhooks" },
     { path: "/relatorios", icon: BarChart3, label: "Relatórios" },
