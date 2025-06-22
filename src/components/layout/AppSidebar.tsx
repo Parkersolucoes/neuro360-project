@@ -1,9 +1,7 @@
-
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   BarChart3,
-  QrCode,
   Database,
   MessageSquare,
   Calendar,
@@ -44,11 +42,6 @@ const menuItems = [
     title: "Dashboard",
     url: "/dashboard",
     icon: BarChart3,
-  },
-  {
-    title: "QR Code",
-    url: "/qrcode",
-    icon: QrCode,
   },
   {
     title: "Consultas SQL",

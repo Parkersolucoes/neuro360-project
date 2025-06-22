@@ -9,7 +9,6 @@ import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
-import QRCode from "./pages/QRCode";
 import SQLServer from "./pages/SQLServer";
 import ConsultasSQL from "./pages/ConsultasSQL";
 import Agendamento from "./pages/Agendamento";
@@ -48,14 +47,6 @@ function App() {
                   <ProtectedRoute>
                     <DashboardLayout>
                       <Dashboard />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/qrcode" element={
-                  <ProtectedRoute>
-                    <DashboardLayout>
-                      <QRCode />
                     </DashboardLayout>
                   </ProtectedRoute>
                 } />
