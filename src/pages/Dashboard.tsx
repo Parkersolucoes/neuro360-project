@@ -4,12 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import { BarChart3, MessageSquare, Calendar, CheckCircle, AlertTriangle, Activity, Database, Building2 } from "lucide-react";
 import { useCompanies } from "@/hooks/useCompanies";
 import { useSQLConnections } from "@/hooks/useSQLConnections";
-import { useWebhookIntegration } from "@/hooks/useWebhookIntegration";
 
 export default function Dashboard() {
   const { currentCompany, companies } = useCompanies();
   const { connections } = useSQLConnections();
-  const { integration } = useWebhookIntegration(currentCompany?.id);
 
   const stats = [
     {
@@ -53,8 +51,8 @@ export default function Dashboard() {
     },
     {
       type: "info",
-      title: "Nova sessão WhatsApp conectada",
-      description: "Sessão 'vendas-bot' ativa",
+      title: "Nova sessão conectada",
+      description: "Sistema ativo",
       time: "15 min atrás",
       icon: Activity,
       company: currentCompany?.name || "Sistema"
@@ -197,30 +195,6 @@ export default function Dashboard() {
                 </div>
               ))
             )}
-            
-            {/* Webhook Integration Status */}
-            <div className="border-t pt-4 mt-4">
-              <h4 className="text-sm font-medium text-gray-900 mb-3">Webhook QR Code</h4>
-              {integration ? (
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-3 h-3 rounded-full ${
-                      integration.is_active ? 'bg-green-500' : 'bg-red-500'
-                    }`}></div>
-                    <span className="font-medium text-gray-900 text-sm">QR Code Webhook</span>
-                  </div>
-                  <Badge className={
-                    integration.is_active 
-                      ? "bg-green-100 text-green-800" 
-                      : "bg-red-100 text-red-800"
-                  }>
-                    {integration.is_active ? 'Ativo' : 'Inativo'}
-                  </Badge>
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500">Nenhuma integração webhook configurada</p>
-              )}
-            </div>
           </CardContent>
         </Card>
       </div>
