@@ -736,7 +736,8 @@ export type Database = {
           id: string
           is_active: boolean
           updated_at: string
-          webhook_name: string
+          webhook_name: string | null
+          webhook_url: string | null
         }
         Insert: {
           company_id: string
@@ -744,7 +745,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           updated_at?: string
-          webhook_name?: string
+          webhook_name?: string | null
+          webhook_url?: string | null
         }
         Update: {
           company_id?: string
@@ -752,7 +754,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           updated_at?: string
-          webhook_name?: string
+          webhook_name?: string | null
+          webhook_url?: string | null
         }
         Relationships: [
           {

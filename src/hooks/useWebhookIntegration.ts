@@ -32,7 +32,7 @@ export function useWebhookIntegration(companyId?: string) {
     }
   };
 
-  const saveIntegration = async (integrationData: UpdateWebhookIntegrationData & { company_id: string }) => {
+  const saveIntegration = async (integrationData: UpdateWebhookIntegrationData & { company_id: string; webhook_url: string }) => {
     if (!companyId) {
       throw new Error('Company ID is required');
     }
@@ -47,13 +47,15 @@ export function useWebhookIntegration(companyId?: string) {
         console.log('Updating existing integration:', integration.id);
         savedIntegration = await WebhookIntegrationService.update(integration.id, {
           webhook_name: integrationData.webhook_name,
+          webhook_url: integrationData.webhook_url,
           is_active: integrationData.is_active !== undefined ? integrationData.is_active : true
         });
       } else {
         console.log('Creating new integration for company:', companyId);
         savedIntegration = await WebhookIntegrationService.create({
           company_id: companyId,
-          webhook_name: integrationData.webhook_name || 'Webhook Integração QrCode',
+          webhook_name: integrationData.webhook_name || "Webhook Integração QrCode",
+          webhook_url: integrationData.webhook_url,
           is_active: integrationData.is_active !== undefined ? integrationData.is_active : true
         });
       }
