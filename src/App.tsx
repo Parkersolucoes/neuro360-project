@@ -1,177 +1,147 @@
+
+import { Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { CompaniesProvider } from "@/providers/CompaniesProvider";
-import { AuthProvider } from "@/hooks/useAuth";
-import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import Dashboard from "./pages/Dashboard";
-import SQLServer from "./pages/SQLServer";
-import ConsultasSQL from "./pages/ConsultasSQL";
-import Agendamento from "./pages/Agendamento";
-import Agendamentos from "./pages/Agendamentos";
-import WhatsAppConnection from "./pages/WhatsAppConnection";
-import Webhooks from "./pages/Webhooks";
-import Relatorios from "./pages/Relatorios";
-import Usuarios from "./pages/Usuarios";
-import Empresas from "./pages/Empresas";
-import Planos from "./pages/Planos";
-import Financeiro from "./pages/Financeiro";
-import Configuracao from "./pages/Configuracao";
-import ConfiguracaoSistema from "./pages/ConfiguracaoSistema";
-import NotFound from "./pages/NotFound";
-import { DashboardLayout } from "./components/layout/DashboardLayout";
-import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import DashboardLayout from "@/components/layout/DashboardLayout";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import Index from "@/pages/Index";
+import Dashboard from "@/pages/Dashboard";
+import Empresas from "@/pages/Empresas";
+import Usuarios from "@/pages/Usuarios";
+import ConsultasSQL from "@/pages/ConsultasSQL";
+import SQLServer from "@/pages/SQLServer";
+import Auth from "@/pages/Auth";
+import NotFound from "@/pages/NotFound";
+import Relatorios from "@/pages/Relatorios";
+import Planos from "@/pages/Planos";
+import Financeiro from "@/pages/Financeiro";
+import Webhooks from "@/pages/Webhooks";
+import Configuracao from "@/pages/Configuracao";
+import ConfiguracaoSistema from "@/pages/ConfiguracaoSistema";
+import Agendamentos from "@/pages/Agendamentos";
+import Agendamento from "@/pages/Agendamento";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <AuthProvider>
+      <CompaniesProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
           <BrowserRouter>
-            <CompaniesProvider>
-              <Routes>
-                {/* Public routes */}
-                <Route path="/" element={<Index />} />
-                <Route path="/auth" element={<Auth />} />
-                
-                {/* Protected routes */}
-                <Route path="/dashboard" element={
-                  <ProtectedRoute>
-                    <DashboardLayout>
-                      <Dashboard />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/consultas" element={
-                  <ProtectedRoute>
-                    <DashboardLayout>
-                      <SQLServer />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                } />
-
-                <Route path="/consultas-sql" element={
-                  <ProtectedRoute>
-                    <DashboardLayout>
-                      <ConsultasSQL />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/templates" element={
-                  <ProtectedRoute>
-                    <DashboardLayout>
-                      <div className="p-6">
-                        <h1 className="text-3xl font-bold">Templates</h1>
-                        <p className="text-gray-600 mt-2">Funcionalidade em desenvolvimento</p>
-                      </div>
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/agendamento" element={
-                  <ProtectedRoute>
-                    <DashboardLayout>
-                      <Agendamento />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/agendamentos" element={
-                  <ProtectedRoute>
-                    <DashboardLayout>
-                      <Agendamentos />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/whatsapp" element={
-                  <ProtectedRoute>
-                    <DashboardLayout>
-                      <WhatsAppConnection />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/webhooks" element={
-                  <ProtectedRoute>
-                    <DashboardLayout>
-                      <Webhooks />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/relatorios" element={
-                  <ProtectedRoute>
-                    <DashboardLayout>
-                      <Relatorios />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/usuarios" element={
-                  <ProtectedRoute>
-                    <DashboardLayout>
-                      <Usuarios />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/empresas" element={
-                  <ProtectedRoute>
-                    <DashboardLayout>
-                      <Empresas />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/planos" element={
-                  <ProtectedRoute>
-                    <DashboardLayout>
-                      <Planos />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/financeiro" element={
-                  <ProtectedRoute>
-                    <DashboardLayout>
-                      <Financeiro />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/configuracao" element={
-                  <ProtectedRoute>
-                    <DashboardLayout>
-                      <Configuracao />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/configuracao-sistema" element={
-                  <ProtectedRoute>
-                    <DashboardLayout>
-                      <ConfiguracaoSistema />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                } />
-                
-                {/* Catch all route */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </CompaniesProvider>
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/" element={<Index />} />
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <Dashboard />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/empresas" element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <Empresas />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/usuarios" element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <Usuarios />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/consultas-sql" element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <ConsultasSQL />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/sql-server" element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <SQLServer />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/relatorios" element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <Relatorios />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/planos" element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <Planos />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/financeiro" element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <Financeiro />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/webhooks" element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <Webhooks />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/configuracao" element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <Configuracao />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/configuracao-sistema" element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <ConfiguracaoSistema />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/agendamentos" element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <Agendamentos />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/agendamento/:id?" element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <Agendamento />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/404" element={<NotFound />} />
+              <Route path="*" element={<Navigate to="/404" replace />} />
+            </Routes>
           </BrowserRouter>
-        </AuthProvider>
-      </TooltipProvider>
+        </TooltipProvider>
+      </CompaniesProvider>
     </QueryClientProvider>
   );
 }
