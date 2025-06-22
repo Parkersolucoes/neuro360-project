@@ -6,8 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, X } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Save, X, AlertCircle, Database } from "lucide-react";
 import { useCompanies } from "@/hooks/useCompanies";
+import { useSQLConnections } from "@/hooks/useSQLConnections";
 import { useAuth } from "@/hooks/useAuth";
 
 interface SQLQueryFormProps {
@@ -18,14 +20,23 @@ interface SQLQueryFormProps {
 
 export function SQLQueryForm({ query, onSubmit, onCancel }: SQLQueryFormProps) {
   const { currentCompany } = useCompanies();
+  const { connections } = useSQLConnections();
   const { userLogin } = useAuth();
   
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     query_text: "",
-    status: "active"
+    connection_id: "",
+    status: "active" as const
   });
+
+  // Filtrar conexões apenas da empresa atual
+  const companyConnections = connections?.filter(
+    connection => connection.company_id === currentCompany?.id
+  ) || [];
+
+  const selectedConnection = companyConnections.find(conn => conn.id === formData.connection_id);
 
   useEffect(() => {
     if (query) {
@@ -33,6 +44,7 @@ export function SQLQueryForm({ query, onSubmit, onCancel }: SQLQueryFormProps) {
         name: query.name || "",
         description: query.description || "",
         query_text: query.query_text || "",
+        connection_id: query.connection_id || "",
         status: query.status || "active"
       });
     }
@@ -46,10 +58,15 @@ export function SQLQueryForm({ query, onSubmit, onCancel }: SQLQueryFormProps) {
       return;
     }
 
+    if (!formData.connection_id) {
+      console.error('No connection selected');
+      return;
+    }
+
     onSubmit({
       ...formData,
       company_id: currentCompany.id,
-      user_id: userLogin?.id
+      created_by: userLogin?.id
     });
   };
 
@@ -59,6 +76,25 @@ export function SQLQueryForm({ query, onSubmit, onCancel }: SQLQueryFormProps) {
         <CardTitle>{query ? 'Editar Consulta SQL' : 'Nova Consulta SQL'}</CardTitle>
       </CardHeader>
       <CardContent>
+        {!currentCompany && (
+          <Alert className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Selecione uma empresa no menu lateral para criar consultas SQL.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {currentCompany && companyConnections.length === 0 && (
+          <Alert className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Configure pelo menos uma conexão SQL na empresa "{currentCompany.name}" antes de criar consultas.
+              Acesse: Empresas &gt; Configurações &gt; SQL Server
+            </AlertDescription>
+          </Alert>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -75,7 +111,7 @@ export function SQLQueryForm({ query, onSubmit, onCancel }: SQLQueryFormProps) {
               <Label htmlFor="status">Status</Label>
               <Select 
                 value={formData.status}
-                onValueChange={(value) => setFormData({...formData, status: value})}
+                onValueChange={(value: "active" | "inactive") => setFormData({...formData, status: value})}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o status" />
@@ -87,6 +123,46 @@ export function SQLQueryForm({ query, onSubmit, onCancel }: SQLQueryFormProps) {
               </Select>
             </div>
           </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="connection">Conexão de Banco de Dados *</Label>
+            <Select 
+              value={formData.connection_id} 
+              onValueChange={(value) => setFormData({...formData, connection_id: value})}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione qual conexão utilizar" />
+              </SelectTrigger>
+              <SelectContent>
+                {companyConnections.map((connection) => (
+                  <SelectItem key={connection.id} value={connection.id}>
+                    <div className="flex items-center space-x-2">
+                      <Database className="w-4 h-4 text-blue-600" />
+                      <div className="flex flex-col">
+                        <span className="font-medium">{connection.name}</span>
+                        <span className="text-xs text-gray-500">{connection.host}:{connection.port} - {connection.database_name}</span>
+                      </div>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            {selectedConnection && (
+              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-center space-x-2 mb-2">
+                  <Database className="w-4 h-4 text-blue-600" />
+                  <span className="text-sm font-medium text-blue-800">Conexão Selecionada:</span>
+                </div>
+                <div className="text-sm text-blue-700">
+                  <p><strong>{selectedConnection.name}</strong></p>
+                  <p>Servidor: {selectedConnection.host}:{selectedConnection.port}</p>
+                  <p>Database: {selectedConnection.database_name}</p>
+                  <p>Usuário: {selectedConnection.username}</p>
+                </div>
+              </div>
+            )}
+          </div>
           
           <div className="space-y-2">
             <Label htmlFor="description">Descrição</Label>
@@ -94,7 +170,7 @@ export function SQLQueryForm({ query, onSubmit, onCancel }: SQLQueryFormProps) {
               id="description"
               value={formData.description}
               onChange={(e) => setFormData({...formData, description: e.target.value})}
-              placeholder="Descrição da consulta"
+              placeholder="Descrição do que a consulta faz"
             />
           </div>
           
@@ -108,10 +184,17 @@ export function SQLQueryForm({ query, onSubmit, onCancel }: SQLQueryFormProps) {
               className="min-h-[200px] font-mono"
               required
             />
+            <p className="text-xs text-gray-500">
+              Dica: Use consultas SELECT para visualizar dados. Evite comandos que modifiquem dados (INSERT, UPDATE, DELETE).
+            </p>
           </div>
           
           <div className="flex space-x-2">
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+            <Button 
+              type="submit" 
+              className="bg-blue-600 hover:bg-blue-700"
+              disabled={!currentCompany || companyConnections.length === 0 || !formData.name || !formData.query_text || !formData.connection_id}
+            >
               <Save className="w-4 h-4 mr-2" />
               {query ? 'Atualizar' : 'Salvar'} Consulta
             </Button>

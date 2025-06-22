@@ -42,7 +42,16 @@ export function useWhatsAppMessages() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setMessages(data || []);
+      
+      // Garantir que os tipos estão corretos
+      const typedMessages: WhatsAppMessage[] = (data || []).map(msg => ({
+        ...msg,
+        message_type: msg.message_type as 'text' | 'image' | 'audio' | 'video' | 'document',
+        status: msg.status as 'sent' | 'delivered' | 'read' | 'failed',
+        direction: msg.direction as 'inbound' | 'outbound'
+      }));
+      
+      setMessages(typedMessages);
     } catch (error) {
       console.error('Error fetching WhatsApp messages:', error);
       toast({

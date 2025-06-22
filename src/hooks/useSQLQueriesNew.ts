@@ -5,8 +5,27 @@ import { useToast } from '@/hooks/use-toast';
 import { useCompanies } from '@/hooks/useCompanies';
 import { useSystemLogsDB } from '@/hooks/useSystemLogsDB';
 
+export interface SQLQueryNew {
+  id: string;
+  company_id: string;
+  connection_id: string;
+  name: string;
+  description?: string;
+  query_text: string;
+  created_by?: string;
+  status: 'active' | 'inactive';
+  created_at: string;
+  updated_at: string;
+  sql_connections?: {
+    name: string;
+    host: string;
+    port: number;
+    database_name: string;
+  };
+}
+
 export function useSQLQueriesNew() {
-  const [queries, setQueries] = useState<any[]>([]);
+  const [queries, setQueries] = useState<SQLQueryNew[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { currentCompany } = useCompanies();
@@ -23,7 +42,15 @@ export function useSQLQueriesNew() {
       setLoading(true);
       const { data, error } = await supabase
         .from('sql_queries')
-        .select('*')
+        .select(`
+          *,
+          sql_connections (
+            name,
+            host,
+            port,
+            database_name
+          )
+        `)
         .eq('company_id', currentCompany.id)
         .order('created_at', { ascending: false });
 
@@ -43,7 +70,7 @@ export function useSQLQueriesNew() {
     }
   };
 
-  const createQuery = async (queryData: any) => {
+  const createQuery = async (queryData: Omit<SQLQueryNew, 'id' | 'created_at' | 'updated_at' | 'sql_connections'>) => {
     try {
       const { data, error } = await supabase
         .from('sql_queries')
@@ -51,7 +78,15 @@ export function useSQLQueriesNew() {
           ...queryData,
           company_id: currentCompany?.id
         })
-        .select()
+        .select(`
+          *,
+          sql_connections (
+            name,
+            host,
+            port,
+            database_name
+          )
+        `)
         .single();
 
       if (error) throw error;
@@ -76,14 +111,22 @@ export function useSQLQueriesNew() {
     }
   };
 
-  const updateQuery = async (id: string, updates: any) => {
+  const updateQuery = async (id: string, updates: Partial<SQLQueryNew>) => {
     try {
       const { data, error } = await supabase
         .from('sql_queries')
         .update(updates)
         .eq('id', id)
         .eq('company_id', currentCompany?.id)
-        .select()
+        .select(`
+          *,
+          sql_connections (
+            name,
+            host,
+            port,
+            database_name
+          )
+        `)
         .single();
 
       if (error) throw error;

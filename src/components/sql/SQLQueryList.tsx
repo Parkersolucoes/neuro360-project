@@ -2,13 +2,28 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Database, Edit, Trash2, Play } from "lucide-react";
+import { Database, Edit, Trash2, Play, Server } from "lucide-react";
+
+interface SQLQuery {
+  id: string;
+  name: string;
+  description?: string;
+  query_text: string;
+  status: 'active' | 'inactive';
+  created_at: string;
+  sql_connections?: {
+    name: string;
+    host: string;
+    port: number;
+    database_name: string;
+  };
+}
 
 interface SQLQueryListProps {
-  queries: any[];
-  onEdit: (query: any) => void;
+  queries: SQLQuery[];
+  onEdit: (query: SQLQuery) => void;
   onDelete: (queryId: string) => void;
-  onExecute: (query: any) => void;
+  onExecute: (query: SQLQuery) => void;
 }
 
 export function SQLQueryList({ queries, onEdit, onDelete, onExecute }: SQLQueryListProps) {
@@ -35,9 +50,28 @@ export function SQLQueryList({ queries, onEdit, onDelete, onExecute }: SQLQueryL
                     {query.status === 'active' ? 'Ativa' : 'Inativa'}
                   </Badge>
                 </div>
+                
                 {query.description && (
                   <p className="text-sm text-gray-600 mb-2">{query.description}</p>
                 )}
+                
+                {query.sql_connections && (
+                  <div className="flex items-center space-x-1 text-xs text-gray-500 mb-2">
+                    <Server className="w-3 h-3 text-blue-600" />
+                    <span>Conexão: {query.sql_connections.name} ({query.sql_connections.host}:{query.sql_connections.port} - {query.sql_connections.database_name})</span>
+                  </div>
+                )}
+                
+                <div className="bg-gray-50 rounded-md p-2 mb-2">
+                  <div className="text-xs font-medium text-gray-700 mb-1">SQL:</div>
+                  <code className="text-xs text-gray-600 font-mono block">
+                    {query.query_text.length > 100 
+                      ? `${query.query_text.substring(0, 100)}...` 
+                      : query.query_text
+                    }
+                  </code>
+                </div>
+                
                 <p className="text-xs text-gray-400">
                   Criada em: {new Date(query.created_at).toLocaleString()}
                 </p>
