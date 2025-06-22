@@ -38,7 +38,22 @@ export function useSystemConfig() {
       }
 
       if (data?.config_value) {
-        setConfig(data.config_value as SystemConfig);
+        // Validar se o config_value tem a estrutura esperada
+        const configValue = data.config_value as any;
+        if (configValue && typeof configValue === 'object') {
+          setConfig({
+            system_name: configValue.system_name || "Visão 360 - Soluções em Dados",
+            system_description: configValue.system_description || "Plataforma completa para análise e gestão de dados empresariais", 
+            login_background_image: configValue.login_background_image || ""
+          });
+        } else {
+          // Usar valores padrão se a estrutura não estiver correta
+          setConfig({
+            system_name: "Visão 360 - Soluções em Dados",
+            system_description: "Plataforma completa para análise e gestão de dados empresariais",
+            login_background_image: ""
+          });
+        }
       } else {
         // Se não há configuração, usar valores padrão
         setConfig({
@@ -70,6 +85,13 @@ export function useSystemConfig() {
     }
 
     try {
+      // Converter SystemConfig para um objeto JSON compatível
+      const jsonConfigValue = {
+        system_name: configData.system_name,
+        system_description: configData.system_description,
+        login_background_image: configData.login_background_image
+      };
+
       // Verificar se já existe uma configuração
       const { data: existingConfig } = await supabase
         .from('system_configs')
@@ -83,7 +105,7 @@ export function useSystemConfig() {
         const { error } = await supabase
           .from('system_configs')
           .update({
-            config_value: configData,
+            config_value: jsonConfigValue,
             updated_at: new Date().toISOString()
           })
           .eq('id', existingConfig.id);
@@ -96,7 +118,7 @@ export function useSystemConfig() {
           .insert({
             company_id: currentCompany.id,
             config_key: 'system_appearance',
-            config_value: configData,
+            config_value: jsonConfigValue,
             description: 'Configurações de aparência do sistema',
             is_public: true
           });
