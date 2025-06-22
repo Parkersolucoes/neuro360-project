@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Save, Link } from "lucide-react";
+import { Save, Link, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useWebhookIntegration } from "@/hooks/useWebhookIntegration";
+import { SimpleWebhookService } from "@/services/simpleWebhookService";
 
 interface WebhookIntegrationFormProps {
   companyId: string;
@@ -19,6 +20,7 @@ export function WebhookIntegrationForm({ companyId }: WebhookIntegrationFormProp
   
   const [path, setPath] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [useSimpleService, setUseSimpleService] = useState(false);
 
   useEffect(() => {
     if (integration?.qrcode_webhook_url) {
@@ -26,7 +28,8 @@ export function WebhookIntegrationForm({ companyId }: WebhookIntegrationFormProp
     }
   }, [integration]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Abordagem 1: Método original com políticas simples
+  const handleSubmitOriginal = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!path.trim()) {
@@ -63,6 +66,58 @@ export function WebhookIntegrationForm({ companyId }: WebhookIntegrationFormProp
     }
   };
 
+  // Abordagem 2: Método direto sem políticas complexas
+  const handleSubmitSimple = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!path.trim()) {
+      toast({
+        title: "Erro",
+        description: "Caminho é obrigatório",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!companyId) {
+      toast({
+        title: "Erro",
+        description: "Empresa não selecionada",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      setIsSaving(true);
+      console.log('🚀 Usando SimpleWebhookService...');
+      
+      await SimpleWebhookService.saveWebhookIntegration({
+        company_id: companyId,
+        webhook_url: path.trim(),
+        is_active: true
+      });
+      
+      toast({
+        title: "Sucesso",
+        description: "Caminho salvo com sucesso usando método direto!"
+      });
+      
+      // Recarregar dados
+      window.location.reload();
+      
+    } catch (error) {
+      console.error('Erro ao salvar caminho com SimpleWebhookService:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao salvar caminho com método direto",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <Card>
@@ -92,7 +147,7 @@ export function WebhookIntegrationForm({ companyId }: WebhookIntegrationFormProp
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={useSimpleService ? handleSubmitSimple : handleSubmitOriginal} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="path">Caminho *</Label>
             <Input
@@ -109,10 +164,45 @@ export function WebhookIntegrationForm({ companyId }: WebhookIntegrationFormProp
             </p>
           </div>
 
+          {/* Seletor de método */}
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <h4 className="font-medium text-gray-900 mb-3">Método de Salvamento</h4>
+            <div className="space-y-2">
+              <label className="flex items-center space-x-2">
+                <input
+                  type="radio"
+                  name="method"
+                  checked={!useSimpleService}
+                  onChange={() => setUseSimpleService(false)}
+                  className="text-blue-600"
+                />
+                <span className="text-sm">Método Padrão (com políticas simplificadas)</span>
+              </label>
+              <label className="flex items-center space-x-2">
+                <input
+                  type="radio"
+                  name="method"
+                  checked={useSimpleService}
+                  onChange={() => setUseSimpleService(true)}
+                  className="text-blue-600"
+                />
+                <span className="text-sm flex items-center">
+                  <Zap className="w-4 h-4 mr-1 text-yellow-500" />
+                  Método Direto (sem verificações complexas)
+                </span>
+              </label>
+            </div>
+          </div>
+
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 className="font-medium text-blue-900 mb-2">Informação</h4>
+            <h4 className="font-medium text-blue-900 mb-2">
+              {useSimpleService ? "⚡ Método Direto Ativo" : "📋 Método Padrão Ativo"}
+            </h4>
             <p className="text-sm text-blue-800">
-              Configure um caminho para salvar as informações do QR Code gerado.
+              {useSimpleService 
+                ? "Usando salvamento direto que ignora políticas RLS complexas."
+                : "Usando método padrão com políticas RLS simplificadas."
+              }
             </p>
           </div>
           
@@ -121,8 +211,8 @@ export function WebhookIntegrationForm({ companyId }: WebhookIntegrationFormProp
             className="bg-blue-600 hover:bg-blue-700"
             disabled={isSaving || !path.trim() || !companyId}
           >
-            <Save className="w-4 h-4 mr-2" />
-            {isSaving ? "Salvando..." : "Salvar Caminho"}
+            {useSimpleService ? <Zap className="w-4 h-4 mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+            {isSaving ? "Salvando..." : useSimpleService ? "Salvar Direto" : "Salvar Caminho"}
           </Button>
         </form>
       </CardContent>

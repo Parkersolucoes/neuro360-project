@@ -66,16 +66,9 @@ export function useWebhookIntegration(companyId?: string) {
     } catch (error: any) {
       console.error('❌ Erro ao carregar configuração:', error);
       
-      let errorMessage = "Erro ao carregar configuração";
-      if (error?.code === 'PGRST116') {
-        errorMessage = "Configuração não encontrada";
-      } else if (error?.message?.includes('permission')) {
-        errorMessage = "Erro de permissão: Verifique se você tem acesso à empresa";
-      }
-      
       toast({
         title: "Erro",
-        description: errorMessage,
+        description: "Erro ao carregar configuração",
         variant: "destructive"
       });
     } finally {
@@ -88,25 +81,15 @@ export function useWebhookIntegration(companyId?: string) {
       console.log('💾 Salvando configuração:', data);
       console.log('👤 Usuário:', userLogin?.name, 'ID:', userLogin?.id, 'Master:', userLogin?.is_admin === '0');
 
-      // Verificar se usuário está autenticado
+      // Abordagem 1: Verificação simples no frontend
       if (!userLogin) {
         throw new Error('Usuário não autenticado');
-      }
-
-      // Criar um usuário temporário no auth.users se necessário para as políticas RLS
-      // Isso é necessário porque as políticas RLS dependem do auth.uid()
-      const { data: authUser, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !authUser.user) {
-        console.log('⚠️ Usuário não está no auth.users, criando sessão temporária...');
-        // Como não temos autenticação real do Supabase, vamos usar o service role
-        // Isso funciona porque o usuário master deve ter acesso total
       }
 
       let result;
       
       if (integration) {
-        // Atualizar existente
+        // Atualizar existente - Abordagem 2: Operação direta sem verificações complexas
         console.log('🔄 Atualizando configuração existente ID:', integration.id);
         result = await supabase
           .from('webhook_integrations')
@@ -119,7 +102,7 @@ export function useWebhookIntegration(companyId?: string) {
           .select()
           .single();
       } else {
-        // Criar novo
+        // Criar novo - Abordagem 3: Inserção direta sem políticas complexas
         console.log('➕ Criando nova configuração');
         result = await supabase
           .from('webhook_integrations')
@@ -134,12 +117,6 @@ export function useWebhookIntegration(companyId?: string) {
       
       if (result.error) {
         console.error('❌ Erro ao salvar configuração:', result.error);
-        console.error('❌ Detalhes do erro:', {
-          code: result.error.code,
-          message: result.error.message,
-          details: result.error.details,
-          hint: result.error.hint
-        });
         throw result.error;
       }
       
@@ -164,19 +141,11 @@ export function useWebhookIntegration(companyId?: string) {
       return mappedData;
     } catch (error: any) {
       console.error('❌ Erro ao salvar configuração:', error);
-      console.error('❌ Stack trace:', error.stack);
       
       let errorMessage = "Erro ao salvar caminho";
       
-      // Tratamento de erros específicos
-      if (error?.code === '42501') {
-        errorMessage = `Erro de permissão: Acesso negado. Usuário: ${userLogin?.name} (Master: ${userLogin?.is_admin === '0'})`;
-      } else if (error?.message?.includes('violates row-level security')) {
-        errorMessage = `Erro de política de segurança. Verifique se o usuário ${userLogin?.name} tem permissão para esta empresa.`;
-      } else if (error?.message?.includes('not authenticated') || error?.message?.includes('Usuário não autenticado')) {
+      if (error?.message?.includes('not authenticated')) {
         errorMessage = "Erro de autenticação: Faça login novamente";
-      } else if (error?.message?.includes('duplicate')) {
-        errorMessage = "Erro: Configuração já existe para esta empresa";
       } else if (error?.message) {
         errorMessage = `Erro: ${error.message}`;
       }
