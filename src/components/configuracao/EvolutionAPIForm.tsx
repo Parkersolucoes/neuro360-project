@@ -1,10 +1,11 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, Save, Smartphone, QrCode, CheckCircle, X } from "lucide-react";
+import { MessageSquare, Save, QrCode, CheckCircle, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useEvolutionConfig } from "@/hooks/useEvolutionConfig";
 import { useSystemLogs } from "@/hooks/useSystemLogs";
@@ -43,22 +44,13 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
         webhook_url: evolutionConfig.webhook_url || ""
       });
     } else {
-      console.log('EvolutionAPIForm: No existing config, generating session name');
-      // Gerar nome da sessão automaticamente
-      if (currentCompany) {
-        const sessionName = generateSessionName(currentCompany.name);
-        setEvolutionForm({
-          instance_name: sessionName,
-          webhook_url: ""
-        });
-      } else {
-        setEvolutionForm({
-          instance_name: "",
-          webhook_url: ""
-        });
-      }
+      console.log('EvolutionAPIForm: No existing config, clearing form');
+      setEvolutionForm({
+        instance_name: "",
+        webhook_url: ""
+      });
     }
-  }, [evolutionConfig, currentCompany, generateSessionName]);
+  }, [evolutionConfig]);
 
   const prepareConfirmationData = () => {
     if (!currentCompany?.phone) {
@@ -207,17 +199,6 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
     }
   };
 
-  const generateNewSessionName = () => {
-    if (currentCompany) {
-      const newSessionName = generateSessionName(currentCompany.name);
-      setEvolutionForm(prev => ({ ...prev, instance_name: newSessionName }));
-      toast({
-        title: "Nome gerado",
-        description: `Novo nome de sessão: ${newSessionName}`
-      });
-    }
-  };
-
   if (loading) {
     return (
       <Card>
@@ -272,25 +253,14 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
           <form onSubmit={handleEvolutionSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="evolution_instance">Nome da Instância *</Label>
-              <div className="flex space-x-2">
-                <Input
-                  id="evolution_instance"
-                  value={evolutionForm.instance_name}
-                  onChange={(e) => setEvolutionForm({...evolutionForm, instance_name: e.target.value})}
-                  placeholder="Ex: minha-empresa_20241222"
-                  className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  required
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={generateNewSessionName}
-                  className="whitespace-nowrap"
-                >
-                  <Smartphone className="w-4 h-4 mr-1" />
-                  Gerar
-                </Button>
-              </div>
+              <Input
+                id="evolution_instance"
+                value={evolutionForm.instance_name}
+                onChange={(e) => setEvolutionForm({...evolutionForm, instance_name: e.target.value})}
+                placeholder="Ex: minha-empresa_20241222"
+                className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                required
+              />
               <p className="text-sm text-gray-500">
                 Nome único da instância WhatsApp (será usado para criar nova instância com integração Baileys)
               </p>
