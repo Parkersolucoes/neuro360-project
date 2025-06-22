@@ -1,4 +1,3 @@
-
 import { useToast } from '@/hooks/use-toast';
 import { useSystemLogs } from '@/hooks/useSystemLogs';
 import { useAuth } from '@/hooks/useAuth';
@@ -70,11 +69,14 @@ export function useEvolutionConfigActions() {
   const createInstanceWithQRCode = async (config: {
     instance_name: string;
     company_phone: string;
-  }): Promise<{ success: boolean; qrCodeData?: string }> => {
+  }): Promise<{ success: boolean; qrCodeData?: string; evolutionService?: EvolutionApiService }> => {
     try {
       console.log('useEvolutionConfigActions: Creating Evolution instance with QR Code:', config);
-      logInfo('Criando nova instância Evolution API com QR Code', 'useEvolutionConfigActions', { 
-        instance_name: config.instance_name 
+      
+      // Passo 1: Validar configurações globais
+      toast({
+        title: "Passo 1/5",
+        description: "🔍 Validando configurações globais da Evolution API..."
       });
 
       const globalConfig = getGlobalEvolutionConfig();
@@ -85,9 +87,20 @@ export function useEvolutionConfigActions() {
 
       console.log('useEvolutionConfigActions: Using global config:', { base_url: globalConfig.base_url });
 
-      // Formatar número de telefone obrigatório
+      // Passo 2: Formatar número de telefone
+      toast({
+        title: "Passo 2/5",
+        description: "📱 Formatando número de telefone da empresa..."
+      });
+
       const phoneNumber = formatPhoneNumber(config.company_phone);
       console.log('useEvolutionConfigActions: Formatted phone number:', phoneNumber);
+
+      // Passo 3: Criar serviço temporário
+      toast({
+        title: "Passo 3/5",
+        description: "⚙️ Configurando serviço Evolution API..."
+      });
 
       const tempEvolutionService = new EvolutionApiService({
         id: 'temp',
@@ -103,10 +116,22 @@ export function useEvolutionConfigActions() {
         updated_at: new Date().toISOString()
       });
 
+      // Passo 4: Criar instância na Evolution API
+      toast({
+        title: "Passo 4/5",
+        description: "🚀 Criando instância WhatsApp na Evolution API..."
+      });
+
       const createResponse = await tempEvolutionService.createInstanceWithQRCode();
       
       if (createResponse.instance && createResponse.instance.instanceName) {
         console.log('useEvolutionConfigActions: Instance created successfully with QR Code:', createResponse);
+        
+        // Passo 5: Salvar QR Code e finalizar
+        toast({
+          title: "Passo 5/5",
+          description: "💾 Salvando configurações e preparando QR Code..."
+        });
         
         // Salvar QR Code na sessão se disponível
         if (createResponse.qrCodeData && currentCompany) {
@@ -119,18 +144,41 @@ export function useEvolutionConfigActions() {
           has_qr_code: !!createResponse.qrCodeData
         });
         
+        // Toast de sucesso
+        toast({
+          title: "✅ Instância criada com sucesso!",
+          description: createResponse.qrCodeData 
+            ? "QR Code gerado e pronto para conexão. Escaneie o código abaixo com seu WhatsApp."
+            : "Instância criada. Acesse o menu QR Code para gerar o código de conexão."
+        });
+        
         return { 
           success: true, 
-          qrCodeData: createResponse.qrCodeData 
+          qrCodeData: createResponse.qrCodeData,
+          evolutionService: tempEvolutionService
         };
       } else {
         console.log('useEvolutionConfigActions: Instance creation failed, invalid response');
         logError('Falha na criação da instância - resposta inválida', 'useEvolutionConfigActions');
+        
+        toast({
+          title: "❌ Falha na criação",
+          description: "Resposta inválida da Evolution API. Verifique as configurações.",
+          variant: "destructive"
+        });
+        
         return { success: false };
       }
     } catch (error) {
       console.error('useEvolutionConfigActions: Instance creation failed:', error);
       logError(`Falha na criação da instância: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'useEvolutionConfigActions', error);
+      
+      toast({
+        title: "❌ Erro na criação",
+        description: error instanceof Error ? error.message : 'Erro desconhecido na criação da instância',
+        variant: "destructive"
+      });
+      
       return { success: false };
     }
   };
@@ -177,7 +225,7 @@ export function useEvolutionConfigActions() {
   const createConfig = async (configData: CreateEvolutionConfigData): Promise<EvolutionConfig> => {
     try {
       console.log('useEvolutionConfigActions: Creating config:', configData);
-      logInfo('Criando nova configuração Evolution API', 'useEvolutionConfigActions', { companyId: configData.company_id });
+      logInfo('Iniciando criação de configuração Evolution API', 'useEvolutionConfigActions', { companyId: configData.company_id });
       
       if (!userLogin?.id) {
         throw new Error('Usuário não autenticado');
@@ -201,11 +249,7 @@ export function useEvolutionConfigActions() {
       const instanceName = configData.instance_name || sessionName;
       const formattedNumber = formatPhoneNumber(currentCompany.phone);
 
-      toast({
-        title: "Criando instância",
-        description: "Criando nova instância WhatsApp na Evolution API com QR Code..."
-      });
-
+      // Criar instância com QR Code e feedback passo a passo
       const createResult = await createInstanceWithQRCode({
         instance_name: instanceName,
         company_phone: currentCompany.phone
@@ -230,103 +274,10 @@ export function useEvolutionConfigActions() {
       console.log('useEvolutionConfigActions: Config created successfully:', newConfig);
       logInfo('Configuração da Evolution API criada e instância validada com sucesso', 'useEvolutionConfigActions', { configId: newConfig.id });
       
-      toast({
-        title: "Sucesso",
-        description: createResult.qrCodeData 
-          ? "Configuração criada e QR Code gerado! Acesse o menu QR Code para conectar o WhatsApp."
-          : "Configuração da Evolution API criada com sucesso! Acesse o menu QR Code para gerar o código."
-      });
-      
       return newConfig;
     } catch (error) {
       console.error('useEvolutionConfigActions: Error creating Evolution config:', error);
       logError(`Erro ao criar configuração da Evolution API: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'useEvolutionConfigActions', error);
-      
-      toast({
-        title: "Erro",
-        description: error instanceof Error ? error.message : "Erro ao criar configuração da Evolution API",
-        variant: "destructive"
-      });
-      
-      throw error;
-    }
-  };
-
-  const updateConfig = async (id: string, updates: UpdateEvolutionConfigData): Promise<EvolutionConfig> => {
-    try {
-      console.log('useEvolutionConfigActions: Updating config:', id, updates);
-      logInfo('Atualizando configuração Evolution API', 'useEvolutionConfigActions', { configId: id });
-      
-      if (!currentCompany?.id) {
-        throw new Error('Nenhuma empresa selecionada');
-      }
-
-      if (!currentCompany?.phone) {
-        throw new Error('Número de telefone da empresa é obrigatório para atualizar a instância');
-      }
-
-      const globalConfig = getGlobalEvolutionConfig();
-      
-      if (!globalConfig) {
-        throw new Error('Configuração global da Evolution API não encontrada. Configure primeiro nas Configurações do Sistema.');
-      }
-
-      if (updates.instance_name) {
-        const currentConfig = await EvolutionConfigService.fetchByCompanyId(currentCompany.id);
-        
-        if (!currentConfig) {
-          throw new Error('Configuração atual não encontrada');
-        }
-
-        let instanceName = updates.instance_name;
-        
-        if (!instanceName) {
-          instanceName = generateSessionName(currentCompany.name);
-          updates.instance_name = instanceName;
-        }
-
-        const formattedNumber = formatPhoneNumber(currentCompany.phone);
-
-        toast({
-          title: "Validando alterações",
-          description: "Criando nova instância para validar as alterações..."
-        });
-
-        const createResult = await createInstanceWithQRCode({
-          instance_name: instanceName,
-          company_phone: currentCompany.phone
-        });
-
-        if (!createResult.success) {
-          throw new Error('Alterações inválidas: não foi possível criar instância com as novas configurações. Verifique os dados informados.');
-        }
-
-        updates.status = 'connected';
-        updates.api_url = globalConfig.base_url;
-        updates.api_key = globalConfig.global_api_key;
-        updates.number = formattedNumber;
-      }
-
-      const updatedConfig = await EvolutionConfigService.update(id, updates);
-      
-      console.log('useEvolutionConfigActions: Config updated successfully:', updatedConfig);
-      logInfo('Configuração da Evolution API atualizada e validada com sucesso', 'useEvolutionConfigActions', { configId: id });
-      
-      toast({
-        title: "Sucesso",
-        description: "Configuração da Evolution API atualizada e validada com sucesso!"
-      });
-      
-      return updatedConfig;
-    } catch (error) {
-      console.error('useEvolutionConfigActions: Error updating Evolution config:', error);
-      logError(`Erro ao atualizar configuração da Evolution API: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'useEvolutionConfigActions', error);
-      
-      toast({
-        title: "Erro",
-        description: error instanceof Error ? error.message : "Erro ao atualizar configuração da Evolution API",
-        variant: "destructive"
-      });
       
       throw error;
     }
@@ -334,7 +285,85 @@ export function useEvolutionConfigActions() {
 
   return {
     createConfig,
-    updateConfig,
+    updateConfig: async (id: string, updates: UpdateEvolutionConfigData): Promise<EvolutionConfig> => {
+      try {
+        console.log('useEvolutionConfigActions: Updating config:', id, updates);
+        logInfo('Atualizando configuração Evolution API', 'useEvolutionConfigActions', { configId: id });
+        
+        if (!currentCompany?.id) {
+          throw new Error('Nenhuma empresa selecionada');
+        }
+
+        if (!currentCompany?.phone) {
+          throw new Error('Número de telefone da empresa é obrigatório para atualizar a instância');
+        }
+
+        const globalConfig = getGlobalEvolutionConfig();
+        
+        if (!globalConfig) {
+          throw new Error('Configuração global da Evolution API não encontrada. Configure primeiro nas Configurações do Sistema.');
+        }
+
+        if (updates.instance_name) {
+          const currentConfig = await EvolutionConfigService.fetchByCompanyId(currentCompany.id);
+          
+          if (!currentConfig) {
+            throw new Error('Configuração atual não encontrada');
+          }
+
+          let instanceName = updates.instance_name;
+          
+          if (!instanceName) {
+            instanceName = generateSessionName(currentCompany.name);
+            updates.instance_name = instanceName;
+          }
+
+          const formattedNumber = formatPhoneNumber(currentCompany.phone);
+
+          toast({
+            title: "Validando alterações",
+            description: "Criando nova instância para validar as alterações..."
+          });
+
+          const createResult = await createInstanceWithQRCode({
+            instance_name: instanceName,
+            company_phone: currentCompany.phone
+          });
+
+          if (!createResult.success) {
+            throw new Error('Alterações inválidas: não foi possível criar instância com as novas configurações. Verifique os dados informados.');
+          }
+
+          updates.status = 'connected';
+          updates.api_url = globalConfig.base_url;
+          updates.api_key = globalConfig.global_api_key;
+          updates.number = formattedNumber;
+        }
+
+        const updatedConfig = await EvolutionConfigService.update(id, updates);
+        
+        console.log('useEvolutionConfigActions: Config updated successfully:', updatedConfig);
+        logInfo('Configuração da Evolution API atualizada e validada com sucesso', 'useEvolutionConfigActions', { configId: id });
+        
+        toast({
+          title: "Sucesso",
+          description: "Configuração da Evolution API atualizada e validada com sucesso!"
+        });
+        
+        return updatedConfig;
+      } catch (error) {
+        console.error('useEvolutionConfigActions: Error updating Evolution config:', error);
+        logError(`Erro ao atualizar configuração da Evolution API: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'useEvolutionConfigActions', error);
+        
+        toast({
+          title: "Erro",
+          description: error instanceof Error ? error.message : "Erro ao atualizar configuração da Evolution API",
+          variant: "destructive"
+        });
+        
+        throw error;
+      }
+    },
     createInstanceWithQRCode,
     generateSessionName
   };
