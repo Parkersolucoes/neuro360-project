@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useCompanies } from '@/hooks/useCompanies';
-import { useSystemLogsDB } from '@/hooks/useSystemLogsDB';
 
 interface SystemConfig {
   system_name: string;
@@ -16,7 +15,6 @@ export function useSystemConfig() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { currentCompany } = useCompanies();
-  const { logError, logInfo } = useSystemLogsDB();
 
   const fetchConfig = async () => {
     if (!currentCompany?.id) {
@@ -66,11 +64,6 @@ export function useSystemConfig() {
       }
     } catch (error) {
       console.error('Error fetching system config:', error);
-      logError(
-        'Erro ao carregar configurações do sistema',
-        'SystemConfig',
-        { error: error.message, company_id: currentCompany?.id }
-      );
       toast({
         title: "Erro",
         description: "Erro ao carregar configurações do sistema",
@@ -83,11 +76,9 @@ export function useSystemConfig() {
 
   const saveConfig = async (configData: SystemConfig) => {
     if (!currentCompany?.id) {
-      const errorMsg = "Nenhuma empresa selecionada";
-      logError(errorMsg, 'SystemConfig', { configData });
       toast({
         title: "Erro",
-        description: errorMsg,
+        description: "Nenhuma empresa selecionada",
         variant: "destructive"
       });
       return;
@@ -135,12 +126,6 @@ export function useSystemConfig() {
         if (error) throw error;
       }
 
-      logInfo(
-        'Configurações de aparência salvas com sucesso',
-        'SystemConfig',
-        { company_id: currentCompany.id, config: jsonConfigValue }
-      );
-
       toast({
         title: "Sucesso",
         description: "Configurações salvas com sucesso!"
@@ -149,15 +134,6 @@ export function useSystemConfig() {
       await fetchConfig();
     } catch (error) {
       console.error('Error saving system config:', error);
-      logError(
-        'Erro ao salvar configurações de aparência',
-        'SystemConfig',
-        { 
-          error: error.message, 
-          company_id: currentCompany?.id,
-          configData 
-        }
-      );
       toast({
         title: "Erro",
         description: "Erro ao salvar configurações",
@@ -169,49 +145,24 @@ export function useSystemConfig() {
 
   const uploadImage = async (file: File): Promise<string> => {
     if (!currentCompany?.id) {
-      const errorMsg = 'Nenhuma empresa selecionada';
-      logError(errorMsg, 'SystemConfig', { fileName: file.name });
-      throw new Error(errorMsg);
+      throw new Error('Nenhuma empresa selecionada');
     }
 
     try {
       // Validações do arquivo
       if (!file.type.startsWith('image/')) {
-        const errorMsg = 'Arquivo deve ser uma imagem';
-        logError(errorMsg, 'SystemConfig', { 
-          fileName: file.name, 
-          fileType: file.type,
-          company_id: currentCompany.id 
-        });
-        throw new Error(errorMsg);
+        throw new Error('Arquivo deve ser uma imagem');
       }
 
       if (file.size > 5 * 1024 * 1024) {
-        const errorMsg = 'Imagem deve ter no máximo 5MB';
-        logError(errorMsg, 'SystemConfig', { 
-          fileName: file.name, 
-          fileSize: file.size,
-          company_id: currentCompany.id 
-        });
-        throw new Error(errorMsg);
+        throw new Error('Imagem deve ter no máximo 5MB');
       }
 
       // Criar nome único para o arquivo
       const fileExt = file.name.split('.').pop();
       const fileName = `${currentCompany.id}/login-bg-${Date.now()}.${fileExt}`;
       
-      logInfo(
-        'Iniciando upload de imagem',
-        'SystemConfig',
-        { 
-          fileName: file.name,
-          newFileName: fileName,
-          fileSize: file.size,
-          company_id: currentCompany.id 
-        }
-      );
-
-      // Remover imagem anterior se existir
+      // Remover imagem anterior se existir (sem logging para evitar RLS)
       if (config?.login_background_image) {
         try {
           const oldFileName = config.login_background_image.split('/').pop();
@@ -220,12 +171,6 @@ export function useSystemConfig() {
             await supabase.storage
               .from('system-images')
               .remove([oldFilePath]);
-            
-            logInfo(
-              'Imagem anterior removida',
-              'SystemConfig',
-              { oldFilePath, company_id: currentCompany.id }
-            );
           }
         } catch (removeError) {
           console.warn('Erro ao remover imagem anterior:', removeError);
@@ -242,17 +187,8 @@ export function useSystemConfig() {
         });
 
       if (error) {
-        logError(
-          'Erro no upload da imagem para o storage',
-          'SystemConfig',
-          { 
-            error: error.message,
-            fileName: file.name,
-            storagePath: fileName,
-            company_id: currentCompany.id 
-          }
-        );
-        throw error;
+        console.error('Storage upload error:', error);
+        throw new Error('Erro no upload da imagem');
       }
 
       // Obter URL pública da imagem
@@ -261,38 +197,12 @@ export function useSystemConfig() {
         .getPublicUrl(fileName);
 
       if (!publicUrl?.publicUrl) {
-        const errorMsg = 'Erro ao obter URL pública da imagem';
-        logError(errorMsg, 'SystemConfig', { 
-          fileName: file.name,
-          storagePath: fileName,
-          company_id: currentCompany.id 
-        });
-        throw new Error(errorMsg);
+        throw new Error('Erro ao obter URL pública da imagem');
       }
-
-      logInfo(
-        'Upload de imagem concluído com sucesso',
-        'SystemConfig',
-        { 
-          fileName: file.name,
-          storagePath: fileName,
-          publicUrl: publicUrl.publicUrl,
-          company_id: currentCompany.id 
-        }
-      );
 
       return publicUrl.publicUrl;
     } catch (error) {
       console.error('Error uploading image:', error);
-      logError(
-        'Erro geral no upload da imagem',
-        'SystemConfig',
-        { 
-          error: error.message,
-          fileName: file.name,
-          company_id: currentCompany?.id 
-        }
-      );
       throw error;
     }
   };
