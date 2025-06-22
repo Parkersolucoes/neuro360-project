@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import type { SMTPConfig, CreateSMTPConfigData, UpdateSMTPConfigData } from '@/types/smtpConfig';
 
@@ -28,41 +27,54 @@ export class SMTPConfigService {
 
   static async create(configData: CreateSMTPConfigData): Promise<SMTPConfig> {
     try {
-      // Encrypt password (in a real implementation, this should be done server-side)
-      const configToCreate = {
-        ...configData,
-        smtp_password_encrypted: btoa(configData.smtp_password), // Simple base64 encoding for demo
-        status: 'disconnected' as const
-      };
-
-      // Remove the plain password before sending to database
-      const { smtp_password, ...dataToInsert } = configToCreate as any;
-
+      console.log('SMTPConfigService: Creating SMTP config:', configData);
+      
+      // Criptografar a senha antes de salvar
+      const encryptedPassword = btoa(configData.smtp_password); // Base64 por simplicidade
+      
       const { data, error } = await supabase
         .from('smtp_configs')
-        .insert(dataToInsert)
+        .insert({
+          company_id: configData.company_id,
+          smtp_host: configData.smtp_host,
+          smtp_port: configData.smtp_port,
+          smtp_username: configData.smtp_username,
+          smtp_password_encrypted: encryptedPassword,
+          use_tls: configData.use_tls,
+          use_ssl: configData.use_ssl,
+          from_email: configData.from_email,
+          from_name: configData.from_name || null,
+          is_active: configData.is_active,
+          status: 'disconnected'
+        })
         .select()
         .single();
 
       if (error) throw error;
-
-      return data;
+      
+      return {
+        ...data,
+        status: data.status as 'connected' | 'disconnected' | 'testing'
+      };
     } catch (error) {
-      console.error('Error creating SMTP config:', error);
+      console.error('SMTPConfigService: Error creating SMTP config:', error);
       throw error;
     }
   }
 
   static async update(id: string, updates: UpdateSMTPConfigData): Promise<SMTPConfig> {
     try {
-      let updateData = { ...updates };
-
-      // If password is being updated, encrypt it
-      if ('smtp_password' in updates && updates.smtp_password) {
+      console.log('SMTPConfigService: Updating SMTP config:', id, updates);
+      
+      const updateData: any = { ...updates };
+      
+      // Criptografar nova senha se fornecida
+      if (updates.smtp_password) {
         updateData.smtp_password_encrypted = btoa(updates.smtp_password);
-        delete (updateData as any).smtp_password;
+        delete updateData.smtp_password;
       }
-
+      
+      // Adicionar timestamp de atualização
       updateData.updated_at = new Date().toISOString();
 
       const { data, error } = await supabase
@@ -73,10 +85,13 @@ export class SMTPConfigService {
         .single();
 
       if (error) throw error;
-
-      return data;
+      
+      return {
+        ...data,
+        status: data.status as 'connected' | 'disconnected' | 'testing'
+      };
     } catch (error) {
-      console.error('Error updating SMTP config:', error);
+      console.error('SMTPConfigService: Error updating SMTP config:', error);
       throw error;
     }
   }

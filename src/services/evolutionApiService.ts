@@ -115,7 +115,15 @@ export class EvolutionApiService {
         'CONNECTION_UPDATE',
         'CALL',
         'NEW_JWT_TOKEN'
-      ]
+      ],
+      // Parâmetros da instância seguindo o modelo especificado
+      instance: {
+        instanceName: this.config.instance_name,
+        phone: numberToUse,
+        webhook_wa_business: this.config.webhook_url || null,
+        access_token_wa_business: "",
+        status: "created"
+      }
     };
 
     const response = await this.makeRequest(`/instance/create`, 'POST', requestBody);
@@ -172,7 +180,15 @@ export class EvolutionApiService {
         'CONNECTION_UPDATE',
         'CALL',
         'NEW_JWT_TOKEN'
-      ]
+      ],
+      // Parâmetros da instância seguindo o modelo especificado
+      instance: {
+        instanceName: this.config.instance_name,
+        phone: numberToUse,
+        webhook_wa_business: this.config.webhook_url || null,
+        access_token_wa_business: "",
+        status: "created"
+      }
     };
 
     return this.makeRequest(`/instance/create`, 'POST', requestBody);
