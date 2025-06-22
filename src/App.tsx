@@ -25,6 +25,7 @@ import Configuracao from "@/pages/Configuracao";
 import ConfiguracaoSistema from "@/pages/ConfiguracaoSistema";
 import Agendamentos from "@/pages/Agendamentos";
 import Agendamento from "@/pages/Agendamento";
+import WhatsApp from "@/pages/WhatsApp";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -93,6 +94,16 @@ function App() {
                       <Sidebar />
                       <main className="flex-1 p-6">
                         <SQLServer />
+                      </main>
+                    </div>
+                  </ProtectedRoute>
+                } />
+                <Route path="/whatsapp" element={
+                  <ProtectedRoute>
+                    <div className="flex min-h-screen">
+                      <Sidebar />
+                      <main className="flex-1 p-6">
+                        <WhatsApp />
                       </main>
                     </div>
                   </ProtectedRoute>
