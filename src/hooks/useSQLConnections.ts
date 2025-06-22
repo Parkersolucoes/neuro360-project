@@ -1,23 +1,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-
-export interface SQLConnection {
-  id: string;
-  name: string;
-  host: string;
-  database_name: string;
-  username: string;
-  password_encrypted: string;
-  port: number;
-  company_id: string;
-  connection_type: string;
-  status: string;
-  created_at: string;
-  updated_at: string;
-}
+import { SQLConnection } from '@/types/sqlConnection';
+import { sqlConnectionService } from '@/services/sqlConnectionService';
+import { connectionTestService } from '@/services/connectionTestService';
 
 export function useSQLConnections() {
   const [connections, setConnections] = useState<SQLConnection[]>([]);
@@ -31,25 +18,16 @@ export function useSQLConnections() {
       setLoading(true);
       console.log('useSQLConnections: Fetching SQL connections...');
       
-      const { data, error } = await supabase
-        .from('sql_connections')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('useSQLConnections: Error fetching connections:', error);
-        toast({
-          title: "Erro",
-          description: "Erro ao carregar conexões SQL",
-          variant: "destructive"
-        });
-        return;
-      }
-
+      const data = await sqlConnectionService.fetchConnections();
       console.log('useSQLConnections: Connections loaded:', data);
-      setConnections(data || []);
+      setConnections(data);
     } catch (error) {
-      console.error('useSQLConnections: Unexpected error:', error);
+      console.error('useSQLConnections: Error fetching connections:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar conexões SQL",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
@@ -59,17 +37,7 @@ export function useSQLConnections() {
     try {
       console.log('useSQLConnections: Creating connection:', connectionData);
       
-      const { data, error } = await supabase
-        .from('sql_connections')
-        .insert(connectionData)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('useSQLConnections: Error creating connection:', error);
-        throw error;
-      }
-
+      const data = await sqlConnectionService.createConnection(connectionData);
       console.log('useSQLConnections: Connection created successfully:', data);
       await fetchConnections();
       
@@ -94,29 +62,7 @@ export function useSQLConnections() {
     try {
       console.log('useSQLConnections: Creating demo connection for:', companyName);
       
-      const demoConnectionData = {
-        name: `Demo SQL - ${companyName}`,
-        host: 'demo-server.exemplo.com',
-        database_name: 'DemoDatabase',
-        username: 'demo_user',
-        password_encrypted: 'demo_password',
-        port: 1433,
-        company_id: companyId,
-        connection_type: 'sqlserver',
-        status: 'active'
-      };
-
-      const { data, error } = await supabase
-        .from('sql_connections')
-        .insert(demoConnectionData)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('useSQLConnections: Error creating demo connection:', error);
-        throw error;
-      }
-
+      const data = await sqlConnectionService.createDemoConnection(companyId, companyName);
       console.log('useSQLConnections: Demo connection created successfully:', data);
       await fetchConnections();
       return data;
@@ -130,18 +76,7 @@ export function useSQLConnections() {
     try {
       console.log('useSQLConnections: Updating connection:', id, updates);
       
-      const { data, error } = await supabase
-        .from('sql_connections')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('useSQLConnections: Error updating connection:', error);
-        throw error;
-      }
-
+      const data = await sqlConnectionService.updateConnection(id, updates);
       console.log('useSQLConnections: Connection updated successfully:', data);
       await fetchConnections();
       
@@ -166,16 +101,7 @@ export function useSQLConnections() {
     try {
       console.log('useSQLConnections: Deleting connection:', id);
       
-      const { error } = await supabase
-        .from('sql_connections')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        console.error('useSQLConnections: Error deleting connection:', error);
-        throw error;
-      }
-
+      await sqlConnectionService.deleteConnection(id);
       console.log('useSQLConnections: Connection deleted successfully');
       await fetchConnections();
       
@@ -199,16 +125,22 @@ export function useSQLConnections() {
       setTesting(true);
       console.log('useSQLConnections: Testing connection...');
       
-      // Simular teste de conexão
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const result = await connectionTestService.testConnection(connection);
       
-      console.log('useSQLConnections: Connection test successful');
-      toast({
-        title: "Sucesso",
-        description: "Conexão testada com sucesso!"
-      });
+      if (result.success) {
+        toast({
+          title: "Sucesso",
+          description: result.message
+        });
+      } else {
+        toast({
+          title: "Erro",
+          description: result.message,
+          variant: "destructive"
+        });
+      }
       
-      return { success: true, message: "Conexão estabelecida com sucesso!" };
+      return result;
     } catch (error) {
       console.error('useSQLConnections: Connection test failed:', error);
       toast({
@@ -241,3 +173,6 @@ export function useSQLConnections() {
     refetch: fetchConnections
   };
 }
+
+// Re-export the interface for backward compatibility
+export type { SQLConnection } from '@/types/sqlConnection';
