@@ -28,7 +28,7 @@ export function SQLQueryForm({ query, onSubmit, onCancel }: SQLQueryFormProps) {
     description: "",
     query_text: "",
     connection_id: "",
-    status: "active" as const
+    status: "active" as "active" | "inactive"
   });
 
   // Filtrar conexões apenas da empresa atual
