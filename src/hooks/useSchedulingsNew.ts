@@ -3,12 +3,14 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useCompanies } from '@/hooks/useCompanies';
+import { useSystemLogsDB } from '@/hooks/useSystemLogsDB';
 
 export function useSchedulingsNew() {
   const [schedulings, setSchedulings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { currentCompany } = useCompanies();
+  const { logError, logInfo } = useSystemLogsDB();
 
   const fetchSchedulings = async () => {
     if (!currentCompany?.id) {
@@ -27,8 +29,10 @@ export function useSchedulingsNew() {
 
       if (error) throw error;
       setSchedulings(data || []);
+      logInfo('Agendamentos carregados com sucesso', 'useSchedulingsNew');
     } catch (error) {
       console.error('Error fetching schedulings:', error);
+      logError('Erro ao carregar agendamentos', 'useSchedulingsNew', error);
       toast({
         title: "Erro",
         description: "Erro ao carregar agendamentos",
@@ -53,6 +57,7 @@ export function useSchedulingsNew() {
       if (error) throw error;
 
       setSchedulings(prev => [data, ...prev]);
+      logInfo('Agendamento criado com sucesso', 'useSchedulingsNew', { schedulingId: data.id });
       toast({
         title: "Sucesso",
         description: "Agendamento criado com sucesso"
@@ -61,6 +66,7 @@ export function useSchedulingsNew() {
       return data;
     } catch (error) {
       console.error('Error creating scheduling:', error);
+      logError('Erro ao criar agendamento', 'useSchedulingsNew', error);
       toast({
         title: "Erro",
         description: "Erro ao criar agendamento",
@@ -86,6 +92,7 @@ export function useSchedulingsNew() {
         scheduling.id === id ? data : scheduling
       ));
 
+      logInfo('Agendamento atualizado com sucesso', 'useSchedulingsNew', { schedulingId: id });
       toast({
         title: "Sucesso",
         description: "Agendamento atualizado com sucesso"
@@ -94,6 +101,7 @@ export function useSchedulingsNew() {
       return data;
     } catch (error) {
       console.error('Error updating scheduling:', error);
+      logError('Erro ao atualizar agendamento', 'useSchedulingsNew', error);
       toast({
         title: "Erro",
         description: "Erro ao atualizar agendamento",
@@ -114,12 +122,14 @@ export function useSchedulingsNew() {
       if (error) throw error;
 
       setSchedulings(prev => prev.filter(scheduling => scheduling.id !== id));
+      logInfo('Agendamento removido com sucesso', 'useSchedulingsNew', { schedulingId: id });
       toast({
         title: "Sucesso",
         description: "Agendamento removido com sucesso"
       });
     } catch (error) {
       console.error('Error deleting scheduling:', error);
+      logError('Erro ao remover agendamento', 'useSchedulingsNew', error);
       toast({
         title: "Erro",
         description: "Erro ao remover agendamento",

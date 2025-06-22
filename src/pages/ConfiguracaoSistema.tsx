@@ -21,7 +21,7 @@ import { useAssasConfig } from "@/hooks/useAssasConfig";
 import { WebhookConfiguration } from "@/components/webhook/WebhookConfiguration";
 import { SystemUpdatesManager } from "@/components/admin/SystemUpdatesManager";
 import { SystemAppearanceManager } from "@/components/admin/SystemAppearanceManager";
-import { SystemLogsViewer } from "@/components/admin/SystemLogsViewer";
+import { SystemLogsViewerDB } from "@/components/admin/SystemLogsViewerDB";
 
 export default function ConfiguracaoSistema() {
   const { toast } = useToast();
@@ -173,7 +173,7 @@ export default function ConfiguracaoSistema() {
         </TabsContent>
 
         <TabsContent value="logs">
-          <SystemLogsViewer />
+          <SystemLogsViewerDB />
         </TabsContent>
       </Tabs>
     </div>

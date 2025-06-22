@@ -3,12 +3,14 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useCompanies } from '@/hooks/useCompanies';
+import { useSystemLogsDB } from '@/hooks/useSystemLogsDB';
 
 export function useSQLQueriesNew() {
   const [queries, setQueries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { currentCompany } = useCompanies();
+  const { logError, logInfo } = useSystemLogsDB();
 
   const fetchQueries = async () => {
     if (!currentCompany?.id) {
@@ -27,8 +29,10 @@ export function useSQLQueriesNew() {
 
       if (error) throw error;
       setQueries(data || []);
+      logInfo('Consultas SQL carregadas com sucesso', 'useSQLQueriesNew');
     } catch (error) {
       console.error('Error fetching SQL queries:', error);
+      logError('Erro ao carregar consultas SQL', 'useSQLQueriesNew', error);
       toast({
         title: "Erro",
         description: "Erro ao carregar consultas SQL",
@@ -53,6 +57,7 @@ export function useSQLQueriesNew() {
       if (error) throw error;
 
       setQueries(prev => [data, ...prev]);
+      logInfo('Consulta SQL criada com sucesso', 'useSQLQueriesNew', { queryId: data.id });
       toast({
         title: "Sucesso",
         description: "Consulta SQL criada com sucesso"
@@ -61,6 +66,7 @@ export function useSQLQueriesNew() {
       return data;
     } catch (error) {
       console.error('Error creating SQL query:', error);
+      logError('Erro ao criar consulta SQL', 'useSQLQueriesNew', error);
       toast({
         title: "Erro",
         description: "Erro ao criar consulta SQL",
@@ -86,6 +92,7 @@ export function useSQLQueriesNew() {
         query.id === id ? data : query
       ));
 
+      logInfo('Consulta SQL atualizada com sucesso', 'useSQLQueriesNew', { queryId: id });
       toast({
         title: "Sucesso",
         description: "Consulta SQL atualizada com sucesso"
@@ -94,6 +101,7 @@ export function useSQLQueriesNew() {
       return data;
     } catch (error) {
       console.error('Error updating SQL query:', error);
+      logError('Erro ao atualizar consulta SQL', 'useSQLQueriesNew', error);
       toast({
         title: "Erro",
         description: "Erro ao atualizar consulta SQL",
@@ -114,12 +122,14 @@ export function useSQLQueriesNew() {
       if (error) throw error;
 
       setQueries(prev => prev.filter(query => query.id !== id));
+      logInfo('Consulta SQL removida com sucesso', 'useSQLQueriesNew', { queryId: id });
       toast({
         title: "Sucesso",
         description: "Consulta SQL removida com sucesso"
       });
     } catch (error) {
       console.error('Error deleting SQL query:', error);
+      logError('Erro ao remover consulta SQL', 'useSQLQueriesNew', error);
       toast({
         title: "Erro",
         description: "Erro ao remover consulta SQL",
