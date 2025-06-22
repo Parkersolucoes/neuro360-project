@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Settings, Eye, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
+import { useSystemLogsDB } from "@/hooks/useSystemLogsDB";
 import { SystemInfoForm } from "./appearance/SystemInfoForm";
 import { ImageUploadSection } from "./appearance/ImageUploadSection";
 
 export function SystemAppearanceManager() {
   const { config, saveConfig, uploadImage, loading } = useSystemConfig();
   const { toast } = useToast();
+  const { logError, logInfo } = useSystemLogsDB();
 
   const [formData, setFormData] = useState({
     system_name: "360 Solutions",
@@ -38,9 +40,15 @@ export function SystemAppearanceManager() {
 
     // Validar tipo de arquivo
     if (!file.type.startsWith('image/')) {
+      const errorMsg = "Por favor, selecione apenas arquivos de imagem";
+      logError(
+        errorMsg,
+        'SystemAppearanceManager',
+        { fileName: file.name, fileType: file.type }
+      );
       toast({
         title: "Erro",
-        description: "Por favor, selecione apenas arquivos de imagem",
+        description: errorMsg,
         variant: "destructive"
       });
       return;
@@ -48,9 +56,15 @@ export function SystemAppearanceManager() {
 
     // Validar tamanho do arquivo (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
+      const errorMsg = "A imagem deve ter no máximo 5MB";
+      logError(
+        errorMsg,
+        'SystemAppearanceManager',
+        { fileName: file.name, fileSize: file.size }
+      );
       toast({
         title: "Erro",
-        description: "A imagem deve ter no máximo 5MB",
+        description: errorMsg,
         variant: "destructive"
       });
       return;
@@ -65,6 +79,12 @@ export function SystemAppearanceManager() {
       };
       reader.readAsDataURL(file);
 
+      logInfo(
+        'Iniciando upload de imagem de fundo',
+        'SystemAppearanceManager',
+        { fileName: file.name, fileSize: file.size }
+      );
+
       // Upload da imagem
       const imageUrl = await uploadImage(file);
       setFormData(prev => ({
@@ -72,12 +92,38 @@ export function SystemAppearanceManager() {
         login_background_image: imageUrl
       }));
 
+      logInfo(
+        'Upload de imagem de fundo concluído',
+        'SystemAppearanceManager',
+        { fileName: file.name, imageUrl }
+      );
+
       toast({
         title: "Sucesso",
         description: "Imagem enviada com sucesso!"
       });
     } catch (error) {
       console.error('Error uploading image:', error);
+      const errorMsg = error.message || 'Erro desconhecido no upload';
+      
+      logError(
+        'Erro no upload da imagem de fundo',
+        'SystemAppearanceManager',
+        { 
+          error: errorMsg,
+          fileName: file.name,
+          fileSize: file.size 
+        }
+      );
+
+      toast({
+        title: "Erro",
+        description: errorMsg,
+        variant: "destructive"
+      });
+
+      // Limpar preview em caso de erro
+      setPreviewImage(null);
     } finally {
       setIsUploading(false);
     }
@@ -85,10 +131,33 @@ export function SystemAppearanceManager() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     try {
+      logInfo(
+        'Iniciando salvamento de configurações de aparência',
+        'SystemAppearanceManager',
+        { formData }
+      );
+
       await saveConfig(formData);
+
+      logInfo(
+        'Configurações de aparência salvas com sucesso',
+        'SystemAppearanceManager',
+        { formData }
+      );
     } catch (error) {
       console.error('Error saving config:', error);
+      const errorMsg = error.message || 'Erro desconhecido ao salvar';
+      
+      logError(
+        'Erro ao salvar configurações de aparência',
+        'SystemAppearanceManager',
+        { 
+          error: errorMsg,
+          formData 
+        }
+      );
     }
   };
 
