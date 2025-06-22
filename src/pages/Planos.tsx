@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { usePlans } from "@/hooks/usePlans";
 import { useTemplates } from "@/hooks/useTemplates";
+import { usePlanTemplates } from "@/hooks/usePlanTemplates";
 import { PlanFormDialog } from "@/components/planos/PlanFormDialog";
 import { PlanTable } from "@/components/planos/PlanTable";
 import { PlanTemplateManager } from "@/components/planos/PlanTemplateManager";
@@ -11,7 +12,8 @@ import { PlanTemplateManager } from "@/components/planos/PlanTemplateManager";
 export default function Planos() {
   const { toast } = useToast();
   const { plans, loading, createPlan, updatePlan, deletePlan } = usePlans();
-  const { templates, planTemplates, linkTemplateToPlan, unlinkTemplateFromPlan } = useTemplates();
+  const { templates } = useTemplates();
+  const { planTemplates, linkTemplateToPlan, unlinkTemplateFromPlan } = usePlanTemplates();
 
   const [editingPlan, setEditingPlan] = useState<any>(null);
 
