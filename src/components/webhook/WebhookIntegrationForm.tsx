@@ -24,30 +24,48 @@ export function WebhookIntegrationForm({ companyId }: WebhookIntegrationFormProp
   // Carregar configuração existente
   useEffect(() => {
     const loadIntegration = async () => {
+      if (!companyId) {
+        setLoading(false);
+        return;
+      }
+
       try {
+        console.log('🔍 Carregando integração webhook para empresa:', companyId);
+        
         const { data, error } = await supabase
           .from('webhook_integrations')
           .select('*')
           .eq('company_id', companyId)
           .maybeSingle();
 
-        if (error && error.code !== 'PGRST116') {
-          console.error('Erro ao carregar integração:', error);
+        if (error) {
+          console.error('❌ Erro ao carregar integração:', error);
+          toast({
+            title: "Erro",
+            description: "Erro ao carregar configuração webhook",
+            variant: "destructive"
+          });
         } else if (data) {
+          console.log('✅ Integração carregada:', data);
           setExistingIntegration(data);
           setQrcodeWebhookUrl(data.webhook_url || "");
+        } else {
+          console.log('ℹ️ Nenhuma integração encontrada');
         }
       } catch (error) {
-        console.error('Erro ao carregar integração:', error);
+        console.error('❌ Erro ao carregar integração:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao carregar configuração webhook",
+          variant: "destructive"
+        });
       } finally {
         setLoading(false);
       }
     };
 
-    if (companyId) {
-      loadIntegration();
-    }
-  }, [companyId]);
+    loadIntegration();
+  }, [companyId, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,9 +78,24 @@ export function WebhookIntegrationForm({ companyId }: WebhookIntegrationFormProp
       });
       return;
     }
+
+    if (!companyId) {
+      toast({
+        title: "Erro",
+        description: "ID da empresa é necessário",
+        variant: "destructive"
+      });
+      return;
+    }
     
     try {
       setIsSaving(true);
+      
+      console.log('💾 Salvando webhook integration:', {
+        company_id: companyId,
+        webhook_url: qrcodeWebhookUrl.trim(),
+        existing: !!existingIntegration
+      });
       
       let result;
       
@@ -75,7 +108,8 @@ export function WebhookIntegrationForm({ companyId }: WebhookIntegrationFormProp
             is_active: true,
             updated_at: new Date().toISOString()
           })
-          .eq('id', existingIntegration.id);
+          .eq('id', existingIntegration.id)
+          .select();
       } else {
         // Criar novo registro
         result = await supabase
@@ -84,11 +118,20 @@ export function WebhookIntegrationForm({ companyId }: WebhookIntegrationFormProp
             company_id: companyId,
             webhook_url: qrcodeWebhookUrl.trim(),
             is_active: true
-          });
+          })
+          .select();
       }
       
       if (result.error) {
+        console.error('❌ Erro ao salvar webhook:', result.error);
         throw result.error;
+      }
+      
+      console.log('✅ Webhook salvo com sucesso:', result.data);
+      
+      // Atualizar estado local
+      if (result.data && result.data[0]) {
+        setExistingIntegration(result.data[0]);
       }
       
       toast({
@@ -96,11 +139,24 @@ export function WebhookIntegrationForm({ companyId }: WebhookIntegrationFormProp
         description: "Configuração webhook salva com sucesso!"
       });
       
-    } catch (error) {
-      console.error('Erro ao salvar webhook:', error);
+    } catch (error: any) {
+      console.error('❌ Erro ao salvar webhook:', error);
+      
+      let errorMessage = "Erro ao salvar configuração webhook";
+      
+      if (error?.message) {
+        if (error.message.includes('violates row-level security')) {
+          errorMessage = "Erro de permissão: Verifique se você tem acesso à empresa selecionada";
+        } else if (error.message.includes('not authenticated')) {
+          errorMessage = "Erro de autenticação: Faça login novamente";
+        } else {
+          errorMessage = `Erro: ${error.message}`;
+        }
+      }
+      
       toast({
         title: "Erro",
-        description: "Erro ao salvar configuração webhook",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -156,7 +212,7 @@ export function WebhookIntegrationForm({ companyId }: WebhookIntegrationFormProp
           <Button 
             type="submit" 
             className="bg-blue-600 hover:bg-blue-700"
-            disabled={isSaving || !qrcodeWebhookUrl.trim()}
+            disabled={isSaving || !qrcodeWebhookUrl.trim() || !companyId}
           >
             <Save className="w-4 h-4 mr-2" />
             {isSaving ? "Salvando..." : "Salvar Configuração"}
