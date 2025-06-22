@@ -69,7 +69,7 @@ export function useEvolutionConfigActions() {
 
   const createInstanceWithQRCode = async (config: {
     instance_name: string;
-    company_phone?: string;
+    company_phone: string;
   }): Promise<{ success: boolean; qrCodeData?: string }> => {
     try {
       console.log('useEvolutionConfigActions: Creating Evolution instance with QR Code:', config);
@@ -85,8 +85,8 @@ export function useEvolutionConfigActions() {
 
       console.log('useEvolutionConfigActions: Using global config:', { base_url: globalConfig.base_url });
 
-      // Formatar número de telefone
-      const phoneNumber = config.company_phone ? formatPhoneNumber(config.company_phone) : undefined;
+      // Formatar número de telefone obrigatório
+      const phoneNumber = formatPhoneNumber(config.company_phone);
       console.log('useEvolutionConfigActions: Formatted phone number:', phoneNumber);
 
       const tempEvolutionService = new EvolutionApiService({
@@ -112,6 +112,7 @@ export function useEvolutionConfigActions() {
         
         logInfo('Instância Evolution API criada com sucesso e QR Code salvo', 'useEvolutionConfigActions', {
           instance_name: config.instance_name,
+          phone_number: phoneNumber,
           has_qr_code: !!createResponse.qrCodeData
         });
         
@@ -183,6 +184,10 @@ export function useEvolutionConfigActions() {
         throw new Error('Nenhuma empresa selecionada');
       }
 
+      if (!currentCompany?.phone) {
+        throw new Error('Número de telefone da empresa é obrigatório para criar a instância');
+      }
+
       const globalConfig = getGlobalEvolutionConfig();
       
       if (!globalConfig) {
@@ -203,7 +208,7 @@ export function useEvolutionConfigActions() {
       });
 
       if (!createResult.success) {
-        throw new Error('Configuração inválida: não foi possível criar a instância. Verifique o nome da instância.');
+        throw new Error('Configuração inválida: não foi possível criar a instância. Verifique o nome da instância e o número de telefone da empresa.');
       }
 
       const configToCreate = {
@@ -249,6 +254,10 @@ export function useEvolutionConfigActions() {
       
       if (!currentCompany?.id) {
         throw new Error('Nenhuma empresa selecionada');
+      }
+
+      if (!currentCompany?.phone) {
+        throw new Error('Número de telefone da empresa é obrigatório para atualizar a instância');
       }
 
       const globalConfig = getGlobalEvolutionConfig();

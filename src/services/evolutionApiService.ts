@@ -85,17 +85,17 @@ export class EvolutionApiService {
     }
   }
 
-  async createInstanceWithQRCode(phoneNumber?: string): Promise<CreateInstanceResponse & { qrCodeData?: string }> {
-    console.log('Evolution API: Creating instance with QR Code:', this.config.instance_name);
+  async createInstanceWithQRCode(phoneNumber: string): Promise<CreateInstanceResponse & { qrCodeData?: string }> {
+    console.log('Evolution API: Creating instance with QR Code:', this.config.instance_name, 'Phone:', phoneNumber);
     
     const requestBody = {
       instanceName: this.config.instance_name,
       qrcode: true,
       integration: 'WHATSAPP-BAILEYS',
+      number: phoneNumber,
       webhookUrl: this.config.webhook_url || undefined,
       webhookByEvents: false,
       webhookBase64: false,
-      number: phoneNumber || undefined,
       events: [
         'APPLICATION_STARTUP',
         'QRCODE_UPDATED',
@@ -134,13 +134,14 @@ export class EvolutionApiService {
     };
   }
 
-  async createInstance(): Promise<CreateInstanceResponse> {
-    console.log('Evolution API: Creating instance:', this.config.instance_name);
+  async createInstance(phoneNumber?: string): Promise<CreateInstanceResponse> {
+    console.log('Evolution API: Creating instance:', this.config.instance_name, 'Phone:', phoneNumber);
     
     const requestBody = {
       instanceName: this.config.instance_name,
       qrcode: true,
       integration: 'WHATSAPP-BAILEYS',
+      number: phoneNumber || undefined,
       webhookUrl: this.config.webhook_url || undefined,
       webhookByEvents: false,
       webhookBase64: false,
