@@ -43,10 +43,10 @@ export function Sidebar() {
     { path: "/whatsapp", icon: QrCode, label: "WhatsApp" },
     { path: "/webhooks", icon: Webhook, label: "Webhooks" },
     { path: "/relatorios", icon: BarChart3, label: "Relatórios" },
-    { path: "/usuarios", icon: Users, label: "Usuários" },
   ];
 
   const adminMenuItems = [
+    { path: "/usuarios", icon: Users, label: "Usuários" },
     { path: "/configuracao-sistema", icon: Settings, label: "Config. Sistema" },
     { path: "/empresas", icon: Building2, label: "Empresas" },
     { path: "/planos", icon: Package, label: "Planos" },

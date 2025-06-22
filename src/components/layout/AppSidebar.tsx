@@ -65,14 +65,14 @@ const menuItems = [
     url: "/agendamento",
     icon: Calendar,
   },
+];
+
+const adminMenuItems = [
   {
     title: "Usuários",
     url: "/usuarios",
     icon: Users,
   },
-];
-
-const adminMenuItems = [
   {
     title: "Empresas",
     url: "/empresas",
