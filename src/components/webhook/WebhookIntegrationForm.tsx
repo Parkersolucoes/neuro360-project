@@ -23,6 +23,7 @@ export function WebhookIntegrationForm({ companyId }: WebhookIntegrationFormProp
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
+    console.log('🔄 WebhookIntegrationForm: Integration updated:', integration);
     if (integration) {
       setForm({
         webhook_name: integration.webhook_name || "",
@@ -34,20 +35,28 @@ export function WebhookIntegrationForm({ companyId }: WebhookIntegrationFormProp
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('📤 WebhookIntegrationForm: Form submitted with data:', form);
+    console.log('📤 WebhookIntegrationForm: Company ID:', companyId);
+    
     if (!form.webhook_url.trim()) {
+      console.warn('⚠️ WebhookIntegrationForm: Webhook URL is required');
       return;
     }
     
     try {
       setIsSaving(true);
+      console.log('💾 WebhookIntegrationForm: Saving integration...');
+      
       await saveIntegration({
         webhook_name: form.webhook_name || "Webhook Integração QrCode",
         webhook_url: form.webhook_url,
         company_id: companyId,
         is_active: true
       });
+      
+      console.log('✅ WebhookIntegrationForm: Integration saved successfully');
     } catch (error) {
-      console.error('Error saving webhook integration:', error);
+      console.error('❌ WebhookIntegrationForm: Error saving webhook integration:', error);
     } finally {
       setIsSaving(false);
     }
@@ -82,6 +91,13 @@ export function WebhookIntegrationForm({ companyId }: WebhookIntegrationFormProp
         </CardTitle>
       </CardHeader>
       <CardContent>
+        {/* Debug info - Remover em produção */}
+        <div className="mb-4 p-2 bg-gray-100 rounded text-xs">
+          <p>Company ID: {companyId}</p>
+          <p>Integration ID: {integration?.id || 'Novo'}</p>
+          <p>Current URL: {integration?.webhook_url || 'Não configurado'}</p>
+        </div>
+        
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="webhook_name">Nome da Integração</Label>
