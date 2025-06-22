@@ -62,12 +62,15 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
       });
       return null;
     }
+
+    const phoneNumber = currentCompany?.phone || '';
     
     return {
       globalConfig,
       instanceName: evolutionForm.instance_name,
       webhookUrl: evolutionForm.webhook_url || '',
       companyName: currentCompany?.name || 'Não informado',
+      phoneNumber: phoneNumber,
       integration: 'WHATSAPP-BAILEYS',
       curlCommand: `curl --request POST \\
 --url ${globalConfig.base_url}/instance/create \\
@@ -77,7 +80,7 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
   "instanceName": "${evolutionForm.instance_name}",
   "token": "",
   "qrcode": true,
-  "number": "",
+  "number": "${phoneNumber}",
   "integration": "WHATSAPP-BAILEYS",
   "webhook": "${evolutionForm.webhook_url || ''}",
   "webhook_by_events": true
@@ -224,7 +227,7 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
               (URL base e chave principal) configurados nas <strong>Configurações do Sistema</strong> para 
               criar uma nova instância no Evolution API com integração <strong>Baileys</strong>.
               <br /><br />
-              <strong>Parâmetros do POST:</strong> instanceName, token (vazio), qrcode (true), number (vazio), 
+              <strong>Parâmetros do POST:</strong> instanceName, token (vazio), qrcode (true), number (telefone da empresa), 
               integration (WHATSAPP-BAILEYS), webhook (URL informada), webhook_by_events (true).
               <br /><br />
               <strong>Processo:</strong> Após criar a instância conforme especificação cURL, o QR Code será gerado automaticamente 
@@ -325,7 +328,7 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
                   <div className="space-y-1 text-sm">
                     <p><strong>Nome da Empresa:</strong> {confirmationData.companyName}</p>
                     <p><strong>Instance Name:</strong> {confirmationData.instanceName}</p>
-                    <p><strong>Number:</strong> (vazio conforme solicitado)</p>
+                    <p><strong>Telefone da Empresa:</strong> {confirmationData.phoneNumber || 'Não informado'}</p>
                   </div>
                 </div>
 
@@ -336,7 +339,7 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
                     <p><strong>instanceName:</strong> "{confirmationData.instanceName}"</p>
                     <p><strong>token:</strong> "" (vazio conforme especificação)</p>
                     <p><strong>qrcode:</strong> true</p>
-                    <p><strong>number:</strong> "" (vazio conforme solicitado)</p>
+                    <p><strong>number:</strong> "{confirmationData.phoneNumber}" (telefone da empresa)</p>
                     <p><strong>integration:</strong> "{confirmationData.integration}"</p>
                     <p><strong>webhook:</strong> "{confirmationData.webhookUrl || 'Vazio'}"</p>
                     <p><strong>webhook_by_events:</strong> true</p>

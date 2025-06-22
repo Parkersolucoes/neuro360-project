@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import type { EvolutionConfig } from '@/types/evolutionConfig';
 
@@ -116,12 +117,12 @@ export class EvolutionApiService {
   async createInstanceWithQRCode(phoneNumber: string, webhookUrl?: string): Promise<CreateInstanceResponse & { qrCodeData?: string }> {
     console.log('Evolution API: Creating instance with QR Code:', this.config.instance_name);
     
-    // Estrutura conforme especificação cURL - number enviado vazio
+    // Estrutura conforme especificação cURL - number com telefone da empresa
     const requestBody = {
       instanceName: this.config.instance_name,
       token: "",
       qrcode: true,
-      number: "", // Sempre enviar vazio conforme solicitado
+      number: phoneNumber || "", // Enviar número do telefone da empresa
       integration: "WHATSAPP-BAILEYS",
       webhook: webhookUrl || "",
       webhook_by_events: true
@@ -144,7 +145,7 @@ export class EvolutionApiService {
       const errorMessage = `Falha ao criar instância Evolution API: ${error instanceof Error ? error.message : 'Erro desconhecido'}`;
       await this.logSystemError(errorMessage, { 
         instanceName: this.config.instance_name,
-        number: "", // Log mostra que enviamos vazio
+        number: phoneNumber || "", // Log mostra número enviado
         error: error instanceof Error ? error.message : 'Erro desconhecido'
       });
       throw error;
@@ -154,12 +155,12 @@ export class EvolutionApiService {
   async createInstance(phoneNumber: string, webhookUrl?: string): Promise<CreateInstanceResponse> {
     console.log('Evolution API: Creating instance:', this.config.instance_name);
     
-    // Estrutura conforme especificação cURL - number enviado vazio
+    // Estrutura conforme especificação cURL - number com telefone da empresa
     const requestBody = {
       instanceName: this.config.instance_name,
       token: "",
       qrcode: true,
-      number: "", // Sempre enviar vazio conforme solicitado
+      number: phoneNumber || "", // Enviar número do telefone da empresa
       integration: "WHATSAPP-BAILEYS",
       webhook: webhookUrl || "",
       webhook_by_events: true
