@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import type { EvolutionConfig } from '@/types/evolutionConfig';
 
@@ -52,6 +51,29 @@ export class EvolutionApiService {
     const url = `${this.config.api_url}${endpoint}`;
     
     console.log(`Evolution API: Making ${method} request to ${url}`);
+    
+    // Log detalhado dos parâmetros quando é um POST para criar instância
+    if (method === 'POST' && (endpoint.includes('/instance/create') || endpoint.includes('/instance/'))) {
+      console.log('🚀 EVOLUTION API - PARÂMETROS DETALHADOS DA REQUISIÇÃO:');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('📍 ENDPOINT:', url);
+      console.log('📤 MÉTODO:', method);
+      console.log('📋 HEADERS:');
+      console.log('   Content-Type: application/json');
+      console.log('   apikey:', this.config.api_key);
+      console.log('📦 BODY DA REQUISIÇÃO (JSON):');
+      console.log(JSON.stringify(body, null, 2));
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      
+      // Log específico do número formatado
+      if (body?.number) {
+        console.log('📱 DETALHES DO NÚMERO FORMATADO:');
+        console.log('   • Número no body:', body.number);
+        console.log('   • Formato esperado: 55 + DDD + Número');
+        console.log('   • Exemplo: 5511999999999');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      }
+    }
     
     try {
       const response = await fetch(url, {
