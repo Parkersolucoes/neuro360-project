@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Company } from '@/types/company';
 
@@ -79,73 +78,121 @@ export class CompanyService {
   }
 
   static async createCompany(companyData: Omit<Company, 'id' | 'created_at' | 'updated_at'>) {
-    // Validações básicas
-    if (!companyData.name?.trim()) {
-      throw new Error('Nome da empresa é obrigatório');
-    }
-    
-    if (!companyData.document?.trim()) {
-      throw new Error('CNPJ é obrigatório');
-    }
-    
-    if (!companyData.email?.trim()) {
-      throw new Error('Email é obrigatório');
-    }
-
-    // Verificar se CNPJ já existe
-    const { data: existingCompany } = await supabase
-      .from('companies')
-      .select('id')
-      .eq('document', companyData.document.trim())
-      .maybeSingle();
-
-    if (existingCompany) {
-      throw new Error('Já existe uma empresa com este CNPJ');
-    }
-
-    // Verificar se email já existe
-    const { data: existingEmailCompany } = await supabase
-      .from('companies')
-      .select('id')
-      .eq('email', companyData.email.trim().toLowerCase())
-      .maybeSingle();
-
-    if (existingEmailCompany) {
-      throw new Error('Já existe uma empresa com este email');
-    }
-
-    const companyToInsert = {
-      name: companyData.name.trim(),
-      document: companyData.document.trim(),
-      email: companyData.email.trim().toLowerCase(),
-      phone: companyData.phone?.trim() || null,
-      address: companyData.address?.trim() || null,
-      status: companyData.status || 'active',
-      plan_id: companyData.plan_id || null
-    };
-
-    const { data, error } = await supabase
-      .from('companies')
-      .insert([companyToInsert])
-      .select(`
-        *,
-        plans (
-          id,
-          name,
-          price
-        )
-      `)
-      .single();
-
-    if (error) {
-      console.error('Supabase error:', error);
-      if (error.code === '23505') {
-        throw new Error('CNPJ ou email já está em uso por outra empresa');
+    try {
+      console.log('CompanyService: Starting company creation...');
+      console.log('CompanyService: Company data received:', companyData);
+      
+      // Verificar se o usuário atual é master
+      console.log('CompanyService: Checking if user is master...');
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log('CompanyService: Current authenticated user:', user);
+      
+      if (!user) {
+        throw new Error('Usuário não autenticado');
       }
-      throw new Error(`Erro do banco de dados: ${error.message}`);
-    }
 
-    return data;
+      // Verificar função is_master_user
+      console.log('CompanyService: Testing is_master_user function...');
+      const { data: isMasterResult, error: masterError } = await supabase
+        .rpc('is_master_user', { user_uuid: user.id });
+      
+      console.log('CompanyService: is_master_user result:', isMasterResult);
+      console.log('CompanyService: is_master_user error:', masterError);
+
+      // Buscar dados do usuário na tabela users para verificar is_admin
+      console.log('CompanyService: Fetching user data from users table...');
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id, name, email, is_admin')
+        .eq('id', user.id)
+        .single();
+      
+      console.log('CompanyService: User data from table:', userData);
+      console.log('CompanyService: User data error:', userError);
+
+      // Validações básicas
+      if (!companyData.name?.trim()) {
+        throw new Error('Nome da empresa é obrigatório');
+      }
+      
+      if (!companyData.document?.trim()) {
+        throw new Error('CNPJ é obrigatório');
+      }
+      
+      if (!companyData.email?.trim()) {
+        throw new Error('Email é obrigatório');
+      }
+
+      // Verificar se CNPJ já existe
+      console.log('CompanyService: Checking if document already exists...');
+      const { data: existingCompany } = await supabase
+        .from('companies')
+        .select('id')
+        .eq('document', companyData.document.trim())
+        .maybeSingle();
+
+      if (existingCompany) {
+        throw new Error('Já existe uma empresa com este CNPJ');
+      }
+
+      // Verificar se email já existe
+      console.log('CompanyService: Checking if email already exists...');
+      const { data: existingEmailCompany } = await supabase
+        .from('companies')
+        .select('id')
+        .eq('email', companyData.email.trim().toLowerCase())
+        .maybeSingle();
+
+      if (existingEmailCompany) {
+        throw new Error('Já existe uma empresa com este email');
+      }
+
+      const companyToInsert = {
+        name: companyData.name.trim(),
+        document: companyData.document.trim(),
+        email: companyData.email.trim().toLowerCase(),
+        phone: companyData.phone?.trim() || null,
+        address: companyData.address?.trim() || null,
+        status: companyData.status || 'active',
+        plan_id: companyData.plan_id || null
+      };
+
+      console.log('CompanyService: Inserting company with data:', companyToInsert);
+
+      const { data, error } = await supabase
+        .from('companies')
+        .insert([companyToInsert])
+        .select(`
+          *,
+          plans (
+            id,
+            name,
+            price
+          )
+        `)
+        .single();
+
+      if (error) {
+        console.error('CompanyService: Supabase insert error:', error);
+        console.error('CompanyService: Error code:', error.code);
+        console.error('CompanyService: Error message:', error.message);
+        console.error('CompanyService: Error details:', error.details);
+        
+        if (error.code === '42501') {
+          throw new Error('Erro de permissão: Usuário não tem permissão para criar empresas. Verifique se você é um usuário master.');
+        }
+        if (error.code === '23505') {
+          throw new Error('CNPJ ou email já está em uso por outra empresa');
+        }
+        throw new Error(`Erro do banco de dados: ${error.message}`);
+      }
+
+      console.log('CompanyService: Company created successfully:', data);
+      return data;
+    } catch (error) {
+      console.error('CompanyService: createCompany error:', error);
+      throw error;
+    }
   }
 
   static async updateCompany(id: string, updates: Partial<Company>) {
