@@ -1,4 +1,5 @@
 
+
 import { useToast } from '@/hooks/use-toast';
 import { useSystemLogsDB } from '@/hooks/useSystemLogsDB';
 import { useAuth } from '@/hooks/useAuth';
@@ -64,7 +65,7 @@ export function useEvolutionConfigActions() {
       instanceName: config.instance_name,
       token: "",
       qrcode: true,
-      number: "", // Sempre vazio conforme especificação
+      number: config.company_phone, // Número da empresa
       integration: "WHATSAPP-BAILEYS",
       webhook: config.webhook_url || "",
       webhook_by_events: true
@@ -94,7 +95,7 @@ curl --request POST \\
 • instanceName: ${requestBody.instanceName}
 • token: (vazio conforme especificação)
 • qrcode: ${requestBody.qrcode}
-• number: (vazio conforme especificação)
+• number: ${requestBody.number}
 • integration: ${requestBody.integration}
 • webhook: ${requestBody.webhook || '(vazio)'}
 • webhook_by_events: ${requestBody.webhook_by_events}`

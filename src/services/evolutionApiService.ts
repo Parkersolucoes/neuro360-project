@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import type { EvolutionConfig } from '@/types/evolutionConfig';
 
@@ -122,12 +123,12 @@ export class EvolutionApiService {
       throw new Error(errorMessage);
     }
     
-    // Estrutura exata conforme especificado no cURL - number sempre vazio
+    // Estrutura conforme especificação cURL - number recebe o telefone da empresa
     const requestBody = {
       instanceName: this.config.instance_name,
       token: "",
       qrcode: true,
-      number: "", // Sempre vazio conforme solicitado
+      number: phoneNumber, // Enviando número da empresa
       integration: "WHATSAPP-BAILEYS",
       webhook: webhookUrl || "",
       webhook_by_events: true
@@ -150,7 +151,7 @@ export class EvolutionApiService {
       const errorMessage = `Falha ao criar instância Evolution API: ${error instanceof Error ? error.message : 'Erro desconhecido'}`;
       await this.logSystemError(errorMessage, { 
         instanceName: this.config.instance_name,
-        number: "", // Log também mostra que number é vazio
+        number: phoneNumber, // Log mostra o número enviado
         error: error instanceof Error ? error.message : 'Erro desconhecido'
       });
       throw error;
@@ -164,12 +165,12 @@ export class EvolutionApiService {
       throw new Error('Número de telefone é obrigatório para criar a instância');
     }
     
-    // Estrutura exata conforme especificado no cURL - number sempre vazio
+    // Estrutura conforme especificação cURL - number recebe o telefone da empresa
     const requestBody = {
       instanceName: this.config.instance_name,
       token: "",
       qrcode: true,
-      number: "", // Sempre vazio conforme solicitado
+      number: phoneNumber, // Enviando número da empresa
       integration: "WHATSAPP-BAILEYS",
       webhook: webhookUrl || "",
       webhook_by_events: true

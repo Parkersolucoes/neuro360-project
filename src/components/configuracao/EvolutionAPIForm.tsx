@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -90,7 +91,7 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
   "instanceName": "${evolutionForm.instance_name}",
   "token": "",
   "qrcode": true,
-  "number": "",
+  "number": "${currentCompany.phone}",
   "integration": "WHATSAPP-BAILEYS",
   "webhook": "${evolutionForm.webhook_url || ''}",
   "webhook_by_events": true
@@ -338,11 +339,11 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
 
                 {/* Dados da Empresa */}
                 <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <h4 className="font-semibold text-green-800 mb-2">🏢 Dados da Empresa (instanceName)</h4>
+                  <h4 className="font-semibold text-green-800 mb-2">🏢 Dados da Empresa (instanceName e number)</h4>
                   <div className="space-y-1 text-sm">
                     <p><strong>Nome da Empresa:</strong> {confirmationData.companyName}</p>
                     <p><strong>Instance Name:</strong> {confirmationData.instanceName}</p>
-                    <p><strong>Number:</strong> (vazio conforme especificação)</p>
+                    <p><strong>Number (Telefone):</strong> {confirmationData.companyPhone}</p>
                   </div>
                 </div>
 
@@ -353,7 +354,7 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
                     <p><strong>instanceName:</strong> "{confirmationData.instanceName}"</p>
                     <p><strong>token:</strong> "" (vazio conforme especificação)</p>
                     <p><strong>qrcode:</strong> true</p>
-                    <p><strong>number:</strong> "" (vazio conforme especificação)</p>
+                    <p><strong>number:</strong> "{confirmationData.companyPhone}"</p>
                     <p><strong>integration:</strong> "{confirmationData.integration}"</p>
                     <p><strong>webhook:</strong> "{confirmationData.webhookUrl || 'Vazio'}"</p>
                     <p><strong>webhook_by_events:</strong> true</p>
@@ -376,7 +377,7 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
                     <p><strong>Método:</strong> POST</p>
                     <p><strong>URL Completa:</strong> {confirmationData.globalConfig.base_url}/instance/create</p>
                     <p><strong>Corpo da Requisição:</strong> JSON com 7 parâmetros conforme especificação cURL</p>
-                    <p><strong>Observação:</strong> Parâmetro "number" enviado vazio conforme solicitado</p>
+                    <p><strong>Observação:</strong> Parâmetro "number" enviado com telefone da empresa: {confirmationData.companyPhone}</p>
                   </div>
                 </div>
 
@@ -454,3 +455,4 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
     </div>
   );
 }
+
