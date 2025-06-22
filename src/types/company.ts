@@ -8,6 +8,7 @@ export interface Company {
   address?: string;
   status: "active" | "inactive" | "suspended";
   plan_id?: string;
+  qr_code?: string;
   created_at: string;
   updated_at: string;
 }

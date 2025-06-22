@@ -19,6 +19,7 @@ export type Database = {
           name: string
           phone: string | null
           plan_id: string | null
+          qr_code: string | null
           status: string
           updated_at: string
         }
@@ -31,6 +32,7 @@ export type Database = {
           name: string
           phone?: string | null
           plan_id?: string | null
+          qr_code?: string | null
           status?: string
           updated_at?: string
         }
@@ -43,6 +45,7 @@ export type Database = {
           name?: string
           phone?: string | null
           plan_id?: string | null
+          qr_code?: string | null
           status?: string
           updated_at?: string
         }

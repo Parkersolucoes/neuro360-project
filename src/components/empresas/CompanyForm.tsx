@@ -27,6 +27,7 @@ export function CompanyForm({ isOpen, onOpenChange, editingCompany, onSave, onCa
     phone: "",
     address: "",
     plan_id: "",
+    qr_code: "",
     status: "active" as "active" | "inactive" | "suspended"
   });
 
@@ -39,6 +40,7 @@ export function CompanyForm({ isOpen, onOpenChange, editingCompany, onSave, onCa
         phone: editingCompany.phone || "",
         address: editingCompany.address || "",
         plan_id: editingCompany.plan_id || "",
+        qr_code: editingCompany.qr_code || "",
         status: editingCompany.status || "active"
       });
     } else {
@@ -49,6 +51,7 @@ export function CompanyForm({ isOpen, onOpenChange, editingCompany, onSave, onCa
         phone: "",
         address: "",
         plan_id: "",
+        qr_code: "",
         status: "active"
       });
     }
@@ -156,6 +159,16 @@ export function CompanyForm({ isOpen, onOpenChange, editingCompany, onSave, onCa
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="qr_code">QR Code</Label>
+            <Input
+              id="qr_code"
+              placeholder="Código QR da empresa"
+              value={formData.qr_code}
+              onChange={(e) => setFormData({...formData, qr_code: e.target.value})}
+            />
           </div>
           
           <div className="flex justify-end space-x-2 mt-6">
