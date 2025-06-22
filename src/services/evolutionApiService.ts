@@ -1,15 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-
-export interface EvolutionConfig {
-  id: string;
-  company_id: string;
-  api_url: string;
-  api_key: string;
-  instance_name: string;
-  webhook_url: string | null;
-  is_active: boolean;
-  status: 'connected' | 'disconnected' | 'testing';
-}
+import type { EvolutionConfig } from '@/types/evolutionConfig';
 
 export interface QRCodeResponse {
   qrCode: string;
