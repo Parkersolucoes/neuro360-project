@@ -206,15 +206,37 @@ export function useSystemConfig() {
 
   const uploadImage = async (file: File): Promise<string> => {
     try {
-      console.log('Uploading image to storage...');
+      console.log('Uploading image to images360 storage...');
+      
+      // Primeiro, deletar imagem anterior se existir
+      if (config?.login_background_image) {
+        try {
+          // Extrair o caminho do arquivo da URL
+          const url = new URL(config.login_background_image);
+          const pathSegments = url.pathname.split('/');
+          const fileName = pathSegments[pathSegments.length - 1];
+          
+          if (fileName && fileName !== '') {
+            console.log('Deleting old image:', fileName);
+            await supabase.storage
+              .from('images360')
+              .remove([fileName]);
+          }
+        } catch (deleteError) {
+          console.warn('Could not delete old image:', deleteError);
+        }
+      }
       
       const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `system/${fileName}`;
+      const fileName = `login-background-${Date.now()}.${fileExt}`;
+      const filePath = fileName;
 
       const { data, error } = await supabase.storage
-        .from('system-assets')
-        .upload(filePath, file);
+        .from('images360')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
 
       if (error) {
         console.error('Storage upload error:', error);
@@ -223,7 +245,7 @@ export function useSystemConfig() {
 
       // Obter URL pública da imagem
       const { data: urlData } = supabase.storage
-        .from('system-assets')
+        .from('images360')
         .getPublicUrl(filePath);
 
       console.log('Image uploaded successfully:', urlData.publicUrl);

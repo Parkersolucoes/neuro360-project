@@ -37,8 +37,11 @@ export default function Auth() {
     }
   };
 
+  // Verificar se há imagem de fundo configurada
+  const hasBackgroundImage = config?.login_background_image && config.login_background_image.trim() !== '';
+
   // Criar estilo dinâmico para o fundo
-  const backgroundStyle = config?.login_background_image 
+  const backgroundStyle = hasBackgroundImage 
     ? {
         backgroundImage: `url(${config.login_background_image})`,
         backgroundSize: 'cover',
@@ -49,16 +52,18 @@ export default function Auth() {
 
   return (
     <div 
-      className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center relative overflow-hidden"
+      className={`min-h-screen flex items-center justify-center relative overflow-hidden ${
+        hasBackgroundImage ? '' : 'bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900'
+      }`}
       style={backgroundStyle}
     >
       {/* Overlay escuro se houver imagem de fundo */}
-      {config?.login_background_image && (
-        <div className="absolute inset-0 bg-black/50"></div>
+      {hasBackgroundImage && (
+        <div className="absolute inset-0 bg-black/60"></div>
       )}
 
       {/* Background decorative elements - só mostrar se não houver imagem */}
-      {!config?.login_background_image && (
+      {!hasBackgroundImage && (
         <div className="absolute inset-0">
           <div className="absolute top-20 left-20 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl"></div>
           <div className="absolute bottom-20 right-20 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl"></div>
@@ -67,7 +72,7 @@ export default function Auth() {
       )}
 
       {/* Grid pattern overlay - só mostrar se não houver imagem */}
-      {!config?.login_background_image && (
+      {!hasBackgroundImage && (
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:50px_50px]"></div>
       )}
 
@@ -75,7 +80,7 @@ export default function Auth() {
         <div className="flex items-center justify-center">
           {/* Quadro único com propaganda e login */}
           <div className="w-full max-w-2xl">
-            <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-8 rounded-2xl border border-slate-700/50 shadow-2xl backdrop-blur-xl">
+            <div className="bg-gradient-to-br from-slate-800/95 to-slate-900/95 p-8 rounded-2xl border border-slate-700/50 shadow-2xl backdrop-blur-xl">
               <div className="space-y-6">
                 <h1 className="text-5xl font-bold text-white leading-tight text-center">
                   {config?.system_name || 'Visão 360'}
