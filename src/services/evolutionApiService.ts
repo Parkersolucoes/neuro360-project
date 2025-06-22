@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import type { EvolutionConfig } from '@/types/evolutionConfig';
 
@@ -147,13 +148,13 @@ export class EvolutionApiService {
       throw new Error(errorMessage);
     }
     
-    // Estrutura exata conforme especificado - usando o número da empresa
+    // Estrutura exata conforme especificado pelos parâmetros solicitados
     const requestBody = {
       instanceName: this.config.instance_name,
-      token: "", // Enviado em branco conforme especificado
+      token: "",
       qrcode: true,
-      number: phoneNumber, // Número da empresa passado como parâmetro
-      integration: "Baileys" // Tipo Baileys conforme especificado
+      number: phoneNumber,
+      integration: "WHATSAPP-BAILEYS"
     };
 
     try {
@@ -187,13 +188,13 @@ export class EvolutionApiService {
       throw new Error('Número de telefone é obrigatório para criar a instância');
     }
     
-    // Estrutura exata conforme especificado - usando o número da empresa
+    // Estrutura exata conforme especificado pelos parâmetros solicitados
     const requestBody = {
       instanceName: this.config.instance_name,
-      token: "", // Enviado em branco conforme especificado
+      token: "",
       qrcode: true,
-      number: phoneNumber, // Número da empresa passado como parâmetro
-      integration: "Baileys" // Tipo Baileys conforme especificado
+      number: phoneNumber,
+      integration: "WHATSAPP-BAILEYS"
     };
 
     return this.makeRequest(`/instance/create`, 'POST', requestBody);

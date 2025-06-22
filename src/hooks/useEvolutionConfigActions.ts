@@ -63,7 +63,7 @@ export function useEvolutionConfigActions() {
       
       // Passo 1: Validar configurações globais
       toast({
-        title: "Passo 1/6 - Validando Configurações",
+        title: "Passo 1/7 - Validando Configurações",
         description: "🔍 Verificando configurações globais da Evolution API..."
       });
 
@@ -85,7 +85,7 @@ export function useEvolutionConfigActions() {
 
       // Passo 3: Preparar número da empresa
       toast({
-        title: "Passo 2/6 - Preparando Número da Empresa",
+        title: "Passo 2/7 - Preparando Número da Empresa",
         description: `📱 Número cadastrado na empresa: ${config.company_phone}`
       });
 
@@ -93,10 +93,24 @@ export function useEvolutionConfigActions() {
       
       console.log('useEvolutionConfigActions: Using company phone number:', phoneNumber);
 
-      // Passo 4: Mostrar parâmetros completos que serão enviados
+      // Passo 4: Mostrar EXATAMENTE os parâmetros que serão enviados
+      const requestParameters = {
+        instanceName: config.instance_name,
+        token: "",
+        qrcode: true,
+        number: phoneNumber,
+        integration: "WHATSAPP-BAILEYS"
+      };
+
       toast({
-        title: "Passo 3/6 - Parâmetros da Requisição",
-        description: `🌐 URL: ${globalConfig.base_url}/instance/create\n🔑 apikey: ${globalConfig.global_api_key.substring(0, 12)}...\n📱 instanceName: ${config.instance_name}\n🎯 token: (em branco)\n📱 qrcode: true\n📞 number: ${phoneNumber}\n🔧 integration: Baileys`
+        title: "Passo 3/7 - Parâmetros da Requisição POST",
+        description: `🌐 URL: ${globalConfig.base_url}/instance/create\n📋 Parâmetros JSON que serão enviados:\n• instanceName: "${requestParameters.instanceName}"\n• token: "${requestParameters.token}" (vazio)\n• qrcode: ${requestParameters.qrcode}\n• number: "${requestParameters.number}"\n• integration: "${requestParameters.integration}"`
+      });
+
+      // Passo 5: Mostrar headers da requisição
+      toast({
+        title: "Passo 4/7 - Headers da Requisição",
+        description: `📤 Headers HTTP:\n• Content-Type: application/json\n• apikey: ${globalConfig.global_api_key.substring(0, 12)}***`
       });
 
       const tempEvolutionService = new EvolutionApiService({
@@ -113,10 +127,10 @@ export function useEvolutionConfigActions() {
         updated_at: new Date().toISOString()
       });
 
-      // Passo 5: Enviar requisição
+      // Passo 6: Enviar requisição
       toast({
-        title: "Passo 4/6 - Enviando Requisição",
-        description: "🚀 Enviando POST para Evolution API com número de telefone da empresa..."
+        title: "Passo 5/7 - Enviando Requisição",
+        description: "🚀 Enviando POST para Evolution API com os parâmetros especificados..."
       });
 
       const createResponse = await tempEvolutionService.createInstanceWithQRCode(phoneNumber);
@@ -124,15 +138,15 @@ export function useEvolutionConfigActions() {
       if (createResponse.instance && createResponse.instance.instanceName) {
         console.log('useEvolutionConfigActions: Instance created successfully with QR Code:', createResponse);
         
-        // Passo 6: Sucesso e QR Code
+        // Passo 7: Sucesso e QR Code
         toast({
-          title: "Passo 5/6 - Instância Criada com Sucesso",
+          title: "Passo 6/7 - Instância Criada com Sucesso",
           description: `🎉 Nome: ${createResponse.instance.instanceName}\n📊 Status: ${createResponse.instance.status}\n📱 Número: ${phoneNumber}\n${createResponse.qrCodeData ? '📱 QR Code gerado automaticamente' : '⚠️ QR Code não disponível'}`
         });
         
-        // Passo 7: Salvar QR Code
+        // Passo 8: Salvar QR Code
         toast({
-          title: "Passo 6/6 - Finalizando",
+          title: "Passo 7/7 - Finalizando",
           description: "💾 Salvando QR Code e preparando para exibição..."
         });
         
@@ -150,7 +164,8 @@ export function useEvolutionConfigActions() {
           instance_name: config.instance_name,
           phone_number: phoneNumber,
           has_qr_code: !!createResponse.qrCodeData,
-          api_url: globalConfig.base_url
+          api_url: globalConfig.base_url,
+          request_parameters: requestParameters
         });
         
         return { 
@@ -319,7 +334,7 @@ export function useEvolutionConfigActions() {
             updates.instance_name = instanceName;
           }
 
-          const phoneNumber = currentCompany.phone; // Sem formatação
+          const phoneNumber = currentCompany.phone;
 
           toast({
             title: "Validando alterações",
@@ -338,7 +353,7 @@ export function useEvolutionConfigActions() {
           updates.status = 'connected';
           updates.api_url = globalConfig.base_url;
           updates.api_key = globalConfig.global_api_key;
-          updates.number = phoneNumber; // Sem formatação
+          updates.number = phoneNumber;
         }
 
         const updatedConfig = await EvolutionConfigService.update(id, updates);
@@ -368,6 +383,6 @@ export function useEvolutionConfigActions() {
     createInstanceWithQRCode,
     generateSessionName,
     getGlobalEvolutionConfig,
-    formatPhoneNumber: (phone: string) => phone // Agora retorna sem formatação
+    formatPhoneNumber: (phone: string) => phone
   };
 }
