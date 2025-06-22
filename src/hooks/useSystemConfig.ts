@@ -38,7 +38,6 @@ export function useSystemConfig() {
       }
 
       if (data?.config_value) {
-        // Validar se o config_value tem a estrutura esperada
         const configValue = data.config_value as any;
         if (configValue && typeof configValue === 'object') {
           setConfig({
@@ -47,7 +46,6 @@ export function useSystemConfig() {
             login_background_image: configValue.login_background_image || ""
           });
         } else {
-          // Usar valores padrão se a estrutura não estiver correta
           setConfig({
             system_name: "Visão 360 - Soluções em Dados",
             system_description: "Plataforma completa para análise e gestão de dados empresariais",
@@ -55,7 +53,6 @@ export function useSystemConfig() {
           });
         }
       } else {
-        // Se não há configuração, usar valores padrão
         setConfig({
           system_name: "Visão 360 - Soluções em Dados",
           system_description: "Plataforma completa para análise e gestão de dados empresariais",
@@ -85,14 +82,12 @@ export function useSystemConfig() {
     }
 
     try {
-      // Converter SystemConfig para um objeto JSON compatível
       const jsonConfigValue = {
         system_name: configData.system_name,
         system_description: configData.system_description,
         login_background_image: configData.login_background_image
       };
 
-      // Verificar se já existe uma configuração
       const { data: existingConfig } = await supabase
         .from('system_configs')
         .select('id')
@@ -101,7 +96,6 @@ export function useSystemConfig() {
         .single();
 
       if (existingConfig) {
-        // Atualizar configuração existente
         const { error } = await supabase
           .from('system_configs')
           .update({
@@ -112,7 +106,6 @@ export function useSystemConfig() {
 
         if (error) throw error;
       } else {
-        // Criar nova configuração
         const { error } = await supabase
           .from('system_configs')
           .insert({
@@ -162,19 +155,19 @@ export function useSystemConfig() {
       const fileExt = file.name.split('.').pop();
       const fileName = `${currentCompany.id}/login-bg-${Date.now()}.${fileExt}`;
       
-      // Remover imagem anterior se existir (sem logging para evitar RLS)
+      // Remover imagem anterior se existir
       if (config?.login_background_image) {
         try {
-          const oldFileName = config.login_background_image.split('/').pop();
-          if (oldFileName) {
-            const oldFilePath = `${currentCompany.id}/${oldFileName}`;
+          const oldUrl = new URL(config.login_background_image);
+          const oldPath = oldUrl.pathname.split('/').pop();
+          if (oldPath) {
+            const oldFilePath = `${currentCompany.id}/${oldPath}`;
             await supabase.storage
               .from('system-images')
               .remove([oldFilePath]);
           }
         } catch (removeError) {
           console.warn('Erro ao remover imagem anterior:', removeError);
-          // Não falhar o upload por erro na remoção
         }
       }
 
@@ -188,7 +181,7 @@ export function useSystemConfig() {
 
       if (error) {
         console.error('Storage upload error:', error);
-        throw new Error('Erro no upload da imagem');
+        throw new Error('Erro no upload da imagem: ' + error.message);
       }
 
       // Obter URL pública da imagem

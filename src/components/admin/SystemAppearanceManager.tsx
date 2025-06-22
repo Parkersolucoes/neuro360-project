@@ -58,7 +58,7 @@ export function SystemAppearanceManager() {
 
     setIsUploading(true);
     try {
-      // Criar preview
+      // Criar preview local
       const reader = new FileReader();
       reader.onload = (e) => {
         setPreviewImage(e.target?.result as string);
@@ -78,7 +78,7 @@ export function SystemAppearanceManager() {
       });
     } catch (error) {
       console.error('Error uploading image:', error);
-      const errorMsg = error.message || 'Erro desconhecido no upload';
+      const errorMsg = error instanceof Error ? error.message : 'Erro desconhecido no upload';
       
       toast({
         title: "Erro",
