@@ -60,11 +60,20 @@ export function useWebhookIntegration(companyId?: string) {
         setIntegration(null);
         console.log('ℹ️ Nenhuma configuração encontrada');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Erro ao carregar configuração:', error);
+      
+      // Mensagem de erro mais específica baseada no tipo de erro
+      let errorMessage = "Erro ao carregar configuração";
+      if (error?.code === 'PGRST116') {
+        errorMessage = "Configuração não encontrada";
+      } else if (error?.message?.includes('permission')) {
+        errorMessage = "Erro de permissão: Verifique se você tem acesso à empresa";
+      }
+      
       toast({
         title: "Erro",
-        description: "Erro ao carregar configuração",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -75,6 +84,12 @@ export function useWebhookIntegration(companyId?: string) {
   const saveIntegration = async (data: SaveWebhookData) => {
     try {
       console.log('💾 Salvando configuração:', data);
+
+      // Verificar se usuário está autenticado
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('Usuário não autenticado');
+      }
 
       let result;
       
@@ -131,10 +146,16 @@ export function useWebhookIntegration(companyId?: string) {
       console.error('❌ Erro ao salvar configuração:', error);
       
       let errorMessage = "Erro ao salvar caminho";
-      if (error?.message?.includes('violates row-level security')) {
-        errorMessage = "Erro de permissão: Verifique se você tem acesso à empresa";
+      
+      // Tratamento de erros específicos
+      if (error?.code === '42501') {
+        errorMessage = "Erro de permissão: Acesso negado";
+      } else if (error?.message?.includes('violates row-level security')) {
+        errorMessage = "Erro de permissão: Política de segurança violada";
       } else if (error?.message?.includes('not authenticated')) {
         errorMessage = "Erro de autenticação: Faça login novamente";
+      } else if (error?.message?.includes('duplicate')) {
+        errorMessage = "Erro: Configuração já existe para esta empresa";
       } else if (error?.message) {
         errorMessage = `Erro: ${error.message}`;
       }
