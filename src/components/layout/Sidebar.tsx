@@ -17,7 +17,8 @@ import {
   Webhook,
   Shield,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  LogOut
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,7 +30,7 @@ export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
   const location = useLocation();
-  const { userLogin } = useAuth();
+  const { userLogin, logout } = useAuth();
   const { currentCompany } = useCompanies();
 
   // Verificar se o usuário é master (is_admin = '0')
@@ -59,6 +60,10 @@ export function Sidebar() {
       setIsAdminMenuOpen(true);
     }
   }, [isAdminMenuActive]);
+
+  const handleLogout = () => {
+    logout();
+  };
 
   return (
     <div className={`bg-slate-800 text-white transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'} min-h-screen flex flex-col`}>
@@ -160,6 +165,19 @@ export function Sidebar() {
               </div>
             </li>
           )}
+
+          {/* Botão de Sair */}
+          <li>
+            <div className="mt-4 pt-4 border-t border-slate-700">
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors text-slate-300 hover:bg-red-600 hover:text-white"
+              >
+                <LogOut className="w-5 h-5 flex-shrink-0" />
+                {!isCollapsed && <span>Sair</span>}
+              </button>
+            </div>
+          </li>
         </ul>
       </nav>
 
