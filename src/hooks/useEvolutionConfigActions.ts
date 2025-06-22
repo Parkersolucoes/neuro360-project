@@ -75,8 +75,8 @@ export function useEvolutionConfigActions() {
       
       // Passo 1: Validar configurações globais
       toast({
-        title: "Passo 1/5",
-        description: "🔍 Validando configurações globais da Evolution API..."
+        title: "Passo 1/5 - Validando Configurações",
+        description: "🔍 Verificando configurações globais da Evolution API..."
       });
 
       const globalConfig = getGlobalEvolutionConfig();
@@ -85,21 +85,33 @@ export function useEvolutionConfigActions() {
         throw new Error('Configuração global da Evolution API não encontrada. Configure primeiro nas Configurações do Sistema.');
       }
 
+      // Mostrar parâmetros das configurações globais
+      toast({
+        title: "✓ Configurações Globais Encontradas",
+        description: `📋 URL Base: ${globalConfig.base_url}\n🔑 API Key: ${globalConfig.global_api_key.substring(0, 8)}...`
+      });
+
       console.log('useEvolutionConfigActions: Using global config:', { base_url: globalConfig.base_url });
 
       // Passo 2: Formatar número de telefone
       toast({
-        title: "Passo 2/5",
-        description: "📱 Formatando número de telefone da empresa..."
+        title: "Passo 2/5 - Formatando Telefone",
+        description: `📱 Número original: ${config.company_phone}`
       });
 
       const phoneNumber = formatPhoneNumber(config.company_phone);
+      
+      toast({
+        title: "✓ Telefone Formatado",
+        description: `📱 Número formatado: ${phoneNumber}\n🌍 Código do país (55) adicionado automaticamente`
+      });
+      
       console.log('useEvolutionConfigActions: Formatted phone number:', phoneNumber);
 
-      // Passo 3: Criar serviço temporário
+      // Passo 3: Preparar parâmetros da instância
       toast({
-        title: "Passo 3/5",
-        description: "⚙️ Configurando serviço Evolution API..."
+        title: "Passo 3/5 - Preparando Instância",
+        description: `⚙️ Nome da instância: ${config.instance_name}\n🔧 Integração: WhatsApp Baileys`
       });
 
       const tempEvolutionService = new EvolutionApiService({
@@ -116,10 +128,16 @@ export function useEvolutionConfigActions() {
         updated_at: new Date().toISOString()
       });
 
+      // Mostrar parâmetros completos antes da criação
+      toast({
+        title: "✓ Parâmetros da Instância Preparados",
+        description: `📦 Instância: ${config.instance_name}\n📡 URL: ${globalConfig.base_url}\n📞 Telefone: ${phoneNumber}\n🔧 Integração: WHATSAPP-BAILEYS`
+      });
+
       // Passo 4: Criar instância na Evolution API
       toast({
-        title: "Passo 4/5",
-        description: "🚀 Criando instância WhatsApp na Evolution API..."
+        title: "Passo 4/5 - Criando Instância",
+        description: "🚀 Enviando solicitação para Evolution API..."
       });
 
       const createResponse = await tempEvolutionService.createInstanceWithQRCode();
@@ -127,29 +145,33 @@ export function useEvolutionConfigActions() {
       if (createResponse.instance && createResponse.instance.instanceName) {
         console.log('useEvolutionConfigActions: Instance created successfully with QR Code:', createResponse);
         
+        // Mostrar detalhes da resposta da API
+        toast({
+          title: "✓ Instância Criada com Sucesso",
+          description: `🎉 Nome: ${createResponse.instance.instanceName}\n📊 Status: ${createResponse.instance.status}\n${createResponse.qrCodeData ? '📱 QR Code gerado automaticamente' : '⚠️ QR Code não disponível'}`
+        });
+        
         // Passo 5: Salvar QR Code e finalizar
         toast({
-          title: "Passo 5/5",
-          description: "💾 Salvando configurações e preparando QR Code..."
+          title: "Passo 5/5 - Finalizando",
+          description: "💾 Salvando QR Code na sessão e preparando para exibição..."
         });
         
         // Salvar QR Code na sessão se disponível
         if (createResponse.qrCodeData && currentCompany) {
           await saveQRCodeToSession(config.instance_name, createResponse.qrCodeData, currentCompany.id);
+          
+          toast({
+            title: "✅ Processo Concluído com Sucesso!",
+            description: `🎯 Instância ${config.instance_name} criada\n📱 QR Code salvo e pronto\n👆 Escaneie o código abaixo com seu WhatsApp`
+          });
         }
         
         logInfo('Instância Evolution API criada com sucesso e QR Code salvo', 'useEvolutionConfigActions', {
           instance_name: config.instance_name,
           phone_number: phoneNumber,
-          has_qr_code: !!createResponse.qrCodeData
-        });
-        
-        // Toast de sucesso
-        toast({
-          title: "✅ Instância criada com sucesso!",
-          description: createResponse.qrCodeData 
-            ? "QR Code gerado e pronto para conexão. Escaneie o código abaixo com seu WhatsApp."
-            : "Instância criada. Acesse o menu QR Code para gerar o código de conexão."
+          has_qr_code: !!createResponse.qrCodeData,
+          api_url: globalConfig.base_url
         });
         
         return { 
@@ -162,7 +184,7 @@ export function useEvolutionConfigActions() {
         logError('Falha na criação da instância - resposta inválida', 'useEvolutionConfigActions');
         
         toast({
-          title: "❌ Falha na criação",
+          title: "❌ Falha na Criação",
           description: "Resposta inválida da Evolution API. Verifique as configurações.",
           variant: "destructive"
         });
@@ -174,7 +196,7 @@ export function useEvolutionConfigActions() {
       logError(`Falha na criação da instância: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'useEvolutionConfigActions', error);
       
       toast({
-        title: "❌ Erro na criação",
+        title: "❌ Erro na Criação",
         description: error instanceof Error ? error.message : 'Erro desconhecido na criação da instância',
         variant: "destructive"
       });
