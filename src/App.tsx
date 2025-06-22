@@ -1,75 +1,66 @@
 
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { AuthProvider } from "@/hooks/useAuth";
-import { CompaniesProvider } from "@/providers/CompaniesProvider";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import Dashboard from "./pages/Dashboard";
-import Empresas from "./pages/Empresas";
-import Usuarios from "./pages/Usuarios";
-import Templates from "./pages/Templates";
-import ConsultasSQL from "./pages/ConsultasSQL";
-import Agendamento from "./pages/Agendamento";
-import QRCode from "./pages/QRCode";
-import Configuracao from "./pages/Configuracao";
-import ConfiguracaoSistema from "./pages/ConfiguracaoSistema";
-import Planos from "./pages/Planos";
-import Financeiro from "./pages/Financeiro";
-import NotFound from "./pages/NotFound";
-import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { AuthProvider } from '@/contexts/AuthContext';
+import { CompanyProvider } from '@/contexts/CompanyContext';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { Layout } from '@/components/layout/Layout';
+
+// Pages
+import Auth from '@/pages/Auth';
+import Dashboard from '@/pages/Dashboard';
+import Empresas from '@/pages/Empresas';
+import Usuarios from '@/pages/Usuarios';
+import Planos from '@/pages/Planos';
+import SQLServer from '@/pages/SQLServer';
+import Agendamentos from '@/pages/Agendamentos';
+import WhatsApp from '@/pages/WhatsApp';
+import Webhooks from '@/pages/Webhooks';
+import Relatorios from '@/pages/Relatorios';
+import ConfiguracaoSistema from '@/pages/ConfiguracaoSistema';
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <CompaniesProvider>
-            <SidebarProvider>
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <CompanyProvider>
+          <Router>
+            <div className="App">
               <Routes>
-                {/* Rota pública para autenticação */}
                 <Route path="/auth" element={<Auth />} />
-                
-                {/* Redirecionar para auth se não autenticado */}
-                <Route path="/" element={<Navigate to="/auth" replace />} />
-                
-                {/* Rotas protegidas do dashboard */}
-                <Route path="/*" element={
-                  <ProtectedRoute>
-                    <DashboardLayout>
-                      <Routes>
-                        <Route path="/dashboard" element={<Dashboard />} />
-                        <Route path="/empresas" element={<Empresas />} />
-                        <Route path="/usuarios" element={<Usuarios />} />
-                        <Route path="/templates" element={<Templates />} />
-                        <Route path="/consultas" element={<ConsultasSQL />} />
-                        <Route path="/agendamento" element={<Agendamento />} />
-                        <Route path="/qrcode" element={<QRCode />} />
-                        <Route path="/configuracao" element={<Configuracao />} />
-                        <Route path="/configuracao-sistema" element={<ConfiguracaoSistema />} />
-                        <Route path="/planos" element={<Planos />} />
-                        <Route path="/financeiro" element={<Financeiro />} />
-                        <Route path="*" element={<NotFound />} />
-                      </Routes>
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                } />
+                <Route 
+                  path="/*" 
+                  element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <Routes>
+                          <Route path="/" element={<Navigate to="/dashboard" />} />
+                          <Route path="/dashboard" element={<Dashboard />} />
+                          <Route path="/empresas" element={<Empresas />} />
+                          <Route path="/usuarios" element={<Usuarios />} />
+                          <Route path="/planos" element={<Planos />} />
+                          <Route path="/sql-server" element={<SQLServer />} />
+                          <Route path="/agendamentos" element={<Agendamentos />} />
+                          <Route path="/whatsapp" element={<WhatsApp />} />
+                          <Route path="/webhooks" element={<Webhooks />} />
+                          <Route path="/relatorios" element={<Relatorios />} />
+                          <Route path="/configuracao-sistema" element={<ConfiguracaoSistema />} />
+                        </Routes>
+                      </Layout>
+                    </ProtectedRoute>
+                  } 
+                />
               </Routes>
-            </SidebarProvider>
-          </CompaniesProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+              <Toaster />
+            </div>
+          </Router>
+        </CompanyProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+}
 
 export default App;

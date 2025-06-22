@@ -1,20 +1,13 @@
 
 import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { usePlans } from "@/hooks/usePlans";
-import { useTemplates } from "@/hooks/useTemplates";
-import { usePlanTemplates } from "@/hooks/usePlanTemplates";
 import { PlanFormDialog } from "@/components/planos/PlanFormDialog";
 import { PlanTable } from "@/components/planos/PlanTable";
-import { PlanTemplateManager } from "@/components/planos/PlanTemplateManager";
 
 export default function Planos() {
   const { toast } = useToast();
   const { plans, loading, createPlan, updatePlan, deletePlan } = usePlans();
-  const { templates } = useTemplates();
-  const { planTemplates, linkTemplateToPlan, unlinkTemplateFromPlan } = usePlanTemplates();
-
   const [editingPlan, setEditingPlan] = useState<any>(null);
 
   const savePlan = async (planData: any) => {
@@ -36,26 +29,6 @@ export default function Planos() {
 
   const handleDeletePlan = async (planId: string) => {
     await deletePlan(planId);
-  };
-
-  const getAssociatedTemplates = (planId: string) => {
-    const associatedTemplateIds = planTemplates
-      .filter(pt => pt.plan_id === planId)
-      .map(pt => pt.template_id);
-    
-    return templates.filter(template => associatedTemplateIds.includes(template.id));
-  };
-
-  const handleTemplateToggle = async (planId: string, templateId: string, isLinked: boolean) => {
-    if (isLinked) {
-      await unlinkTemplateFromPlan(templateId, planId);
-    } else {
-      await linkTemplateToPlan(templateId, planId);
-    }
-  };
-
-  const isTemplateLinkedToPlan = (planId: string, templateId: string) => {
-    return planTemplates.some(pt => pt.plan_id === planId && pt.template_id === templateId);
   };
 
   if (loading) {
@@ -83,30 +56,11 @@ export default function Planos() {
         />
       </div>
 
-      <Tabs defaultValue="planos" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="planos">Planos</TabsTrigger>
-          <TabsTrigger value="templates">Gerenciar Templates</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="planos">
-          <PlanTable
-            plans={plans}
-            onEdit={editPlan}
-            onDelete={handleDeletePlan}
-            getAssociatedTemplates={getAssociatedTemplates}
-          />
-        </TabsContent>
-
-        <TabsContent value="templates">
-          <PlanTemplateManager
-            plans={plans}
-            templates={templates}
-            isTemplateLinkedToPlan={isTemplateLinkedToPlan}
-            onTemplateToggle={handleTemplateToggle}
-          />
-        </TabsContent>
-      </Tabs>
+      <PlanTable
+        plans={plans}
+        onEdit={editPlan}
+        onDelete={handleDeletePlan}
+      />
     </div>
   );
 }
