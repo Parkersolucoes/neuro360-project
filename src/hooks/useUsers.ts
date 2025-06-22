@@ -75,10 +75,27 @@ export function useUsers() {
       
       console.log('Users fetched successfully:', data);
       
-      const formattedUsers = (data || []).map(user => ({
+      let formattedUsers = (data || []).map(user => ({
         ...user,
         status: user.status as 'active' | 'inactive'
       }));
+
+      // Verificar se a empresa atual é a empresa default (primeira empresa criada)
+      // Buscar a primeira empresa criada no sistema
+      const { data: firstCompany } = await supabase
+        .from('companies')
+        .select('id')
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .single();
+
+      const isDefaultCompany = firstCompany && currentCompany.id === firstCompany.id;
+
+      // Filtrar usuários master se não estiver na empresa default
+      if (!isDefaultCompany) {
+        formattedUsers = formattedUsers.filter(user => user.is_admin !== '0');
+        console.log('Filtered out master users for non-default company');
+      }
       
       setUsers(formattedUsers);
     } catch (error) {
