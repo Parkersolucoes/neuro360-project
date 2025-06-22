@@ -85,14 +85,22 @@ export class EvolutionApiService {
     }
   }
 
-  async createInstanceWithQRCode(phoneNumber: string): Promise<CreateInstanceResponse & { qrCodeData?: string }> {
+  async createInstanceWithQRCode(phoneNumber?: string): Promise<CreateInstanceResponse & { qrCodeData?: string }> {
     console.log('Evolution API: Creating instance with QR Code:', this.config.instance_name, 'Phone:', phoneNumber);
+    
+    // Usar número da configuração se não fornecido como parâmetro
+    const numberToUse = phoneNumber || this.config.number;
+    
+    if (!numberToUse) {
+      throw new Error('Número de telefone é obrigatório para criar a instância');
+    }
     
     const requestBody = {
       instanceName: this.config.instance_name,
+      token: this.config.api_key,
+      number: numberToUse,
       qrcode: true,
       integration: 'WHATSAPP-BAILEYS',
-      number: phoneNumber,
       webhookUrl: this.config.webhook_url || undefined,
       webhookByEvents: false,
       webhookBase64: false,
@@ -137,11 +145,19 @@ export class EvolutionApiService {
   async createInstance(phoneNumber?: string): Promise<CreateInstanceResponse> {
     console.log('Evolution API: Creating instance:', this.config.instance_name, 'Phone:', phoneNumber);
     
+    // Usar número da configuração se não fornecido como parâmetro
+    const numberToUse = phoneNumber || this.config.number;
+    
+    if (!numberToUse) {
+      throw new Error('Número de telefone é obrigatório para criar a instância');
+    }
+    
     const requestBody = {
       instanceName: this.config.instance_name,
+      token: this.config.api_key,
+      number: numberToUse,
       qrcode: true,
       integration: 'WHATSAPP-BAILEYS',
-      number: phoneNumber || undefined,
       webhookUrl: this.config.webhook_url || undefined,
       webhookByEvents: false,
       webhookBase64: false,

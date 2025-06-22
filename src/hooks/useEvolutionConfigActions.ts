@@ -96,11 +96,14 @@ export function useEvolutionConfigActions() {
         api_key: globalConfig.global_api_key,
         instance_name: config.instance_name,
         webhook_url: null,
+        number: phoneNumber,
         is_active: true,
-        status: 'testing' as const
+        status: 'testing' as const,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       });
 
-      const createResponse = await tempEvolutionService.createInstanceWithQRCode(phoneNumber);
+      const createResponse = await tempEvolutionService.createInstanceWithQRCode();
       
       if (createResponse.instance && createResponse.instance.instanceName) {
         console.log('useEvolutionConfigActions: Instance created successfully with QR Code:', createResponse);
@@ -196,6 +199,7 @@ export function useEvolutionConfigActions() {
 
       const sessionName = generateSessionName(currentCompany.name);
       const instanceName = configData.instance_name || sessionName;
+      const formattedNumber = formatPhoneNumber(currentCompany.phone);
 
       toast({
         title: "Criando instância",
@@ -216,6 +220,7 @@ export function useEvolutionConfigActions() {
         instance_name: instanceName,
         api_url: globalConfig.base_url,
         api_key: globalConfig.global_api_key,
+        number: formattedNumber,
         company_id: currentCompany.id,
         status: 'connected' as const
       };
@@ -280,6 +285,8 @@ export function useEvolutionConfigActions() {
           updates.instance_name = instanceName;
         }
 
+        const formattedNumber = formatPhoneNumber(currentCompany.phone);
+
         toast({
           title: "Validando alterações",
           description: "Criando nova instância para validar as alterações..."
@@ -297,6 +304,7 @@ export function useEvolutionConfigActions() {
         updates.status = 'connected';
         updates.api_url = globalConfig.base_url;
         updates.api_key = globalConfig.global_api_key;
+        updates.number = formattedNumber;
       }
 
       const updatedConfig = await EvolutionConfigService.update(id, updates);

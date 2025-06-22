@@ -65,6 +65,7 @@ export type Database = {
           id: string
           instance_name: string
           is_active: boolean
+          number: string | null
           status: string
           updated_at: string
           webhook_url: string | null
@@ -77,6 +78,7 @@ export type Database = {
           id?: string
           instance_name: string
           is_active?: boolean
+          number?: string | null
           status?: string
           updated_at?: string
           webhook_url?: string | null
@@ -89,6 +91,7 @@ export type Database = {
           id?: string
           instance_name?: string
           is_active?: boolean
+          number?: string | null
           status?: string
           updated_at?: string
           webhook_url?: string | null

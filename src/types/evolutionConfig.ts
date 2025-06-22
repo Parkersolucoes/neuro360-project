@@ -6,6 +6,7 @@ export interface EvolutionConfig {
   api_key: string;
   instance_name: string;
   webhook_url: string | null;
+  number: string | null;
   is_active: boolean;
   status: 'connected' | 'disconnected' | 'testing';
   created_at: string;
