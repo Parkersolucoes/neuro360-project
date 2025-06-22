@@ -758,7 +758,7 @@ export type Database = {
           {
             foreignKeyName: "webhook_integrations_company_id_fkey"
             columns: ["company_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
