@@ -1,16 +1,29 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useCompanies } from '@/hooks/useCompanies';
-import { useSystemLogsDB } from '@/hooks/useSystemLogsDB';
+import { supabase } from '@/integrations/supabase/client';
+
+export interface Scheduling {
+  id: string;
+  company_id: string;
+  user_id: string | null;
+  name: string;
+  message_content: string;
+  recipients: any[];
+  scheduled_for: string;
+  status: 'pending' | 'sent' | 'cancelled' | 'failed';
+  template_id: string | null;
+  sent_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 export function useSchedulingsNew() {
-  const [schedulings, setSchedulings] = useState<any[]>([]);
+  const [schedulings, setSchedulings] = useState<Scheduling[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { currentCompany } = useCompanies();
-  const { logError, logInfo } = useSystemLogsDB();
 
   const fetchSchedulings = async () => {
     if (!currentCompany?.id) {
@@ -21,6 +34,7 @@ export function useSchedulingsNew() {
 
     try {
       setLoading(true);
+      
       const { data, error } = await supabase
         .from('schedulings')
         .select('*')
@@ -28,11 +42,10 @@ export function useSchedulingsNew() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      
       setSchedulings(data || []);
-      logInfo('Agendamentos carregados com sucesso', 'useSchedulingsNew');
     } catch (error) {
       console.error('Error fetching schedulings:', error);
-      logError('Erro ao carregar agendamentos', 'useSchedulingsNew', error);
       toast({
         title: "Erro",
         description: "Erro ao carregar agendamentos",
@@ -43,68 +56,120 @@ export function useSchedulingsNew() {
     }
   };
 
-  const createScheduling = async (schedulingData: any) => {
+  const createScheduling = async (schedulingData: Omit<Scheduling, 'id' | 'created_at' | 'updated_at' | 'company_id'>) => {
     try {
+      if (!currentCompany?.id) {
+        throw new Error('Nenhuma empresa selecionada');
+      }
+
+      // Validar dados obrigatórios
+      if (!schedulingData.name?.trim()) {
+        throw new Error('Nome do agendamento é obrigatório');
+      }
+      if (!schedulingData.message_content?.trim()) {
+        throw new Error('Conteúdo da mensagem é obrigatório');
+      }
+      if (!schedulingData.scheduled_for) {
+        throw new Error('Data de agendamento é obrigatória');
+      }
+      if (!schedulingData.recipients || schedulingData.recipients.length === 0) {
+        throw new Error('Pelo menos um destinatário é obrigatório');
+      }
+
+      // Validar data de agendamento
+      const scheduledDate = new Date(schedulingData.scheduled_for);
+      if (scheduledDate <= new Date()) {
+        throw new Error('Data de agendamento deve ser no futuro');
+      }
+
       const { data, error } = await supabase
         .from('schedulings')
         .insert({
-          ...schedulingData,
-          company_id: currentCompany?.id
+          company_id: currentCompany.id,
+          name: schedulingData.name.trim(),
+          message_content: schedulingData.message_content.trim(),
+          recipients: schedulingData.recipients,
+          scheduled_for: schedulingData.scheduled_for,
+          status: schedulingData.status || 'pending',
+          template_id: schedulingData.template_id || null,
+          user_id: schedulingData.user_id || null
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      setSchedulings(prev => [data, ...prev]);
-      logInfo('Agendamento criado com sucesso', 'useSchedulingsNew', { schedulingId: data.id });
       toast({
         title: "Sucesso",
         description: "Agendamento criado com sucesso"
       });
-      
+
+      await fetchSchedulings();
       return data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating scheduling:', error);
-      logError('Erro ao criar agendamento', 'useSchedulingsNew', error);
       toast({
         title: "Erro",
-        description: "Erro ao criar agendamento",
+        description: error.message || "Erro ao criar agendamento",
         variant: "destructive"
       });
       throw error;
     }
   };
 
-  const updateScheduling = async (id: string, updates: any) => {
+  const updateScheduling = async (id: string, updates: Partial<Scheduling>) => {
     try {
+      if (!currentCompany?.id) {
+        throw new Error('Nenhuma empresa selecionada');
+      }
+
+      // Validar dados obrigatórios se foram fornecidos
+      if (updates.name !== undefined && !updates.name?.trim()) {
+        throw new Error('Nome do agendamento é obrigatório');
+      }
+      if (updates.message_content !== undefined && !updates.message_content?.trim()) {
+        throw new Error('Conteúdo da mensagem é obrigatório');
+      }
+      if (updates.scheduled_for !== undefined && new Date(updates.scheduled_for) <= new Date()) {
+        throw new Error('Data de agendamento deve ser no futuro');
+      }
+      if (updates.recipients !== undefined && (!updates.recipients || updates.recipients.length === 0)) {
+        throw new Error('Pelo menos um destinatário é obrigatório');
+      }
+
+      const updateData: any = {
+        updated_at: new Date().toISOString()
+      };
+
+      if (updates.name !== undefined) updateData.name = updates.name.trim();
+      if (updates.message_content !== undefined) updateData.message_content = updates.message_content.trim();
+      if (updates.recipients !== undefined) updateData.recipients = updates.recipients;
+      if (updates.scheduled_for !== undefined) updateData.scheduled_for = updates.scheduled_for;
+      if (updates.status !== undefined) updateData.status = updates.status;
+      if (updates.template_id !== undefined) updateData.template_id = updates.template_id;
+
       const { data, error } = await supabase
         .from('schedulings')
-        .update(updates)
+        .update(updateData)
         .eq('id', id)
-        .eq('company_id', currentCompany?.id)
+        .eq('company_id', currentCompany.id)
         .select()
         .single();
 
       if (error) throw error;
 
-      setSchedulings(prev => prev.map(scheduling => 
-        scheduling.id === id ? data : scheduling
-      ));
-
-      logInfo('Agendamento atualizado com sucesso', 'useSchedulingsNew', { schedulingId: id });
       toast({
         title: "Sucesso",
         description: "Agendamento atualizado com sucesso"
       });
 
+      await fetchSchedulings();
       return data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating scheduling:', error);
-      logError('Erro ao atualizar agendamento', 'useSchedulingsNew', error);
       toast({
         title: "Erro",
-        description: "Erro ao atualizar agendamento",
+        description: error.message || "Erro ao atualizar agendamento",
         variant: "destructive"
       });
       throw error;
@@ -113,26 +178,29 @@ export function useSchedulingsNew() {
 
   const deleteScheduling = async (id: string) => {
     try {
+      if (!currentCompany?.id) {
+        throw new Error('Nenhuma empresa selecionada');
+      }
+
       const { error } = await supabase
         .from('schedulings')
         .delete()
         .eq('id', id)
-        .eq('company_id', currentCompany?.id);
+        .eq('company_id', currentCompany.id);
 
       if (error) throw error;
 
-      setSchedulings(prev => prev.filter(scheduling => scheduling.id !== id));
-      logInfo('Agendamento removido com sucesso', 'useSchedulingsNew', { schedulingId: id });
       toast({
         title: "Sucesso",
         description: "Agendamento removido com sucesso"
       });
-    } catch (error) {
+
+      await fetchSchedulings();
+    } catch (error: any) {
       console.error('Error deleting scheduling:', error);
-      logError('Erro ao remover agendamento', 'useSchedulingsNew', error);
       toast({
         title: "Erro",
-        description: "Erro ao remover agendamento",
+        description: error.message || "Erro ao remover agendamento",
         variant: "destructive"
       });
       throw error;

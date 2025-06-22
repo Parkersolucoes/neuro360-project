@@ -1,35 +1,37 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useCompanies } from '@/hooks/useCompanies';
-import { useSystemLogsDB } from '@/hooks/useSystemLogsDB';
+import { useSQLConnections } from '@/hooks/useSQLConnections';
+import { supabase } from '@/integrations/supabase/client';
 
-export interface SQLQueryNew {
+export interface SQLQuery {
   id: string;
   company_id: string;
-  connection_id: string;
+  connection_id: string | null;
   name: string;
-  description?: string;
+  description: string | null;
   query_text: string;
-  created_by?: string;
   status: 'active' | 'inactive';
   created_at: string;
   updated_at: string;
+  created_by: string | null;
+  user_id: string | null;
   sql_connections?: {
+    id: string;
     name: string;
     host: string;
     port: number;
     database_name: string;
-  } | null;
+  };
 }
 
 export function useSQLQueriesNew() {
-  const [queries, setQueries] = useState<SQLQueryNew[]>([]);
+  const [queries, setQueries] = useState<SQLQuery[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { currentCompany } = useCompanies();
-  const { logError, logInfo } = useSystemLogsDB();
+  const { connections } = useSQLConnections();
 
   const fetchQueries = async () => {
     if (!currentCompany?.id) {
@@ -41,75 +43,26 @@ export function useSQLQueriesNew() {
     try {
       setLoading(true);
       
-      // Primeira consulta para buscar as queries
-      const { data: queriesData, error: queriesError } = await supabase
+      const { data, error } = await supabase
         .from('sql_queries')
         .select(`
-          id,
-          company_id,
-          connection_id,
-          name,
-          description,
-          query_text,
-          created_by,
-          status,
-          created_at,
-          updated_at
+          *,
+          sql_connections (
+            id,
+            name,
+            host,
+            port,
+            database_name
+          )
         `)
         .eq('company_id', currentCompany.id)
         .order('created_at', { ascending: false });
 
-      if (queriesError) throw queriesError;
-
-      // Se não há queries, retorna array vazio
-      if (!queriesData || queriesData.length === 0) {
-        setQueries([]);
-        return;
-      }
-
-      // Buscar informações das conexões separadamente
-      const connectionIds = queriesData
-        .map(q => q.connection_id)
-        .filter(id => id !== null);
-
-      let connectionsData: any[] = [];
-      if (connectionIds.length > 0) {
-        const { data: connections, error: connectionsError } = await supabase
-          .from('sql_connections')
-          .select('id, name, host, port, database_name')
-          .in('id', connectionIds);
-
-        if (connectionsError) {
-          console.warn('Erro ao buscar conexões:', connectionsError);
-        } else {
-          connectionsData = connections || [];
-        }
-      }
-
-      // Mapear queries com informações das conexões
-      const typedData: SQLQueryNew[] = queriesData.map(item => {
-        const connection = connectionsData.find(conn => conn.id === item.connection_id);
-        
-        return {
-          id: item.id,
-          company_id: item.company_id,
-          connection_id: item.connection_id || '',
-          name: item.name,
-          description: item.description,
-          query_text: item.query_text,
-          created_by: item.created_by,
-          status: item.status as 'active' | 'inactive',
-          created_at: item.created_at,
-          updated_at: item.updated_at,
-          sql_connections: connection || null
-        };
-      });
+      if (error) throw error;
       
-      setQueries(typedData);
-      logInfo('Consultas SQL carregadas com sucesso', 'useSQLQueriesNew');
+      setQueries(data || []);
     } catch (error) {
       console.error('Error fetching SQL queries:', error);
-      logError('Erro ao carregar consultas SQL', 'useSQLQueriesNew', error);
       toast({
         title: "Erro",
         description: "Erro ao carregar consultas SQL",
@@ -120,135 +73,101 @@ export function useSQLQueriesNew() {
     }
   };
 
-  const createQuery = async (queryData: Omit<SQLQueryNew, 'id' | 'created_at' | 'updated_at' | 'sql_connections'>) => {
+  const createQuery = async (queryData: Omit<SQLQuery, 'id' | 'created_at' | 'updated_at' | 'company_id'>) => {
     try {
-      console.log('Criando consulta SQL:', queryData);
-      
+      if (!currentCompany?.id) {
+        throw new Error('Nenhuma empresa selecionada');
+      }
+
+      // Validar dados obrigatórios
+      if (!queryData.name?.trim()) {
+        throw new Error('Nome da consulta é obrigatório');
+      }
+      if (!queryData.query_text?.trim()) {
+        throw new Error('Texto da consulta SQL é obrigatório');
+      }
+
       const { data, error } = await supabase
         .from('sql_queries')
         .insert({
-          company_id: queryData.company_id,
-          connection_id: queryData.connection_id,
-          name: queryData.name,
-          description: queryData.description,
-          query_text: queryData.query_text,
-          created_by: queryData.created_by,
-          status: queryData.status
+          company_id: currentCompany.id,
+          name: queryData.name.trim(),
+          description: queryData.description?.trim() || null,
+          query_text: queryData.query_text.trim(),
+          connection_id: queryData.connection_id || null,
+          status: queryData.status || 'active',
+          created_by: null, // TODO: Implementar autenticação
+          user_id: null
         })
-        .select('id, company_id, connection_id, name, description, query_text, created_by, status, created_at, updated_at')
+        .select()
         .single();
 
       if (error) throw error;
 
-      // Buscar informações da conexão se existe
-      let connectionInfo = null;
-      if (data.connection_id) {
-        const { data: connection } = await supabase
-          .from('sql_connections')
-          .select('name, host, port, database_name')
-          .eq('id', data.connection_id)
-          .single();
-        
-        connectionInfo = connection;
-      }
-
-      const typedData: SQLQueryNew = {
-        id: data.id,
-        company_id: data.company_id,
-        connection_id: data.connection_id || '',
-        name: data.name,
-        description: data.description,
-        query_text: data.query_text,
-        created_by: data.created_by,
-        status: data.status as 'active' | 'inactive',
-        created_at: data.created_at,
-        updated_at: data.updated_at,
-        sql_connections: connectionInfo
-      };
-
-      setQueries(prev => [typedData, ...prev]);
-      logInfo('Consulta SQL criada com sucesso', 'useSQLQueriesNew', { queryId: data.id });
       toast({
         title: "Sucesso",
         description: "Consulta SQL criada com sucesso"
       });
-      
-      return typedData;
-    } catch (error) {
+
+      await fetchQueries();
+      return data;
+    } catch (error: any) {
       console.error('Error creating SQL query:', error);
-      logError('Erro ao criar consulta SQL', 'useSQLQueriesNew', error);
       toast({
         title: "Erro",
-        description: "Erro ao criar consulta SQL",
+        description: error.message || "Erro ao criar consulta SQL",
         variant: "destructive"
       });
       throw error;
     }
   };
 
-  const updateQuery = async (id: string, updates: Partial<SQLQueryNew>) => {
+  const updateQuery = async (id: string, updates: Partial<SQLQuery>) => {
     try {
-      console.log('Atualizando consulta SQL:', id, updates);
-      
+      if (!currentCompany?.id) {
+        throw new Error('Nenhuma empresa selecionada');
+      }
+
+      // Validar dados obrigatórios se foram fornecidos
+      if (updates.name !== undefined && !updates.name?.trim()) {
+        throw new Error('Nome da consulta é obrigatório');
+      }
+      if (updates.query_text !== undefined && !updates.query_text?.trim()) {
+        throw new Error('Texto da consulta SQL é obrigatório');
+      }
+
+      const updateData: any = {
+        updated_at: new Date().toISOString()
+      };
+
+      if (updates.name !== undefined) updateData.name = updates.name.trim();
+      if (updates.description !== undefined) updateData.description = updates.description?.trim() || null;
+      if (updates.query_text !== undefined) updateData.query_text = updates.query_text.trim();
+      if (updates.connection_id !== undefined) updateData.connection_id = updates.connection_id || null;
+      if (updates.status !== undefined) updateData.status = updates.status;
+
       const { data, error } = await supabase
         .from('sql_queries')
-        .update({
-          connection_id: updates.connection_id,
-          name: updates.name,
-          description: updates.description,
-          query_text: updates.query_text,
-          status: updates.status
-        })
+        .update(updateData)
         .eq('id', id)
-        .eq('company_id', currentCompany?.id)
-        .select('id, company_id, connection_id, name, description, query_text, created_by, status, created_at, updated_at')
+        .eq('company_id', currentCompany.id)
+        .select()
         .single();
 
       if (error) throw error;
 
-      // Buscar informações da conexão se existe
-      let connectionInfo = null;
-      if (data.connection_id) {
-        const { data: connection } = await supabase
-          .from('sql_connections')
-          .select('name, host, port, database_name')
-          .eq('id', data.connection_id)
-          .single();
-        
-        connectionInfo = connection;
-      }
-
-      const typedData: SQLQueryNew = {
-        id: data.id,
-        company_id: data.company_id,
-        connection_id: data.connection_id || '',
-        name: data.name,
-        description: data.description,
-        query_text: data.query_text,
-        created_by: data.created_by,
-        status: data.status as 'active' | 'inactive',
-        created_at: data.created_at,
-        updated_at: data.updated_at,
-        sql_connections: connectionInfo
-      };
-
-      setQueries(prev => prev.map(query => 
-        query.id === id ? typedData : query
-      ));
-
-      logInfo('Consulta SQL atualizada com sucesso', 'useSQLQueriesNew', { queryId: id });
       toast({
         title: "Sucesso",
         description: "Consulta SQL atualizada com sucesso"
       });
 
-      return typedData;
-    } catch (error) {
+      await fetchQueries();
+      return data;
+    } catch (error: any) {
       console.error('Error updating SQL query:', error);
-      logError('Erro ao atualizar consulta SQL', 'useSQLQueriesNew', error);
       toast({
         title: "Erro",
-        description: "Erro ao atualizar consulta SQL",
+        description: error.message || "Erro ao atualizar consulta SQL",
         variant: "destructive"
       });
       throw error;
@@ -257,26 +176,29 @@ export function useSQLQueriesNew() {
 
   const deleteQuery = async (id: string) => {
     try {
+      if (!currentCompany?.id) {
+        throw new Error('Nenhuma empresa selecionada');
+      }
+
       const { error } = await supabase
         .from('sql_queries')
         .delete()
         .eq('id', id)
-        .eq('company_id', currentCompany?.id);
+        .eq('company_id', currentCompany.id);
 
       if (error) throw error;
 
-      setQueries(prev => prev.filter(query => query.id !== id));
-      logInfo('Consulta SQL removida com sucesso', 'useSQLQueriesNew', { queryId: id });
       toast({
         title: "Sucesso",
         description: "Consulta SQL removida com sucesso"
       });
-    } catch (error) {
+
+      await fetchQueries();
+    } catch (error: any) {
       console.error('Error deleting SQL query:', error);
-      logError('Erro ao remover consulta SQL', 'useSQLQueriesNew', error);
       toast({
         title: "Erro",
-        description: "Erro ao remover consulta SQL",
+        description: error.message || "Erro ao remover consulta SQL",
         variant: "destructive"
       });
       throw error;
@@ -286,39 +208,15 @@ export function useSQLQueriesNew() {
   const createTestRecord = async () => {
     try {
       if (!currentCompany?.id) {
-        toast({
-          title: "Erro",
-          description: "Nenhuma empresa selecionada",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      const { data: connections, error: connectionsError } = await supabase
-        .from('sql_connections')
-        .select('id')
-        .eq('company_id', currentCompany.id)
-        .limit(1);
-
-      if (connectionsError) throw connectionsError;
-
-      if (!connections || connections.length === 0) {
-        toast({
-          title: "Erro",
-          description: "Nenhuma conexão SQL encontrada. Crie uma conexão primeiro.",
-          variant: "destructive"
-        });
-        return;
+        throw new Error('Nenhuma empresa selecionada');
       }
 
       const testQuery = {
-        company_id: currentCompany.id,
-        connection_id: connections[0].id,
-        name: "Consulta de Teste",
-        description: "Esta é uma consulta de teste criada automaticamente",
-        query_text: "SELECT 'Hello World' as mensagem",
-        status: 'active' as const,
-        created_by: null
+        name: `Consulta Teste ${new Date().getTime()}`,
+        description: "Consulta de teste criada automaticamente",
+        query_text: "SELECT COUNT(*) as total FROM usuarios WHERE status = 'ativo'",
+        connection_id: connections.length > 0 ? connections[0].id : null,
+        status: 'active' as const
       };
 
       await createQuery(testQuery);
@@ -327,11 +225,11 @@ export function useSQLQueriesNew() {
         title: "Sucesso",
         description: "Registro de teste criado com sucesso"
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating test record:', error);
       toast({
         title: "Erro",
-        description: "Erro ao criar registro de teste",
+        description: error.message || "Erro ao criar registro de teste",
         variant: "destructive"
       });
     }

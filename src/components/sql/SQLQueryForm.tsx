@@ -6,37 +6,27 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Save, X, AlertCircle, Database } from "lucide-react";
-import { useCompanies } from "@/hooks/useCompanies";
+import { Database, Save, X } from "lucide-react";
 import { useSQLConnections } from "@/hooks/useSQLConnections";
-import { useAuth } from "@/hooks/useAuth";
+import { SQLQuery } from "@/hooks/useSQLQueriesNew";
 
 interface SQLQueryFormProps {
-  query?: any;
-  onSubmit: (queryData: any) => void;
+  query?: SQLQuery | null;
+  onSubmit: (queryData: any) => Promise<void>;
   onCancel: () => void;
 }
 
 export function SQLQueryForm({ query, onSubmit, onCancel }: SQLQueryFormProps) {
-  const { currentCompany } = useCompanies();
   const { connections } = useSQLConnections();
-  const { userLogin } = useAuth();
-  
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     query_text: "",
     connection_id: "",
-    status: "active" as "active" | "inactive"
+    status: "active" as const
   });
-
-  // Filtrar conexões apenas da empresa atual
-  const companyConnections = connections?.filter(
-    connection => connection.company_id === currentCompany?.id
-  ) || [];
-
-  const selectedConnection = companyConnections.find(conn => conn.id === formData.connection_id);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (query) {
@@ -47,160 +37,171 @@ export function SQLQueryForm({ query, onSubmit, onCancel }: SQLQueryFormProps) {
         connection_id: query.connection_id || "",
         status: query.status || "active"
       });
+    } else {
+      setFormData({
+        name: "",
+        description: "",
+        query_text: "",
+        connection_id: "",
+        status: "active"
+      });
     }
+    setErrors({});
   }, [query]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = "Nome da consulta é obrigatório";
+    }
+
+    if (!formData.query_text.trim()) {
+      newErrors.query_text = "Texto da consulta SQL é obrigatório";
+    }
+
+    // Validar se é um SQL básico válido
+    const sqlText = formData.query_text.trim().toLowerCase();
+    if (sqlText && !sqlText.startsWith('select') && !sqlText.startsWith('with')) {
+      newErrors.query_text = "Por segurança, apenas consultas SELECT são permitidas";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!currentCompany?.id) {
-      console.error('No company selected');
+    if (!validateForm()) {
       return;
     }
 
-    if (!formData.connection_id) {
-      console.error('No connection selected');
-      return;
+    setIsSubmitting(true);
+    try {
+      const submitData = {
+        ...formData,
+        connection_id: formData.connection_id || null
+      };
+      
+      await onSubmit(submitData);
+    } catch (error) {
+      console.error('Error submitting form:', error);
+    } finally {
+      setIsSubmitting(false);
     }
+  };
 
-    onSubmit({
-      ...formData,
-      company_id: currentCompany.id,
-      created_by: userLogin?.id
-    });
+  const handleFieldChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // Limpar erro do campo quando o usuário começar a digitar
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: "" }));
+    }
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{query ? 'Editar Consulta SQL' : 'Nova Consulta SQL'}</CardTitle>
+        <CardTitle className="flex items-center space-x-2">
+          <Database className="w-5 h-5 text-blue-600" />
+          <span>{query ? "Editar Consulta SQL" : "Nova Consulta SQL"}</span>
+        </CardTitle>
       </CardHeader>
       <CardContent>
-        {!currentCompany && (
-          <Alert className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Selecione uma empresa no menu lateral para criar consultas SQL.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {currentCompany && companyConnections.length === 0 && (
-          <Alert className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Configure pelo menos uma conexão SQL na empresa "{currentCompany.name}" antes de criar consultas.
-              Acesse: Empresas &gt; Configurações &gt; SQL Server
-            </AlertDescription>
-          </Alert>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Nome da Consulta *</Label>
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                onChange={(e) => handleFieldChange("name", e.target.value)}
                 placeholder="Ex: Relatório de Vendas"
-                required
+                className={errors.name ? "border-red-500" : ""}
               />
+              {errors.name && <p className="text-sm text-red-600">{errors.name}</p>}
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select 
-                value={formData.status}
-                onValueChange={(value: "active" | "inactive") => setFormData({...formData, status: value})}
+              <Label htmlFor="connection">Conexão SQL</Label>
+              <Select
+                value={formData.connection_id}
+                onValueChange={(value) => handleFieldChange("connection_id", value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione o status" />
+                  <SelectValue placeholder="Selecione uma conexão" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="active">Ativa</SelectItem>
-                  <SelectItem value="inactive">Inativa</SelectItem>
+                  <SelectItem value="">Nenhuma conexão</SelectItem>
+                  {connections.map((connection) => (
+                    <SelectItem key={connection.id} value={connection.id}>
+                      {connection.name} ({connection.host})
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="connection">Conexão de Banco de Dados *</Label>
-            <Select 
-              value={formData.connection_id} 
-              onValueChange={(value) => setFormData({...formData, connection_id: value})}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione qual conexão utilizar" />
-              </SelectTrigger>
-              <SelectContent>
-                {companyConnections.map((connection) => (
-                  <SelectItem key={connection.id} value={connection.id}>
-                    <div className="flex items-center space-x-2">
-                      <Database className="w-4 h-4 text-blue-600" />
-                      <div className="flex flex-col">
-                        <span className="font-medium">{connection.name}</span>
-                        <span className="text-xs text-gray-500">{connection.host}:{connection.port} - {connection.database_name}</span>
-                      </div>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            {selectedConnection && (
-              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <div className="flex items-center space-x-2 mb-2">
-                  <Database className="w-4 h-4 text-blue-600" />
-                  <span className="text-sm font-medium text-blue-800">Conexão Selecionada:</span>
-                </div>
-                <div className="text-sm text-blue-700">
-                  <p><strong>{selectedConnection.name}</strong></p>
-                  <p>Servidor: {selectedConnection.host}:{selectedConnection.port}</p>
-                  <p>Database: {selectedConnection.database_name}</p>
-                  <p>Usuário: {selectedConnection.username}</p>
-                </div>
-              </div>
-            )}
-          </div>
-          
-          <div className="space-y-2">
             <Label htmlFor="description">Descrição</Label>
             <Input
               id="description"
               value={formData.description}
-              onChange={(e) => setFormData({...formData, description: e.target.value})}
-              placeholder="Descrição do que a consulta faz"
+              onChange={(e) => handleFieldChange("description", e.target.value)}
+              placeholder="Descrição opcional da consulta"
             />
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="query_text">Consulta SQL *</Label>
             <Textarea
               id="query_text"
               value={formData.query_text}
-              onChange={(e) => setFormData({...formData, query_text: e.target.value})}
-              placeholder="SELECT * FROM tabela WHERE..."
-              className="min-h-[200px] font-mono"
-              required
+              onChange={(e) => handleFieldChange("query_text", e.target.value)}
+              placeholder="Digite sua consulta SQL aqui..."
+              className={`min-h-32 font-mono ${errors.query_text ? "border-red-500" : ""}`}
             />
+            {errors.query_text && <p className="text-sm text-red-600">{errors.query_text}</p>}
             <p className="text-xs text-gray-500">
-              Dica: Use consultas SELECT para visualizar dados. Evite comandos que modifiquem dados (INSERT, UPDATE, DELETE).
+              Por segurança, apenas consultas SELECT são permitidas
             </p>
           </div>
-          
-          <div className="flex space-x-2">
-            <Button 
-              type="submit" 
-              className="bg-blue-600 hover:bg-blue-700"
-              disabled={!currentCompany || companyConnections.length === 0 || !formData.name || !formData.query_text || !formData.connection_id}
+
+          <div className="space-y-2">
+            <Label htmlFor="status">Status</Label>
+            <Select
+              value={formData.status}
+              onValueChange={(value: "active" | "inactive") => handleFieldChange("status", value)}
             >
-              <Save className="w-4 h-4 mr-2" />
-              {query ? 'Atualizar' : 'Salvar'} Consulta
-            </Button>
-            <Button type="button" variant="outline" onClick={onCancel}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Ativa</SelectItem>
+                <SelectItem value="inactive">Inativa</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex justify-end space-x-2 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              disabled={isSubmitting}
+            >
               <X className="w-4 h-4 mr-2" />
               Cancelar
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              {isSubmitting ? "Salvando..." : query ? "Atualizar" : "Criar"}
             </Button>
           </div>
         </form>
