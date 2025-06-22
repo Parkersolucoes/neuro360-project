@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import type { EvolutionConfig } from '@/types/evolutionConfig';
 
@@ -68,31 +67,6 @@ export class EvolutionApiService {
     
     console.log(`Evolution API: Making ${method} request to ${url}`);
     
-    // Log detalhado dos parâmetros quando é um POST para criar instância
-    if (method === 'POST' && (endpoint.includes('/instance/create') || endpoint.includes('/instance/'))) {
-      console.log('🚀 EVOLUTION API - REQUISIÇÃO DETALHADA:');
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('📍 URL COMPLETA:', url);
-      console.log('📤 MÉTODO HTTP:', method);
-      console.log('📋 HEADERS DA REQUISIÇÃO:');
-      console.log('   • Content-Type: application/json');
-      console.log('   • apikey:', this.config.api_key.substring(0, 12) + '***');
-      console.log('📦 CORPO DA REQUISIÇÃO (JSON):');
-      console.log(JSON.stringify(body, null, 2));
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      
-      // Log específico de cada parâmetro
-      if (body) {
-        console.log('🔍 DETALHAMENTO DOS PARÂMETROS:');
-        console.log('   • instanceName:', body.instanceName || 'NÃO INFORMADO');
-        console.log('   • token:', body.token === "" ? '(VAZIO - CONFORME ESPECIFICADO)' : body.token);
-        console.log('   • qrcode:', body.qrcode);
-        console.log('   • number:', body.number || 'NÃO INFORMADO');
-        console.log('   • integration:', body.integration || 'NÃO INFORMADO');
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      }
-    }
-    
     try {
       const response = await fetch(url, {
         method,
@@ -139,7 +113,7 @@ export class EvolutionApiService {
     }
   }
 
-  async createInstanceWithQRCode(phoneNumber: string): Promise<CreateInstanceResponse & { qrCodeData?: string }> {
+  async createInstanceWithQRCode(phoneNumber: string, webhookUrl?: string): Promise<CreateInstanceResponse & { qrCodeData?: string }> {
     console.log('Evolution API: Creating instance with QR Code:', this.config.instance_name, 'Phone:', phoneNumber);
     
     if (!phoneNumber) {
@@ -148,13 +122,15 @@ export class EvolutionApiService {
       throw new Error(errorMessage);
     }
     
-    // Estrutura exata conforme especificado pelos parâmetros solicitados
+    // Estrutura exata conforme especificado no cURL
     const requestBody = {
       instanceName: this.config.instance_name,
       token: "",
       qrcode: true,
       number: phoneNumber,
-      integration: "WHATSAPP-BAILEYS"
+      integration: "WHATSAPP-BAILEYS",
+      webhook: webhookUrl || "",
+      webhook_by_events: true
     };
 
     try {
@@ -181,20 +157,22 @@ export class EvolutionApiService {
     }
   }
 
-  async createInstance(phoneNumber: string): Promise<CreateInstanceResponse> {
+  async createInstance(phoneNumber: string, webhookUrl?: string): Promise<CreateInstanceResponse> {
     console.log('Evolution API: Creating instance:', this.config.instance_name, 'Phone:', phoneNumber);
     
     if (!phoneNumber) {
       throw new Error('Número de telefone é obrigatório para criar a instância');
     }
     
-    // Estrutura exata conforme especificado pelos parâmetros solicitados
+    // Estrutura exata conforme especificado no cURL
     const requestBody = {
       instanceName: this.config.instance_name,
       token: "",
       qrcode: true,
       number: phoneNumber,
-      integration: "WHATSAPP-BAILEYS"
+      integration: "WHATSAPP-BAILEYS",
+      webhook: webhookUrl || "",
+      webhook_by_events: true
     };
 
     return this.makeRequest(`/instance/create`, 'POST', requestBody);

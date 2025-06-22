@@ -54,16 +54,66 @@ export function useEvolutionConfigActions() {
     return `${firstName}_${dateStr}`;
   };
 
+  const showRequestPreview = (config: {
+    instance_name: string;
+    company_phone: string;
+    webhook_url?: string;
+    globalConfig: any;
+  }) => {
+    const requestBody = {
+      instanceName: config.instance_name,
+      token: "",
+      qrcode: true,
+      number: config.company_phone,
+      integration: "WHATSAPP-BAILEYS",
+      webhook: config.webhook_url || "",
+      webhook_by_events: true
+    };
+
+    // Mostrar prévia detalhada da requisição cURL
+    toast({
+      title: "🚀 PRÉVIA DA REQUISIÇÃO - Evolution API",
+      description: `📋 CURL COMMAND EQUIVALENTE:
+curl --request POST \\
+--url ${config.globalConfig.base_url}/instance/create \\
+--header 'Content-Type: application/json' \\
+--header 'apikey: ${config.globalConfig.global_api_key.substring(0, 12)}***' \\
+--data '{
+  "instanceName": "${requestBody.instanceName}",
+  "token": "${requestBody.token}",
+  "qrcode": ${requestBody.qrcode},
+  "number": "${requestBody.number}",
+  "integration": "${requestBody.integration}",
+  "webhook": "${requestBody.webhook}",
+  "webhook_by_events": ${requestBody.webhook_by_events}
+}'
+
+🔍 PARÂMETROS DETALHADOS:
+• URL Completa: ${config.globalConfig.base_url}/instance/create
+• API Key: ${config.globalConfig.global_api_key.substring(0, 12)}***
+• instanceName: ${requestBody.instanceName}
+• token: (vazio conforme especificação)
+• qrcode: ${requestBody.qrcode}
+• number: ${requestBody.number}
+• integration: ${requestBody.integration}
+• webhook: ${requestBody.webhook || '(vazio)'}
+• webhook_by_events: ${requestBody.webhook_by_events}`
+    });
+
+    return requestBody;
+  };
+
   const createInstanceWithQRCode = async (config: {
     instance_name: string;
     company_phone: string;
+    webhook_url?: string;
   }): Promise<{ success: boolean; qrCodeData?: string; evolutionService?: EvolutionApiService }> => {
     try {
       console.log('useEvolutionConfigActions: Creating Evolution instance with QR Code:', config);
       
       // Passo 1: Validar configurações globais
       toast({
-        title: "Passo 1/7 - Validando Configurações",
+        title: "Passo 1/8 - Validando Configurações Globais",
         description: "🔍 Verificando configurações globais da Evolution API..."
       });
 
@@ -75,42 +125,39 @@ export function useEvolutionConfigActions() {
         throw new Error(errorMsg);
       }
 
-      // Passo 2: Mostrar configurações globais
+      // Passo 2: Mostrar configurações globais encontradas
       toast({
-        title: "✓ Configurações Globais Encontradas",
-        description: `📋 URL Base: ${globalConfig.base_url}\n🔑 API Key: ${globalConfig.global_api_key.substring(0, 8)}...`
+        title: "Passo 2/8 - ✓ Configurações Globais Encontradas",
+        description: `📋 URL Base: ${globalConfig.base_url}
+🔑 API Key: ${globalConfig.global_api_key.substring(0, 12)}***`
       });
 
-      console.log('useEvolutionConfigActions: Using global config:', { base_url: globalConfig.base_url });
-
-      // Passo 3: Preparar número da empresa
+      // Passo 3: Validar dados da empresa
       toast({
-        title: "Passo 2/7 - Preparando Número da Empresa",
-        description: `📱 Número cadastrado na empresa: ${config.company_phone}`
+        title: "Passo 3/8 - Validando Dados da Empresa",
+        description: `🏢 Empresa: ${currentCompany?.name}
+📱 Telefone: ${config.company_phone}
+📋 Instância: ${config.instance_name}
+🔗 Webhook: ${config.webhook_url || 'Não informado'}`
       });
 
-      const phoneNumber = config.company_phone;
-      
-      console.log('useEvolutionConfigActions: Using company phone number:', phoneNumber);
-
-      // Passo 4: Mostrar EXATAMENTE os parâmetros que serão enviados
-      const requestParameters = {
-        instanceName: config.instance_name,
-        token: "",
-        qrcode: true,
-        number: phoneNumber,
-        integration: "WHATSAPP-BAILEYS"
-      };
-
+      // Passo 4: Mostrar prévia completa da requisição
       toast({
-        title: "Passo 3/7 - Parâmetros da Requisição POST",
-        description: `🌐 URL: ${globalConfig.base_url}/instance/create\n📋 Parâmetros JSON que serão enviados:\n• instanceName: "${requestParameters.instanceName}"\n• token: "${requestParameters.token}" (vazio)\n• qrcode: ${requestParameters.qrcode}\n• number: "${requestParameters.number}"\n• integration: "${requestParameters.integration}"`
+        title: "Passo 4/8 - PRÉVIA DA REQUISIÇÃO HTTP",
+        description: "📋 Preparando requisição conforme especificação cURL..."
       });
 
-      // Passo 5: Mostrar headers da requisição
+      const requestBody = showRequestPreview({
+        instance_name: config.instance_name,
+        company_phone: config.company_phone,
+        webhook_url: config.webhook_url,
+        globalConfig
+      });
+
+      // Passo 5: Criar serviço temporário
       toast({
-        title: "Passo 4/7 - Headers da Requisição",
-        description: `📤 Headers HTTP:\n• Content-Type: application/json\n• apikey: ${globalConfig.global_api_key.substring(0, 12)}***`
+        title: "Passo 5/8 - Criando Serviço de Comunicação",
+        description: "🔧 Configurando cliente da Evolution API..."
       });
 
       const tempEvolutionService = new EvolutionApiService({
@@ -119,8 +166,8 @@ export function useEvolutionConfigActions() {
         api_url: globalConfig.base_url,
         api_key: globalConfig.global_api_key,
         instance_name: config.instance_name,
-        webhook_url: null,
-        number: phoneNumber,
+        webhook_url: config.webhook_url || null,
+        number: config.company_phone,
         is_active: true,
         status: 'testing' as const,
         created_at: new Date().toISOString(),
@@ -129,43 +176,53 @@ export function useEvolutionConfigActions() {
 
       // Passo 6: Enviar requisição
       toast({
-        title: "Passo 5/7 - Enviando Requisição",
-        description: "🚀 Enviando POST para Evolution API com os parâmetros especificados..."
+        title: "Passo 6/8 - ENVIANDO REQUISIÇÃO POST",
+        description: `🚀 Executando: POST ${globalConfig.base_url}/instance/create
+📤 Enviando parâmetros JSON conforme prévia...`
       });
 
-      const createResponse = await tempEvolutionService.createInstanceWithQRCode(phoneNumber);
+      const createResponse = await tempEvolutionService.createInstanceWithQRCode(
+        config.company_phone, 
+        config.webhook_url
+      );
       
       if (createResponse.instance && createResponse.instance.instanceName) {
-        console.log('useEvolutionConfigActions: Instance created successfully with QR Code:', createResponse);
-        
-        // Passo 7: Sucesso e QR Code
+        // Passo 7: Sucesso na criação
         toast({
-          title: "Passo 6/7 - Instância Criada com Sucesso",
-          description: `🎉 Nome: ${createResponse.instance.instanceName}\n📊 Status: ${createResponse.instance.status}\n📱 Número: ${phoneNumber}\n${createResponse.qrCodeData ? '📱 QR Code gerado automaticamente' : '⚠️ QR Code não disponível'}`
+          title: "Passo 7/8 - ✅ INSTÂNCIA CRIADA COM SUCESSO!",
+          description: `🎉 Nome: ${createResponse.instance.instanceName}
+📊 Status: ${createResponse.instance.status}
+📱 Número: ${config.company_phone}
+🔗 Webhook: ${config.webhook_url || 'Não configurado'}
+${createResponse.qrCodeData ? '📱 QR Code gerado!' : '⚠️ QR Code não disponível'}`
         });
         
         // Passo 8: Salvar QR Code
-        toast({
-          title: "Passo 7/7 - Finalizando",
-          description: "💾 Salvando QR Code e preparando para exibição..."
-        });
-        
-        // Salvar QR Code na sessão se disponível
         if (createResponse.qrCodeData && currentCompany) {
+          toast({
+            title: "Passo 8/8 - Finalizando Configuração",
+            description: "💾 Salvando QR Code e preparando exibição..."
+          });
+          
           await saveQRCodeToSession(config.instance_name, createResponse.qrCodeData, currentCompany.id);
           
           toast({
-            title: "✅ Processo Concluído com Sucesso!",
-            description: `🎯 Instância ${config.instance_name} criada\n📱 Número: ${phoneNumber}\n📱 QR Code gerado e salvo\n👆 Escaneie o código para conectar`
+            title: "🎯 PROCESSO CONCLUÍDO COM SUCESSO!",
+            description: `✅ Instância ${config.instance_name} criada e configurada
+📱 Número da empresa: ${config.company_phone}
+🔗 Webhook configurado: ${config.webhook_url || 'Não configurado'}
+📱 QR Code gerado e salvo
+👆 Escaneie o código QR para conectar o WhatsApp`
           });
         }
         
-        await logInfo('Instância Evolution API criada com sucesso e QR Code salvo', 'useEvolutionConfigActions', {
+        await logInfo('Instância Evolution API criada com sucesso conforme especificação cURL', 'useEvolutionConfigActions', {
           instance_name: config.instance_name,
-          phone_number: phoneNumber,
+          phone_number: config.company_phone,
+          webhook_url: config.webhook_url,
           has_qr_code: !!createResponse.qrCodeData,
           api_url: globalConfig.base_url,
-          request_parameters: requestParameters
+          request_parameters: requestBody
         });
         
         return { 
@@ -175,11 +232,11 @@ export function useEvolutionConfigActions() {
         };
       } else {
         console.log('useEvolutionConfigActions: Instance creation failed, invalid response');
-        await logError('Falha na criação da instância - resposta inválida', 'useEvolutionConfigActions');
+        await logError('Falha na criação da instância - resposta inválida da Evolution API', 'useEvolutionConfigActions');
         
         toast({
-          title: "❌ Falha na Criação",
-          description: "Resposta inválida da Evolution API. Verifique as configurações.",
+          title: "❌ Falha na Criação da Instância",
+          description: "Resposta inválida da Evolution API. Verifique as configurações globais e tente novamente.",
           variant: "destructive"
         });
         
@@ -187,10 +244,10 @@ export function useEvolutionConfigActions() {
       }
     } catch (error) {
       console.error('useEvolutionConfigActions: Instance creation failed:', error);
-      await logError(`Falha na criação da instância: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'useEvolutionConfigActions', error);
+      await logError(`Falha na criação da instância Evolution API: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'useEvolutionConfigActions', error);
       
       toast({
-        title: "❌ Erro na Criação",
+        title: "❌ Erro na Comunicação com Evolution API",
         description: error instanceof Error ? error.message : 'Erro desconhecido na criação da instância',
         variant: "destructive"
       });

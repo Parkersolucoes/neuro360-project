@@ -86,11 +86,24 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
     return {
       globalConfig,
       instanceName: evolutionForm.instance_name,
-      webhookUrl: evolutionForm.webhook_url || 'Não informado',
+      webhookUrl: evolutionForm.webhook_url || '',
       companyPhone: currentCompany.phone,
       formattedPhone,
       companyName: currentCompany.name,
       integration: 'WHATSAPP-BAILEYS',
+      curlCommand: `curl --request POST \\
+--url ${globalConfig.base_url}/instance/create \\
+--header 'Content-Type: application/json' \\
+--header 'apikey: ${globalConfig.global_api_key.substring(0, 12)}***' \\
+--data '{
+  "instanceName": "${evolutionForm.instance_name}",
+  "token": "",
+  "qrcode": true,
+  "number": "${currentCompany.phone}",
+  "integration": "WHATSAPP-BAILEYS",
+  "webhook": "${evolutionForm.webhook_url || ''}",
+  "webhook_by_events": true
+}'`,
       events: [
         'APPLICATION_STARTUP',
         'QRCODE_UPDATED', 
@@ -148,10 +161,11 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
         company_id: companyId
       });
 
-      // Usar createInstanceWithQRCode diretamente para ter controle do QR Code
+      // Usar createInstanceWithQRCode com webhook_url
       const createResult = await createInstanceWithQRCode({
         instance_name: evolutionForm.instance_name,
-        company_phone: currentCompany!.phone
+        company_phone: currentCompany!.phone,
+        webhook_url: evolutionForm.webhook_url
       });
 
       if (createResult.success) {
@@ -172,14 +186,15 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
           setShowQRCode(true);
           
           toast({
-            title: "🎉 Sucesso!",
-            description: "Instância criada e QR Code gerado! Escaneie o código abaixo para conectar.",
+            title: "🎉 Sucesso Total!",
+            description: "Instância criada conforme especificação cURL e QR Code gerado! Escaneie o código abaixo para conectar.",
           });
         }
 
-        logInfo('Configuração Evolution API da instância salva e instância criada com sucesso', 'EvolutionAPIForm', {
+        logInfo('Configuração Evolution API salva e instância criada conforme especificação cURL', 'EvolutionAPIForm', {
           companyId,
           instanceName: evolutionForm.instance_name,
+          webhookUrl: evolutionForm.webhook_url,
           hasQRCode: !!createResult.qrCodeData
         });
       }
@@ -242,12 +257,15 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
         <CardContent>
           <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-sm text-blue-800">
-              <strong>Criação Automática de Instância:</strong> Esta configuração utilizará automaticamente os dados globais 
+              <strong>Criação Automática de Instância via cURL:</strong> Esta configuração utilizará automaticamente os dados globais 
               (URL base e chave principal) configurados nas <strong>Configurações do Sistema</strong> para 
               criar uma nova instância no Evolution API com integração <strong>Baileys</strong>.
               <br /><br />
-              <strong>Processo:</strong> Após criar a instância, o QR Code será gerado automaticamente na tela 
-              para você conectar o WhatsApp imediatamente.
+              <strong>Parâmetros do POST:</strong> instanceName, token (vazio), qrcode (true), number (telefone da empresa), 
+              integration (WHATSAPP-BAILEYS), webhook (URL informada), webhook_by_events (true).
+              <br /><br />
+              <strong>Processo:</strong> Após criar a instância conforme especificação cURL, o QR Code será gerado automaticamente 
+              para conectar o WhatsApp imediatamente.
             </p>
           </div>
           
@@ -319,21 +337,30 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
 
       {/* Confirmation Dialog */}
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
               <CheckCircle className="w-5 h-5 text-blue-600" />
-              <span>Confirmar Criação da Instância WhatsApp</span>
+              <span>Confirmar Criação da Instância WhatsApp via Evolution API</span>
             </DialogTitle>
           </DialogHeader>
           
           {confirmationData && (
-            <div className="space-y-4 max-h-96 overflow-y-auto">
+            <div className="space-y-4">
+              
+              {/* Comando cURL Completo */}
+              <div className="p-4 bg-gray-900 text-green-400 rounded-lg">
+                <h4 className="font-semibold text-green-300 mb-2">🚀 Comando cURL Equivalente</h4>
+                <pre className="text-xs overflow-x-auto whitespace-pre-wrap">
+                  {confirmationData.curlCommand}
+                </pre>
+              </div>
+
               <div className="grid grid-cols-1 gap-4">
                 
                 {/* Configurações Globais */}
                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <h4 className="font-semibold text-blue-800 mb-2">🌐 Configurações Globais da Evolution API</h4>
+                  <h4 className="font-semibold text-blue-800 mb-2">🌐 Configurações Globais (server-url e apikey)</h4>
                   <div className="space-y-1 text-sm">
                     <p><strong>URL Base:</strong> {confirmationData.globalConfig.base_url}</p>
                     <p><strong>API Key:</strong> {confirmationData.globalConfig.global_api_key.substring(0, 12)}***</p>
@@ -342,45 +369,44 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
 
                 {/* Dados da Empresa */}
                 <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <h4 className="font-semibold text-green-800 mb-2">🏢 Dados da Empresa</h4>
+                  <h4 className="font-semibold text-green-800 mb-2">🏢 Dados da Empresa (instanceName e number)</h4>
                   <div className="space-y-1 text-sm">
-                    <p><strong>Nome:</strong> {confirmationData.companyName}</p>
-                    <p><strong>Telefone Original:</strong> {confirmationData.companyPhone}</p>
-                    <p><strong>Telefone Formatado:</strong> {confirmationData.formattedPhone}</p>
+                    <p><strong>Nome da Empresa:</strong> {confirmationData.companyName}</p>
+                    <p><strong>Instance Name:</strong> {confirmationData.instanceName}</p>
+                    <p><strong>Number (Telefone):</strong> {confirmationData.companyPhone}</p>
                   </div>
                 </div>
 
-                {/* Parâmetros da Instância */}
+                {/* Parâmetros JSON do POST */}
                 <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <h4 className="font-semibold text-yellow-800 mb-2">⚙️ Parâmetros da Instância</h4>
+                  <h4 className="font-semibold text-yellow-800 mb-2">📋 Parâmetros JSON do POST</h4>
                   <div className="space-y-1 text-sm">
-                    <p><strong>Nome da Instância:</strong> {confirmationData.instanceName}</p>
-                    <p><strong>Integração:</strong> {confirmationData.integration}</p>
-                    <p><strong>Webhook URL:</strong> {confirmationData.webhookUrl}</p>
-                    <p><strong>QR Code:</strong> Habilitado</p>
-                    <p><strong>Webhook por Eventos:</strong> Desabilitado</p>
-                    <p><strong>Webhook Base64:</strong> Desabilitado</p>
+                    <p><strong>instanceName:</strong> "{confirmationData.instanceName}"</p>
+                    <p><strong>token:</strong> "" (vazio conforme especificação)</p>
+                    <p><strong>qrcode:</strong> true</p>
+                    <p><strong>number:</strong> "{confirmationData.companyPhone}"</p>
+                    <p><strong>integration:</strong> "{confirmationData.integration}"</p>
+                    <p><strong>webhook:</strong> "{confirmationData.webhookUrl || 'Vazio'}"</p>
+                    <p><strong>webhook_by_events:</strong> true</p>
                   </div>
                 </div>
 
-                {/* Eventos Configurados */}
+                {/* Headers HTTP */}
                 <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                  <h4 className="font-semibold text-purple-800 mb-2">📡 Eventos Configurados</h4>
-                  <div className="grid grid-cols-2 gap-1 text-xs">
-                    {confirmationData.events.map((event: string, index: number) => (
-                      <p key={index}>• {event}</p>
-                    ))}
+                  <h4 className="font-semibold text-purple-800 mb-2">📡 Headers HTTP da Requisição</h4>
+                  <div className="space-y-1 text-sm">
+                    <p><strong>Content-Type:</strong> application/json</p>
+                    <p><strong>apikey:</strong> {confirmationData.globalConfig.global_api_key.substring(0, 12)}***</p>
                   </div>
                 </div>
 
                 {/* Resumo da Requisição */}
                 <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                  <h4 className="font-semibold text-gray-800 mb-2">📋 Resumo da Requisição</h4>
+                  <h4 className="font-semibold text-gray-800 mb-2">📋 Resumo da Requisição HTTP</h4>
                   <div className="space-y-1 text-sm">
-                    <p><strong>Endpoint:</strong> {confirmationData.globalConfig.base_url}/instance/create</p>
                     <p><strong>Método:</strong> POST</p>
-                    <p><strong>Content-Type:</strong> application/json</p>
-                    <p><strong>Autenticação:</strong> API Key no header</p>
+                    <p><strong>URL Completa:</strong> {confirmationData.globalConfig.base_url}/instance/create</p>
+                    <p><strong>Corpo da Requisição:</strong> JSON com 7 parâmetros conforme especificação cURL</p>
                   </div>
                 </div>
 
@@ -403,7 +429,7 @@ export function EvolutionAPIForm({ companyId }: EvolutionAPIFormProps) {
               className="bg-green-600 hover:bg-green-700"
             >
               <CheckCircle className="w-4 h-4 mr-1" />
-              {isSaving ? "Criando..." : "Confirmar e Criar"}
+              {isSaving ? "Enviando POST..." : "Confirmar e Enviar POST"}
             </Button>
           </DialogFooter>
         </DialogContent>
