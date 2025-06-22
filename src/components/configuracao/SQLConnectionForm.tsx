@@ -35,7 +35,6 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
     connection_type: "sqlserver"
   });
 
-  // Usar a empresa atual do contexto se não foi passada uma específica
   const effectiveCompanyId = companyId || currentCompany?.id;
   const company = companies.find(c => c.id === effectiveCompanyId);
   const currentPlan = company?.plan_id ? plans.find(plan => plan.id === company.plan_id) : null;
@@ -50,7 +49,7 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
         port: editingConnection.port,
         database_name: editingConnection.database_name,
         username: editingConnection.username,
-        password: "", // Sempre vazio por segurança
+        password: "",
         connection_type: editingConnection.connection_type
       });
       setIsFormVisible(true);
@@ -73,7 +72,7 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
     if (!effectiveCompanyId) {
       toast({
         title: "Erro",
-        description: "Nenhuma empresa selecionada. Selecione uma empresa no menu principal.",
+        description: "Nenhuma empresa selecionada",
         variant: "destructive"
       });
       return;
@@ -103,11 +102,6 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
       resetForm();
     } catch (error) {
       console.error('Error saving connection:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao salvar conexão SQL. Verifique os dados e tente novamente.",
-        variant: "destructive"
-      });
     }
   };
 
@@ -159,56 +153,64 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
 
   if (!effectiveCompanyId) {
     return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="text-center py-8 text-gray-500">
-            <Database className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-            <p>Selecione uma empresa no menu principal para configurar conexões SQL.</p>
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-blue-600 rounded-t-lg px-6 py-4">
+            <h1 className="text-2xl font-bold text-white">Conexões SQL Server</h1>
+            <p className="text-blue-100 mt-1">Selecione uma empresa para configurar conexões</p>
           </div>
-        </CardContent>
-      </Card>
+          <div className="bg-white rounded-b-lg shadow-lg">
+            <div className="p-12 text-center">
+              <Database className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Empresa não selecionada</h3>
+              <p className="text-gray-500">Selecione uma empresa no menu principal para configurar conexões SQL.</p>
+            </div>
+          </div>
+        </div>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Database className="w-5 h-5 text-blue-600" />
-              <span>Conexões SQL Server - {company?.name}</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              {currentPlan && (
-                <Badge variant="outline">
-                  {companyConnections.length}/{currentPlan.max_sql_connections} conexões
-                </Badge>
-              )}
-              <Button 
-                onClick={handleNewConnection}
-                disabled={!canAddConnection}
-                size="sm"
-                className="bg-blue-500 hover:bg-blue-600 text-white"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Nova Conexão
-              </Button>
-            </div>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="bg-blue-600 rounded-t-lg px-6 py-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Conexões SQL Server - {company?.name}</h1>
+            <p className="text-blue-100 mt-1">Configure as conexões de banco de dados para esta empresa</p>
+          </div>
+          <div className="flex items-center space-x-3">
+            {currentPlan && (
+              <Badge variant="outline" className="bg-white text-blue-600 border-white">
+                {companyConnections.length}/{currentPlan.max_sql_connections} conexões
+              </Badge>
+            )}
+            <Button 
+              onClick={handleNewConnection}
+              disabled={!canAddConnection}
+              className="bg-white text-blue-600 hover:bg-gray-100 shadow-lg font-medium"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Nova Conexão
+            </Button>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-b-lg shadow-lg">
           {!currentPlan && (
-            <div className="text-center py-8 text-gray-500">
-              <p>A empresa deve ter um plano associado para configurar conexões SQL.</p>
+            <div className="p-12 text-center">
+              <Database className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Plano não configurado</h3>
+              <p className="text-gray-500">A empresa deve ter um plano associado para configurar conexões SQL.</p>
             </div>
           )}
 
           {currentPlan && companyConnections.length === 0 && !isFormVisible && (
-            <div className="text-center py-8 text-gray-500">
-              <Database className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-              <p>Nenhuma conexão SQL configurada para esta empresa.</p>
-              <Button onClick={handleNewConnection} className="mt-4 bg-blue-500 hover:bg-blue-600 text-white">
+            <div className="p-12 text-center">
+              <Database className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Nenhuma conexão configurada</h3>
+              <p className="text-gray-500 mb-6">Configure a primeira conexão SQL para esta empresa.</p>
+              <Button onClick={handleNewConnection} className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg font-medium">
                 <Plus className="w-4 h-4 mr-2" />
                 Criar primeira conexão
               </Button>
@@ -216,159 +218,170 @@ export function SQLConnectionForm({ companyId, connections }: SQLConnectionFormP
           )}
 
           {companyConnections.length > 0 && (
-            <div className="space-y-4">
-              {companyConnections.map((connection) => (
-                <div key={connection.id} className="border rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-medium">{connection.name}</h4>
-                      <p className="text-sm text-gray-500">
-                        {connection.host}:{connection.port} - {connection.database_name}
-                      </p>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <Badge className={connection.status === 'active' ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
-                          {connection.status === 'active' ? 'Ativa' : 'Inativa'}
-                        </Badge>
-                        <Badge variant="outline">{connection.connection_type}</Badge>
+            <div className="p-6">
+              <div className="space-y-4">
+                {companyConnections.map((connection, index) => (
+                  <div key={connection.id} className={`border rounded-lg p-4 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-medium text-gray-900">{connection.name}</h4>
+                        <p className="text-sm text-gray-500">
+                          {connection.host}:{connection.port} - {connection.database_name}
+                        </p>
+                        <div className="flex items-center space-x-2 mt-2">
+                          <Badge className={connection.status === 'active' ? "bg-green-100 text-green-800 border-green-200" : "bg-red-100 text-red-800 border-red-200"}>
+                            {connection.status === 'active' ? 'Ativa' : 'Inativa'}
+                          </Badge>
+                          <Badge variant="outline" className="border-gray-300 text-gray-700 bg-gray-50">
+                            {connection.connection_type}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => handleEdit(connection)}
+                          className="border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300"
+                        >
+                          <Edit className="w-3 h-3" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300"
+                          onClick={() => handleDelete(connection.id)}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex space-x-2">
-                      <Button size="sm" variant="outline" onClick={() => handleEdit(connection)}>
-                        <Edit className="w-3 h-3" />
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="text-red-600 hover:text-red-700"
-                        onClick={() => handleDelete(connection.id)}
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
 
           {isFormVisible && (
-            <div className="mt-6 border-t pt-6">
-              <h4 className="font-medium mb-4">
-                {editingConnection ? 'Editar Conexão' : 'Nova Conexão SQL'}
-              </h4>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+            <div className="border-t border-gray-200 p-6 bg-gray-50">
+              <div className="bg-white rounded-lg p-6 border border-gray-200">
+                <h4 className="text-lg font-medium mb-6 text-gray-900">
+                  {editingConnection ? 'Editar Conexão' : 'Nova Conexão SQL'}
+                </h4>
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="connection_name" className="text-gray-700 font-medium">Nome da Conexão *</Label>
+                      <Input
+                        id="connection_name"
+                        value={connectionForm.name}
+                        onChange={(e) => setConnectionForm({...connectionForm, name: e.target.value})}
+                        placeholder="Ex: Banco Principal"
+                        className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 bg-white"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="connection_type" className="text-gray-700 font-medium">Tipo de Banco</Label>
+                      <Select 
+                        value={connectionForm.connection_type}
+                        onValueChange={(value) => setConnectionForm({...connectionForm, connection_type: value})}
+                      >
+                        <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 bg-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white">
+                          <SelectItem value="sqlserver">SQL Server</SelectItem>
+                          <SelectItem value="mysql">MySQL</SelectItem>
+                          <SelectItem value="postgresql">PostgreSQL</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-6">
+                    <div className="space-y-2 col-span-2">
+                      <Label htmlFor="host" className="text-gray-700 font-medium">Servidor *</Label>
+                      <Input
+                        id="host"
+                        value={connectionForm.host}
+                        onChange={(e) => setConnectionForm({...connectionForm, host: e.target.value})}
+                        placeholder="servidor.exemplo.com"
+                        className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 bg-white"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="port" className="text-gray-700 font-medium">Porta *</Label>
+                      <Input
+                        id="port"
+                        type="number"
+                        value={connectionForm.port}
+                        onChange={(e) => setConnectionForm({...connectionForm, port: parseInt(e.target.value) || 1433})}
+                        placeholder="1433"
+                        className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 bg-white"
+                        required
+                      />
+                    </div>
+                  </div>
+                  
                   <div className="space-y-2">
-                    <Label htmlFor="connection_name">Nome da Conexão</Label>
+                    <Label htmlFor="database_name" className="text-gray-700 font-medium">Nome do Banco *</Label>
                     <Input
-                      id="connection_name"
-                      value={connectionForm.name}
-                      onChange={(e) => setConnectionForm({...connectionForm, name: e.target.value})}
-                      placeholder="Ex: Banco Principal"
-                      className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
+                      id="database_name"
+                      value={connectionForm.database_name}
+                      onChange={(e) => setConnectionForm({...connectionForm, database_name: e.target.value})}
+                      placeholder="nome_do_banco"
+                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 bg-white"
                       required
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="connection_type">Tipo de Banco</Label>
-                    <Select 
-                      value={connectionForm.connection_type}
-                      onValueChange={(value) => setConnectionForm({...connectionForm, connection_type: value})}
+                  
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="username" className="text-gray-700 font-medium">Usuário *</Label>
+                      <Input
+                        id="username"
+                        value={connectionForm.username}
+                        onChange={(e) => setConnectionForm({...connectionForm, username: e.target.value})}
+                        placeholder="usuario"
+                        className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 bg-white"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="password" className="text-gray-700 font-medium">Senha *</Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        value={connectionForm.password}
+                        onChange={(e) => setConnectionForm({...connectionForm, password: e.target.value})}
+                        placeholder="********"
+                        className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 bg-white"
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                    <Button type="button" variant="outline" onClick={resetForm} className="border-gray-300 text-gray-700 hover:bg-gray-100">
+                      Cancelar
+                    </Button>
+                    <Button 
+                      type="submit" 
+                      disabled={testing}
+                      className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg font-medium"
                     >
-                      <SelectTrigger className="border-blue-200 focus:border-blue-500 focus:ring-blue-500">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="sqlserver">SQL Server</SelectItem>
-                        <SelectItem value="mysql">MySQL</SelectItem>
-                        <SelectItem value="postgresql">PostgreSQL</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      <Save className="w-4 h-4 mr-2" />
+                      {testing ? 'Salvando...' : editingConnection ? 'Atualizar' : 'Salvar'} Conexão
+                    </Button>
                   </div>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2 col-span-2">
-                    <Label htmlFor="host">Servidor</Label>
-                    <Input
-                      id="host"
-                      value={connectionForm.host}
-                      onChange={(e) => setConnectionForm({...connectionForm, host: e.target.value})}
-                      placeholder="servidor.exemplo.com"
-                      className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="port">Porta</Label>
-                    <Input
-                      id="port"
-                      type="number"
-                      value={connectionForm.port}
-                      onChange={(e) => setConnectionForm({...connectionForm, port: parseInt(e.target.value) || 1433})}
-                      placeholder="1433"
-                      className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="database_name">Nome do Banco</Label>
-                  <Input
-                    id="database_name"
-                    value={connectionForm.database_name}
-                    onChange={(e) => setConnectionForm({...connectionForm, database_name: e.target.value})}
-                    placeholder="nome_do_banco"
-                    className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="username">Usuário</Label>
-                    <Input
-                      id="username"
-                      value={connectionForm.username}
-                      onChange={(e) => setConnectionForm({...connectionForm, username: e.target.value})}
-                      placeholder="usuario"
-                      className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Senha</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      value={connectionForm.password}
-                      onChange={(e) => setConnectionForm({...connectionForm, password: e.target.value})}
-                      placeholder="********"
-                      className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-                </div>
-                
-                <div className="flex space-x-2">
-                  <Button 
-                    type="submit" 
-                    disabled={testing}
-                    className="bg-blue-500 hover:bg-blue-600 text-white"
-                  >
-                    <Save className="w-4 h-4 mr-2" />
-                    {testing ? 'Testando...' : editingConnection ? 'Atualizar' : 'Salvar'} Conexão
-                  </Button>
-                  <Button type="button" variant="outline" onClick={resetForm}>
-                    Cancelar
-                  </Button>
-                </div>
-              </form>
+                </form>
+              </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

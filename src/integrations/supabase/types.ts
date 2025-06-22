@@ -295,13 +295,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "query_executions_connection_id_fkey"
-            columns: ["connection_id"]
-            isOneToOne: false
-            referencedRelation: "sql_connections"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "query_executions_query_id_fkey"
             columns: ["query_id"]
             isOneToOne: false

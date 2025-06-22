@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { useCompanies } from '@/hooks/useCompanies';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -25,14 +25,14 @@ export function useSQLConnections() {
   const [loading, setLoading] = useState(true);
   const [testing, setTesting] = useState(false);
   const { toast } = useToast();
-  const { isAdmin } = useAdminAuth();
+  const { userLogin } = useAuth();
   const { currentCompany } = useCompanies();
 
   const fetchConnections = async () => {
     try {
       setLoading(true);
       
-      if (!currentCompany) {
+      if (!currentCompany || !userLogin) {
         setConnections([]);
         return;
       }
@@ -69,32 +69,27 @@ export function useSQLConnections() {
     }
   };
 
-  const createConnection = async (connectionData: Omit<SQLConnection, 'id' | 'created_at' | 'updated_at' | 'company_id'>) => {
+  const createConnection = async (connectionData: Omit<SQLConnection, 'id' | 'created_at' | 'updated_at'>) => {
     try {
-      if (!currentCompany) {
-        throw new Error('Nenhuma empresa selecionada');
+      if (!currentCompany || !userLogin) {
+        throw new Error('Nenhuma empresa ou usuário selecionado');
       }
 
       console.log('Creating SQL connection:', connectionData);
       
-      // Preparar dados para inserção
-      const insertData = {
-        company_id: currentCompany.id,
-        name: connectionData.name,
-        host: connectionData.host,
-        database_name: connectionData.database_name,
-        username: connectionData.username,
-        password_encrypted: connectionData.password_encrypted,
-        port: connectionData.port,
-        connection_type: connectionData.connection_type,
-        status: connectionData.status || 'active'
-      };
-
-      console.log('Insert data:', insertData);
-      
       const { data, error } = await supabase
         .from('sql_connections')
-        .insert(insertData)
+        .insert({
+          company_id: connectionData.company_id,
+          name: connectionData.name,
+          host: connectionData.host,
+          database_name: connectionData.database_name,
+          username: connectionData.username,
+          password_encrypted: connectionData.password_encrypted,
+          port: connectionData.port,
+          connection_type: connectionData.connection_type,
+          status: connectionData.status
+        })
         .select()
         .single();
 
@@ -134,7 +129,7 @@ export function useSQLConnections() {
           updated_at: new Date().toISOString()
         })
         .eq('id', id)
-        .eq('company_id', currentCompany?.id) // Garantir que só atualiza conexões da empresa atual
+        .eq('company_id', currentCompany?.id)
         .select()
         .single();
 
@@ -171,7 +166,7 @@ export function useSQLConnections() {
         .from('sql_connections')
         .delete()
         .eq('id', id)
-        .eq('company_id', currentCompany?.id); // Garantir que só deleta conexões da empresa atual
+        .eq('company_id', currentCompany?.id);
 
       if (error) {
         console.error('Error deleting SQL connection:', error);
@@ -202,7 +197,6 @@ export function useSQLConnections() {
       setTesting(true);
       console.log('Testing SQL connection:', connectionData);
       
-      // Simular teste de conexão por enquanto
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       toast({
@@ -226,7 +220,7 @@ export function useSQLConnections() {
 
   useEffect(() => {
     fetchConnections();
-  }, [isAdmin, currentCompany]);
+  }, [userLogin, currentCompany]);
 
   return {
     connections,
