@@ -56,56 +56,6 @@ export type Database = {
           },
         ]
       }
-      evolution_configs: {
-        Row: {
-          api_key: string
-          api_url: string
-          company_id: string
-          created_at: string
-          id: string
-          instance_name: string
-          is_active: boolean
-          number: string | null
-          status: string
-          updated_at: string
-          webhook_url: string | null
-        }
-        Insert: {
-          api_key: string
-          api_url?: string
-          company_id: string
-          created_at?: string
-          id?: string
-          instance_name: string
-          is_active?: boolean
-          number?: string | null
-          status?: string
-          updated_at?: string
-          webhook_url?: string | null
-        }
-        Update: {
-          api_key?: string
-          api_url?: string
-          company_id?: string
-          created_at?: string
-          id?: string
-          instance_name?: string
-          is_active?: boolean
-          number?: string | null
-          status?: string
-          updated_at?: string
-          webhook_url?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "evolution_configs_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       plans: {
         Row: {
           created_at: string
@@ -200,13 +150,6 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "qr_sessions_evolution_config_id_fkey"
-            columns: ["evolution_config_id"]
-            isOneToOne: false
-            referencedRelation: "evolution_configs"
             referencedColumns: ["id"]
           },
         ]
@@ -786,6 +729,41 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_integrations: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          updated_at: string
+          webhook_name: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          webhook_name?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          webhook_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_integrations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_messages: {
         Row: {
           company_id: string
@@ -838,13 +816,6 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "whatsapp_messages_evolution_config_id_fkey"
-            columns: ["evolution_config_id"]
-            isOneToOne: false
-            referencedRelation: "evolution_configs"
             referencedColumns: ["id"]
           },
         ]
