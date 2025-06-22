@@ -6,25 +6,48 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Webhook, Save } from "lucide-react";
-import { useWebhookIntegration } from "@/hooks/useWebhookIntegration";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface WebhookIntegrationFormProps {
   companyId: string;
 }
 
 export function WebhookIntegrationForm({ companyId }: WebhookIntegrationFormProps) {
-  const { integration, loading } = useWebhookIntegration(companyId);
   const { toast } = useToast();
   
   const [qrcodeWebhookUrl, setQrcodeWebhookUrl] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [existingIntegration, setExistingIntegration] = useState<any>(null);
 
+  // Carregar configuração existente
   useEffect(() => {
-    if (integration) {
-      setQrcodeWebhookUrl(integration.qrcode_webhook_url || "");
+    const loadIntegration = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('webhook_integrations')
+          .select('*')
+          .eq('company_id', companyId)
+          .maybeSingle();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Erro ao carregar integração:', error);
+        } else if (data) {
+          setExistingIntegration(data);
+          setQrcodeWebhookUrl(data.webhook_url || "");
+        }
+      } catch (error) {
+        console.error('Erro ao carregar integração:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (companyId) {
+      loadIntegration();
     }
-  }, [integration]);
+  }, [companyId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,24 +64,31 @@ export function WebhookIntegrationForm({ companyId }: WebhookIntegrationFormProp
     try {
       setIsSaving(true);
       
-      const integrationData = {
-        company_id: companyId,
-        qrcode_webhook_url: qrcodeWebhookUrl.trim(),
-        is_active: true
-      };
-
-      console.log('💾 Salvando integração webhook:', integrationData);
-
-      // Salvar diretamente usando o service
-      const { WebhookIntegrationService } = await import('@/services/webhookIntegrationService');
+      let result;
       
-      if (integration && integration.id) {
-        await WebhookIntegrationService.update(integration.id, {
-          qrcode_webhook_url: integrationData.qrcode_webhook_url,
-          is_active: integrationData.is_active
-        });
+      if (existingIntegration) {
+        // Atualizar registro existente
+        result = await supabase
+          .from('webhook_integrations')
+          .update({
+            webhook_url: qrcodeWebhookUrl.trim(),
+            is_active: true,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingIntegration.id);
       } else {
-        await WebhookIntegrationService.create(integrationData);
+        // Criar novo registro
+        result = await supabase
+          .from('webhook_integrations')
+          .insert({
+            company_id: companyId,
+            webhook_url: qrcodeWebhookUrl.trim(),
+            is_active: true
+          });
+      }
+      
+      if (result.error) {
+        throw result.error;
       }
       
       toast({
@@ -67,7 +97,7 @@ export function WebhookIntegrationForm({ companyId }: WebhookIntegrationFormProp
       });
       
     } catch (error) {
-      console.error('❌ Erro ao salvar webhook:', error);
+      console.error('Erro ao salvar webhook:', error);
       toast({
         title: "Erro",
         description: "Erro ao salvar configuração webhook",
@@ -99,7 +129,7 @@ export function WebhookIntegrationForm({ companyId }: WebhookIntegrationFormProp
             <Webhook className="w-5 h-5 text-blue-600" />
             <span>Webhook QR Code</span>
           </div>
-          {integration && integration.qrcode_webhook_url && (
+          {existingIntegration && existingIntegration.webhook_url && (
             <Badge className="bg-green-100 text-green-800">
               Configurado
             </Badge>
