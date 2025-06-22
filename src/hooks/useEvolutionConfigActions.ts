@@ -64,7 +64,7 @@ export function useEvolutionConfigActions() {
       instanceName: config.instance_name,
       token: "",
       qrcode: true,
-      number: config.company_phone,
+      number: "", // Sempre vazio conforme especificação
       integration: "WHATSAPP-BAILEYS",
       webhook: config.webhook_url || "",
       webhook_by_events: true
@@ -94,7 +94,7 @@ curl --request POST \\
 • instanceName: ${requestBody.instanceName}
 • token: (vazio conforme especificação)
 • qrcode: ${requestBody.qrcode}
-• number: ${requestBody.number}
+• number: (vazio conforme especificação)
 • integration: ${requestBody.integration}
 • webhook: ${requestBody.webhook || '(vazio)'}
 • webhook_by_events: ${requestBody.webhook_by_events}`

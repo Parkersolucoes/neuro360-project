@@ -122,12 +122,12 @@ export class EvolutionApiService {
       throw new Error(errorMessage);
     }
     
-    // Estrutura exata conforme especificado no cURL
+    // Estrutura exata conforme especificado no cURL - number sempre vazio
     const requestBody = {
       instanceName: this.config.instance_name,
       token: "",
       qrcode: true,
-      number: phoneNumber,
+      number: "", // Sempre vazio conforme solicitado
       integration: "WHATSAPP-BAILEYS",
       webhook: webhookUrl || "",
       webhook_by_events: true
@@ -150,7 +150,7 @@ export class EvolutionApiService {
       const errorMessage = `Falha ao criar instância Evolution API: ${error instanceof Error ? error.message : 'Erro desconhecido'}`;
       await this.logSystemError(errorMessage, { 
         instanceName: this.config.instance_name,
-        number: phoneNumber,
+        number: "", // Log também mostra que number é vazio
         error: error instanceof Error ? error.message : 'Erro desconhecido'
       });
       throw error;
@@ -164,12 +164,12 @@ export class EvolutionApiService {
       throw new Error('Número de telefone é obrigatório para criar a instância');
     }
     
-    // Estrutura exata conforme especificado no cURL
+    // Estrutura exata conforme especificado no cURL - number sempre vazio
     const requestBody = {
       instanceName: this.config.instance_name,
       token: "",
       qrcode: true,
-      number: phoneNumber,
+      number: "", // Sempre vazio conforme solicitado
       integration: "WHATSAPP-BAILEYS",
       webhook: webhookUrl || "",
       webhook_by_events: true
