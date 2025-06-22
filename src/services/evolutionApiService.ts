@@ -1,6 +1,5 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import type { EvolutionConfig } from '@/types/evolutionConfig';
 
 export interface QRCodeResponse {
   qrCode: string;
@@ -39,6 +38,19 @@ export interface SendMessageResponse {
   message: any;
   messageTimestamp: string;
   status: string;
+}
+
+export interface EvolutionConfig {
+  id: string;
+  company_id: string;
+  instance_name: string;
+  api_url: string;
+  api_key: string;
+  webhook_url?: string;
+  status: 'connected' | 'disconnected' | 'testing';
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export class EvolutionApiService {
@@ -260,35 +272,10 @@ export class EvolutionApiService {
   }
 }
 
-// Função helper para obter o serviço da Evolution API
-export const getEvolutionApiService = async (companyId: string): Promise<EvolutionApiService | null> => {
-  try {
-    const { data: config, error } = await supabase
-      .from('evolution_configs')
-      .select('*')
-      .eq('company_id', companyId)
-      .eq('is_active', true)
-      .single();
-
-    if (error || !config) {
-      console.log('No active Evolution config found for company:', companyId);
-      return null;
-    }
-
-    return new EvolutionApiService({
-      ...config,
-      status: config.status as 'connected' | 'disconnected' | 'testing'
-    });
-  } catch (error) {
-    console.error('Error getting Evolution API service:', error);
-    return null;
-  }
-};
-
 // Função para salvar mensagem no banco de dados
 export const saveMessageToDatabase = async (
   companyId: string,
-  evolutionConfigId: string,
+  webhookIntegrationId: string,
   messageData: {
     message_id?: string;
     from_number: string;
@@ -304,7 +291,7 @@ export const saveMessageToDatabase = async (
       .from('whatsapp_messages')
       .insert({
         company_id: companyId,
-        evolution_config_id: evolutionConfigId,
+        evolution_config_id: webhookIntegrationId,
         message_id: messageData.message_id || null,
         from_number: messageData.from_number,
         to_number: messageData.to_number,

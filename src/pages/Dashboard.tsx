@@ -4,12 +4,12 @@ import { Badge } from "@/components/ui/badge";
 import { BarChart3, MessageSquare, Calendar, CheckCircle, AlertTriangle, Activity, Database, Building2 } from "lucide-react";
 import { useCompanies } from "@/hooks/useCompanies";
 import { useSQLConnections } from "@/hooks/useSQLConnections";
-import { useEvolutionConfigs } from "@/hooks/useEvolutionConfigs";
+import { useWebhookIntegration } from "@/hooks/useWebhookIntegration";
 
 export default function Dashboard() {
   const { currentCompany, companies } = useCompanies();
   const { connections } = useSQLConnections();
-  const { configs } = useEvolutionConfigs();
+  const { integration } = useWebhookIntegration(currentCompany?.id);
 
   const stats = [
     {
@@ -72,11 +72,6 @@ export default function Dashboard() {
   // Filter connections by current company
   const companyConnections = connections.filter(conn => 
     currentCompany ? conn.company_id === currentCompany.id : false
-  );
-
-  // Show evolution configs for current company
-  const evolutionConfigs = configs.filter(config =>
-    currentCompany ? config.company_id === currentCompany.id : false
   );
 
   return (
@@ -203,29 +198,27 @@ export default function Dashboard() {
               ))
             )}
             
-            {/* Evolution API Status */}
+            {/* Webhook Integration Status */}
             <div className="border-t pt-4 mt-4">
-              <h4 className="text-sm font-medium text-gray-900 mb-3">Evolution API</h4>
-              {evolutionConfigs.length === 0 ? (
-                <p className="text-sm text-gray-500">Nenhuma configuração Evolution</p>
-              ) : (
-                evolutionConfigs.map((evolutionConfig, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-2">
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-3 h-3 rounded-full ${
-                        evolutionConfig.status === 'connected' ? 'bg-green-500' : 'bg-red-500'
-                      }`}></div>
-                      <span className="font-medium text-gray-900 text-sm">{evolutionConfig.instance_name}</span>
-                    </div>
-                    <Badge className={
-                      evolutionConfig.status === 'connected' 
-                        ? "bg-green-100 text-green-800" 
-                        : "bg-red-100 text-red-800"
-                    }>
-                      {evolutionConfig.status === 'connected' ? 'Online' : 'Offline'}
-                    </Badge>
+              <h4 className="text-sm font-medium text-gray-900 mb-3">Webhook Integration</h4>
+              {integration ? (
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-3 h-3 rounded-full ${
+                      integration.is_active ? 'bg-green-500' : 'bg-red-500'
+                    }`}></div>
+                    <span className="font-medium text-gray-900 text-sm">{integration.webhook_name}</span>
                   </div>
-                ))
+                  <Badge className={
+                    integration.is_active 
+                      ? "bg-green-100 text-green-800" 
+                      : "bg-red-100 text-red-800"
+                  }>
+                    {integration.is_active ? 'Ativo' : 'Inativo'}
+                  </Badge>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">Nenhuma integração webhook configurada</p>
               )}
             </div>
           </CardContent>

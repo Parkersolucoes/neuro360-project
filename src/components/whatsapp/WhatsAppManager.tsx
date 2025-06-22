@@ -8,12 +8,12 @@ import { Label } from "@/components/ui/label";
 import { MessageSquare, Send, Phone } from "lucide-react";
 import { useWhatsAppMessages } from "@/hooks/useWhatsAppMessages";
 import { useCompanies } from "@/hooks/useCompanies";
-import { useEvolutionConfig } from "@/hooks/useEvolutionConfig";
+import { useWebhookIntegration } from "@/hooks/useWebhookIntegration";
 import { Badge } from "@/components/ui/badge";
 
 export function WhatsAppManager() {
   const { currentCompany } = useCompanies();
-  const { config: evolutionConfig } = useEvolutionConfig(currentCompany?.id);
+  const { integration } = useWebhookIntegration(currentCompany?.id);
   const { messages, loading, sendMessage } = useWhatsAppMessages();
   
   const [messageForm, setMessageForm] = useState({
@@ -35,7 +35,7 @@ export function WhatsAppManager() {
       await sendMessage({
         to_number: messageForm.to_number,
         content: messageForm.content,
-        evolution_config_id: evolutionConfig?.id
+        evolution_config_id: integration?.id
       });
       
       setMessageForm({ to_number: "", content: "" });
@@ -61,12 +61,12 @@ export function WhatsAppManager() {
     );
   }
 
-  if (!evolutionConfig) {
+  if (!integration) {
     return (
       <Card>
         <CardContent className="text-center py-12">
           <MessageSquare className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">Configure a Evolution API primeiro nas configurações da empresa</p>
+          <p className="text-gray-600">Configure a integração webhook primeiro na página Conexão WhatsApp</p>
         </CardContent>
       </Card>
     );
