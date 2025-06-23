@@ -33,73 +33,54 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
       console.log('CompaniesProvider: Fetching companies...');
       console.log('CompaniesProvider: User login:', userLogin);
       
-      // Se for usuário master, buscar todas as empresas
-      if (userLogin?.is_master) {
-        console.log('CompaniesProvider: Fetching all companies for master user...');
-        const data = await CompanyService.fetchAllCompanies();
-        console.log('CompaniesProvider: All companies fetched for master user:', data);
-        
-        if (data && Array.isArray(data)) {
-          const typedCompanies = data.map(company => ({
-            ...company,
-            status: company.status as "active" | "inactive" | "suspended"
-          })) as Company[];
-          
-          setCompanies(typedCompanies);
-          
-          // Tentar carregar empresa do localStorage primeiro
-          if (!loadSelectedCompanyFromStorage(typedCompanies)) {
-            // Se não há empresa salva e não há empresa atual, selecionar a empresa Visão 360 ou a primeira
-            if (!currentCompany && typedCompanies.length > 0) {
-              const defaultCompany = typedCompanies.find(c => c.id === '0a988013-fa43-4d9d-9bfa-22c245c0c1ea') || typedCompanies[0];
-              console.log('CompaniesProvider: Setting default company for master:', defaultCompany);
-              setCurrentCompanyInternal(defaultCompany);
-              localStorage.setItem('selectedCompanyId', defaultCompany.id);
-            }
-          }
-        } else {
-          console.log('CompaniesProvider: No companies found or invalid data format');
-          setCompanies([]);
-        }
-        return;
-      }
-
-      // Para usuários normais, buscar apenas empresas associadas
-      if (!userLogin) {
-        console.log('CompaniesProvider: No user login found, clearing companies');
-        setCompanies([]);
-        setCurrentCompanyInternal(null);
-        localStorage.removeItem('selectedCompanyId');
-        return;
-      }
-
-      console.log('CompaniesProvider: Fetching companies for regular user:', userLogin.id);
-      const userCompanies = await CompanyService.fetchUserCompanies(userLogin.id);
-      console.log('CompaniesProvider: User companies fetched:', userCompanies);
+      // SEMPRE buscar todas as empresas para a página de empresas
+      console.log('CompaniesProvider: Fetching all companies...');
+      const data = await CompanyService.fetchAllCompanies();
+      console.log('CompaniesProvider: All companies fetched:', data);
       
-      if (userCompanies && Array.isArray(userCompanies)) {
-        const typedCompanies = userCompanies.map(company => ({
+      if (data && Array.isArray(data)) {
+        const typedCompanies = data.map(company => ({
           ...company,
           status: company.status as "active" | "inactive" | "suspended"
         })) as Company[];
         
         setCompanies(typedCompanies);
-
-        // Tentar carregar empresa do localStorage primeiro
-        if (!loadSelectedCompanyFromStorage(typedCompanies)) {
-          // Para usuários normais, se há apenas uma empresa, selecioná-la automaticamente
-          if (!currentCompany && typedCompanies.length === 1) {
-            console.log('CompaniesProvider: Setting single company for user:', typedCompanies[0]);
-            setCurrentCompanyInternal(typedCompanies[0]);
-            localStorage.setItem('selectedCompanyId', typedCompanies[0].id);
-          } else if (typedCompanies.length > 1) {
-            console.log('CompaniesProvider: Multiple companies found for user - waiting for manual selection');
+        
+        // Para usuários master, tentar carregar empresa do localStorage primeiro
+        if (userLogin?.is_master && !loadSelectedCompanyFromStorage(typedCompanies)) {
+          // Se não há empresa salva, selecionar a empresa Visão 360 ou a primeira
+          if (!currentCompany && typedCompanies.length > 0) {
+            const defaultCompany = typedCompanies.find(c => c.id === '0a988013-fa43-4d9d-9bfa-22c245c0c1ea') || typedCompanies[0];
+            console.log('CompaniesProvider: Setting default company for master:', defaultCompany);
+            setCurrentCompanyInternal(defaultCompany);
+            localStorage.setItem('selectedCompanyId', defaultCompany.id);
+          }
+        }
+        
+        // Para usuários normais, buscar apenas empresas associadas para o contexto atual
+        if (!userLogin?.is_master && userLogin?.id) {
+          console.log('CompaniesProvider: Fetching user companies for current company context...');
+          const userCompanies = await CompanyService.fetchUserCompanies(userLogin.id);
+          
+          if (userCompanies && Array.isArray(userCompanies)) {
+            const typedUserCompanies = userCompanies.map(company => ({
+              ...company,
+              status: company.status as "active" | "inactive" | "suspended"
+            })) as Company[];
+            
+            // Para o contexto de empresa atual, usar apenas as empresas do usuário
+            if (!loadSelectedCompanyFromStorage(typedUserCompanies)) {
+              if (!currentCompany && typedUserCompanies.length === 1) {
+                console.log('CompaniesProvider: Setting single company for user:', typedUserCompanies[0]);
+                setCurrentCompanyInternal(typedUserCompanies[0]);
+                localStorage.setItem('selectedCompanyId', typedUserCompanies[0].id);
+              }
+            }
           }
         }
       } else {
-        console.log('CompaniesProvider: No user companies found or invalid data format');
+        console.log('CompaniesProvider: No companies found or invalid data format');
         setCompanies([]);
-        localStorage.removeItem('selectedCompanyId');
       }
 
     } catch (error) {
