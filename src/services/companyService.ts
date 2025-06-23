@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Company } from '@/types/company';
 
@@ -82,33 +83,30 @@ export class CompanyService {
       console.log('CompanyService: Starting company creation...');
       console.log('CompanyService: Company data received:', companyData);
       
-      // Verificar se o usuário atual é master
-      console.log('CompanyService: Checking if user is master...');
-      const { data: { user } } = await supabase.auth.getUser();
-      console.log('CompanyService: Current authenticated user:', user);
+      // Verificar se há usuário logado no sistema customizado
+      const savedUser = localStorage.getItem('userLogin');
+      console.log('CompanyService: Checking saved user in localStorage:', savedUser);
       
-      if (!user) {
-        throw new Error('Usuário não autenticado');
+      if (!savedUser) {
+        throw new Error('Usuário não está logado no sistema');
       }
 
-      // Verificar função is_master_user
-      console.log('CompanyService: Testing is_master_user function...');
-      const { data: isMasterResult, error: masterError } = await supabase
-        .rpc('is_master_user', { user_uuid: user.id });
-      
-      console.log('CompanyService: is_master_user result:', isMasterResult);
-      console.log('CompanyService: is_master_user error:', masterError);
+      let userLogin;
+      try {
+        userLogin = JSON.parse(savedUser);
+      } catch (error) {
+        console.error('CompanyService: Error parsing user data:', error);
+        throw new Error('Dados de usuário inválidos');
+      }
 
-      // Buscar dados do usuário na tabela users para verificar is_admin
-      console.log('CompanyService: Fetching user data from users table...');
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('id, name, email, is_admin')
-        .eq('id', user.id)
-        .single();
-      
-      console.log('CompanyService: User data from table:', userData);
-      console.log('CompanyService: User data error:', userError);
+      console.log('CompanyService: Current user login data:', userLogin);
+      console.log('CompanyService: User is_admin value:', userLogin.is_admin);
+      console.log('CompanyService: User is_master value:', userLogin.is_master);
+
+      // Verificar se o usuário é master (is_admin = '0')
+      if (userLogin.is_admin !== '0' && !userLogin.is_master) {
+        throw new Error('Apenas usuários master podem criar empresas');
+      }
 
       // Validações básicas
       if (!companyData.name?.trim()) {
@@ -159,9 +157,64 @@ export class CompanyService {
 
       console.log('CompanyService: Inserting company with data:', companyToInsert);
 
-      const { data, error } = await supabase
+      // Como o usuário é master, vamos usar RPC para bypass das políticas RLS
+      console.log('CompanyService: Attempting to create company via RPC...');
+      
+      const { data, error } = await supabase.rpc('create_company_as_master', {
+        company_name: companyToInsert.name,
+        company_document: companyToInsert.document,
+        company_email: companyToInsert.email,
+        company_phone: companyToInsert.phone,
+        company_address: companyToInsert.address,
+        company_status: companyToInsert.status,
+        company_plan_id: companyToInsert.plan_id,
+        master_user_id: userLogin.id
+      });
+
+      if (error) {
+        console.error('CompanyService: RPC error:', error);
+        
+        // Se RPC falhar, tentar inserção direta
+        console.log('CompanyService: RPC failed, trying direct insert...');
+        
+        const { data: directData, error: directError } = await supabase
+          .from('companies')
+          .insert([companyToInsert])
+          .select(`
+            *,
+            plans (
+              id,
+              name,
+              price
+            )
+          `)
+          .single();
+
+        if (directError) {
+          console.error('CompanyService: Direct insert error:', directError);
+          console.error('CompanyService: Error code:', directError.code);
+          console.error('CompanyService: Error message:', directError.message);
+          console.error('CompanyService: Error details:', directError.details);
+          
+          if (directError.code === '42501') {
+            throw new Error('Erro de permissão: Usuário não tem permissão para criar empresas. Verifique se você é um usuário master.');
+          }
+          if (directError.code === '23505') {
+            throw new Error('CNPJ ou email já está em uso por outra empresa');
+          }
+          throw new Error(`Erro do banco de dados: ${directError.message}`);
+        }
+
+        console.log('CompanyService: Company created successfully via direct insert:', directData);
+        return directData;
+      }
+
+      // Se chegou aqui, o RPC funcionou
+      console.log('CompanyService: Company created successfully via RPC:', data);
+      
+      // Buscar a empresa criada com os dados completos
+      const { data: createdCompany, error: fetchError } = await supabase
         .from('companies')
-        .insert([companyToInsert])
         .select(`
           *,
           plans (
@@ -170,25 +223,15 @@ export class CompanyService {
             price
           )
         `)
+        .eq('id', data.company_id)
         .single();
 
-      if (error) {
-        console.error('CompanyService: Supabase insert error:', error);
-        console.error('CompanyService: Error code:', error.code);
-        console.error('CompanyService: Error message:', error.message);
-        console.error('CompanyService: Error details:', error.details);
-        
-        if (error.code === '42501') {
-          throw new Error('Erro de permissão: Usuário não tem permissão para criar empresas. Verifique se você é um usuário master.');
-        }
-        if (error.code === '23505') {
-          throw new Error('CNPJ ou email já está em uso por outra empresa');
-        }
-        throw new Error(`Erro do banco de dados: ${error.message}`);
+      if (fetchError) {
+        console.error('CompanyService: Error fetching created company:', fetchError);
+        throw new Error('Empresa criada mas erro ao buscar dados completos');
       }
 
-      console.log('CompanyService: Company created successfully:', data);
-      return data;
+      return createdCompany;
     } catch (error) {
       console.error('CompanyService: createCompany error:', error);
       throw error;
