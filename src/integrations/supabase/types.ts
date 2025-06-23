@@ -694,6 +694,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_company_as_master: {
+        Args: {
+          company_name: string
+          company_document: string
+          company_email: string
+          company_phone?: string
+          company_address?: string
+          company_status?: string
+          company_plan_id?: string
+          master_user_id?: string
+        }
+        Returns: {
+          company_id: string
+        }[]
+      }
       is_master_user: {
         Args: { user_uuid?: string }
         Returns: boolean

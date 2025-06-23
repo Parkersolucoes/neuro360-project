@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Company } from '@/types/company';
 
@@ -145,72 +144,39 @@ export class CompanyService {
         throw new Error('Já existe uma empresa com este email');
       }
 
-      const companyToInsert = {
-        name: companyData.name.trim(),
-        document: companyData.document.trim(),
-        email: companyData.email.trim().toLowerCase(),
-        phone: companyData.phone?.trim() || null,
-        address: companyData.address?.trim() || null,
-        status: companyData.status || 'active',
-        plan_id: companyData.plan_id || null
-      };
-
-      console.log('CompanyService: Inserting company with data:', companyToInsert);
-
-      // Como o usuário é master, vamos usar RPC para bypass das políticas RLS
       console.log('CompanyService: Attempting to create company via RPC...');
       
-      const { data, error } = await supabase.rpc('create_company_as_master', {
-        company_name: companyToInsert.name,
-        company_document: companyToInsert.document,
-        company_email: companyToInsert.email,
-        company_phone: companyToInsert.phone,
-        company_address: companyToInsert.address,
-        company_status: companyToInsert.status,
-        company_plan_id: companyToInsert.plan_id,
+      // Usar RPC para criar empresa como master user
+      const { data: rpcData, error: rpcError } = await supabase.rpc('create_company_as_master', {
+        company_name: companyData.name.trim(),
+        company_document: companyData.document.trim(),
+        company_email: companyData.email.trim().toLowerCase(),
+        company_phone: companyData.phone?.trim() || null,
+        company_address: companyData.address?.trim() || null,
+        company_status: companyData.status || 'active',
+        company_plan_id: companyData.plan_id || null,
         master_user_id: userLogin.id
       });
 
-      if (error) {
-        console.error('CompanyService: RPC error:', error);
-        
-        // Se RPC falhar, tentar inserção direta
-        console.log('CompanyService: RPC failed, trying direct insert...');
-        
-        const { data: directData, error: directError } = await supabase
-          .from('companies')
-          .insert([companyToInsert])
-          .select(`
-            *,
-            plans (
-              id,
-              name,
-              price
-            )
-          `)
-          .single();
-
-        if (directError) {
-          console.error('CompanyService: Direct insert error:', directError);
-          console.error('CompanyService: Error code:', directError.code);
-          console.error('CompanyService: Error message:', directError.message);
-          console.error('CompanyService: Error details:', directError.details);
-          
-          if (directError.code === '42501') {
-            throw new Error('Erro de permissão: Usuário não tem permissão para criar empresas. Verifique se você é um usuário master.');
-          }
-          if (directError.code === '23505') {
-            throw new Error('CNPJ ou email já está em uso por outra empresa');
-          }
-          throw new Error(`Erro do banco de dados: ${directError.message}`);
-        }
-
-        console.log('CompanyService: Company created successfully via direct insert:', directData);
-        return directData;
+      if (rpcError) {
+        console.error('CompanyService: RPC error:', rpcError);
+        throw new Error(`Erro ao criar empresa: ${rpcError.message}`);
       }
 
-      // Se chegou aqui, o RPC funcionou
-      console.log('CompanyService: Company created successfully via RPC:', data);
+      console.log('CompanyService: RPC response:', rpcData);
+
+      if (!rpcData || rpcData.length === 0) {
+        throw new Error('Erro: Nenhum ID de empresa retornado');
+      }
+
+      // Pegar o ID da empresa criada
+      const companyId = rpcData[0]?.company_id;
+      
+      if (!companyId) {
+        throw new Error('Erro: ID da empresa não encontrado na resposta');
+      }
+
+      console.log('CompanyService: Company created with ID:', companyId);
       
       // Buscar a empresa criada com os dados completos
       const { data: createdCompany, error: fetchError } = await supabase
@@ -223,7 +189,7 @@ export class CompanyService {
             price
           )
         `)
-        .eq('id', data.company_id)
+        .eq('id', companyId)
         .single();
 
       if (fetchError) {
@@ -231,6 +197,7 @@ export class CompanyService {
         throw new Error('Empresa criada mas erro ao buscar dados completos');
       }
 
+      console.log('CompanyService: Company created successfully:', createdCompany);
       return createdCompany;
     } catch (error) {
       console.error('CompanyService: createCompany error:', error);
