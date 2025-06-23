@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -24,7 +23,7 @@ export function useUserCompanies() {
   const [userCompanies, setUserCompanies] = useState<UserCompany[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const { isAdmin } = useAdminAuth();
+  const { isMasterUser } = useAdminAuth();
   const { currentCompany } = useCompanies();
 
   const fetchUserCompanies = async () => {
@@ -41,19 +40,15 @@ export function useUserCompanies() {
           )
         `);
 
-      // Se não for admin, filtrar apenas associações das empresas do usuário
-      if (!isAdmin) {
+      // Para usuários master, mostrar todas as associações
+      if (isMasterUser) {
+        // Não filtrar por usuário específico - mostrar todas as associações
+        console.log('Master user: fetching all user-company associations');
+      } else {
+        // Para usuários normais, filtrar apenas suas próprias associações
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const { data: userCompaniesData } = await supabase
-            .from('user_companies')
-            .select('company_id')
-            .eq('user_id', user.id);
-          
-          if (userCompaniesData && userCompaniesData.length > 0) {
-            const companyIds = userCompaniesData.map(uc => uc.company_id);
-            query = query.in('company_id', companyIds);
-          }
+          query = query.eq('user_id', user.id);
         }
       }
 
@@ -174,7 +169,7 @@ export function useUserCompanies() {
 
   useEffect(() => {
     fetchUserCompanies();
-  }, [isAdmin, currentCompany]);
+  }, [isMasterUser, currentCompany]);
 
   return {
     userCompanies,
