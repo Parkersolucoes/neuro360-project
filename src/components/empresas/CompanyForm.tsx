@@ -36,6 +36,7 @@ export function CompanyForm({ isOpen, onOpenChange, editingCompany, onSave, onCa
   });
 
   const [isSaving, setIsSaving] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (editingCompany) {
@@ -61,7 +62,55 @@ export function CompanyForm({ isOpen, onOpenChange, editingCompany, onSave, onCa
         status: "active"
       });
     }
+    // Limpar erros quando o modal abrir/fechar
+    setFieldErrors({});
   }, [editingCompany, isOpen]);
+
+  const validateField = (field: string, value: string) => {
+    const errors = { ...fieldErrors };
+    
+    switch (field) {
+      case 'name':
+        if (!value.trim()) {
+          errors.name = 'Nome da empresa é obrigatório';
+        } else {
+          delete errors.name;
+        }
+        break;
+      case 'document':
+        if (!value.trim()) {
+          errors.document = 'CNPJ é obrigatório';
+        } else {
+          const cnpj = value.replace(/\D/g, '');
+          if (cnpj.length !== 14) {
+            errors.document = 'CNPJ deve conter 14 dígitos';
+          } else {
+            delete errors.document;
+          }
+        }
+        break;
+      case 'email':
+        if (!value.trim()) {
+          errors.email = 'Email é obrigatório';
+        } else {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(value)) {
+            errors.email = 'Formato de email inválido';
+          } else {
+            delete errors.email;
+          }
+        }
+        break;
+    }
+    
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleFieldChange = (field: string, value: string) => {
+    setFormData({ ...formData, [field]: value });
+    validateField(field, value);
+  };
 
   const handleSave = async () => {
     if (isSaving) return;
@@ -71,6 +120,20 @@ export function CompanyForm({ isOpen, onOpenChange, editingCompany, onSave, onCa
       toast({
         title: "Erro de Permissão",
         description: "Apenas usuários master podem criar ou editar empresas",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validar todos os campos obrigatórios
+    const isNameValid = validateField('name', formData.name);
+    const isDocumentValid = validateField('document', formData.document);
+    const isEmailValid = validateField('email', formData.email);
+
+    if (!isNameValid || !isDocumentValid || !isEmailValid) {
+      toast({
+        title: "Dados Inválidos",
+        description: "Por favor, corrija os erros nos campos destacados",
         variant: "destructive"
       });
       return;
@@ -91,17 +154,36 @@ export function CompanyForm({ isOpen, onOpenChange, editingCompany, onSave, onCa
       
       await onSave(formData);
       onCancel();
+      
+      toast({
+        title: "Sucesso!",
+        description: editingCompany 
+          ? "Empresa atualizada com sucesso" 
+          : "Empresa criada com sucesso",
+        variant: "default"
+      });
     } catch (error) {
       console.error('CompanyForm: Error saving company:', error);
       
-      // Mostrar toast de erro mais específico
+      let errorMessage = "Erro desconhecido ao salvar empresa";
+      
       if (error instanceof Error) {
-        toast({
-          title: "Erro ao salvar empresa",
-          description: error.message,
-          variant: "destructive"
-        });
+        errorMessage = error.message;
+        
+        // Destacar campos específicos com erro
+        if (errorMessage.includes('CNPJ') && errorMessage.includes('já está')) {
+          setFieldErrors({ ...fieldErrors, document: errorMessage });
+        }
+        if (errorMessage.includes('Email') && errorMessage.includes('já está')) {
+          setFieldErrors({ ...fieldErrors, email: errorMessage });
+        }
       }
+      
+      toast({
+        title: "Erro ao Salvar",
+        description: errorMessage,
+        variant: "destructive"
+      });
     } finally {
       setIsSaving(false);
     }
@@ -145,38 +227,50 @@ export function CompanyForm({ isOpen, onOpenChange, editingCompany, onSave, onCa
         <div className="space-y-4 mt-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Razão Social</Label>
+              <Label htmlFor="name">Razão Social *</Label>
               <Input
                 id="name"
                 placeholder="Nome da empresa"
                 value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                onChange={(e) => handleFieldChange('name', e.target.value)}
                 disabled={isSaving}
+                className={fieldErrors.name ? "border-red-500" : ""}
               />
+              {fieldErrors.name && (
+                <p className="text-sm text-red-500">{fieldErrors.name}</p>
+              )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="document">CNPJ</Label>
+              <Label htmlFor="document">CNPJ *</Label>
               <Input
                 id="document"
                 placeholder="XX.XXX.XXX/XXXX-XX"
                 value={formData.document}
-                onChange={(e) => setFormData({...formData, document: e.target.value})}
+                onChange={(e) => handleFieldChange('document', e.target.value)}
                 disabled={isSaving}
+                className={fieldErrors.document ? "border-red-500" : ""}
               />
+              {fieldErrors.document && (
+                <p className="text-sm text-red-500">{fieldErrors.document}</p>
+              )}
             </div>
           </div>
           
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
+              <Label htmlFor="email">E-mail *</Label>
               <Input
                 id="email"
                 type="email"
                 placeholder="contato@empresa.com"
                 value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                onChange={(e) => handleFieldChange('email', e.target.value)}
                 disabled={isSaving}
+                className={fieldErrors.email ? "border-red-500" : ""}
               />
+              {fieldErrors.email && (
+                <p className="text-sm text-red-500">{fieldErrors.email}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">Telefone</Label>
@@ -184,7 +278,7 @@ export function CompanyForm({ isOpen, onOpenChange, editingCompany, onSave, onCa
                 id="phone"
                 placeholder="(11) 3333-4444"
                 value={formData.phone}
-                onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                onChange={(e) => handleFieldChange('phone', e.target.value)}
                 disabled={isSaving}
               />
             </div>
@@ -196,7 +290,7 @@ export function CompanyForm({ isOpen, onOpenChange, editingCompany, onSave, onCa
               id="address"
               placeholder="Endereço completo da empresa"
               value={formData.address}
-              onChange={(e) => setFormData({...formData, address: e.target.value})}
+              onChange={(e) => handleFieldChange('address', e.target.value)}
               disabled={isSaving}
             />
           </div>
@@ -205,7 +299,7 @@ export function CompanyForm({ isOpen, onOpenChange, editingCompany, onSave, onCa
             <Label htmlFor="plan">Plano</Label>
             <Select 
               value={formData.plan_id} 
-              onValueChange={(value) => setFormData({...formData, plan_id: value})}
+              onValueChange={(value) => handleFieldChange('plan_id', value)}
               disabled={plansLoading || isSaving}
             >
               <SelectTrigger>
@@ -232,7 +326,7 @@ export function CompanyForm({ isOpen, onOpenChange, editingCompany, onSave, onCa
               id="qr_code"
               placeholder="Código QR da empresa"
               value={formData.qr_code}
-              onChange={(e) => setFormData({...formData, qr_code: e.target.value})}
+              onChange={(e) => handleFieldChange('qr_code', e.target.value)}
               disabled={isSaving}
             />
           </div>
@@ -243,7 +337,7 @@ export function CompanyForm({ isOpen, onOpenChange, editingCompany, onSave, onCa
             </Button>
             <Button 
               onClick={handleSave} 
-              disabled={!formData.name || !formData.document || !formData.email || isSaving}
+              disabled={isSaving || Object.keys(fieldErrors).length > 0}
             >
               {isSaving 
                 ? "Salvando..." 

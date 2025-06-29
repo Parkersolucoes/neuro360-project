@@ -78,11 +78,82 @@ export class CompanyService {
     }
   }
 
+  private static validateCompanyData(companyData: Omit<Company, 'id' | 'created_at' | 'updated_at'>) {
+    const errors: string[] = [];
+
+    if (!companyData.name?.trim()) {
+      errors.push('Nome da empresa é obrigatório');
+    }
+
+    if (!companyData.document?.trim()) {
+      errors.push('CNPJ é obrigatório');
+    } else {
+      // Validação básica de CNPJ (apenas números e formato)
+      const cnpj = companyData.document.replace(/\D/g, '');
+      if (cnpj.length !== 14) {
+        errors.push('CNPJ deve conter 14 dígitos');
+      }
+    }
+
+    if (!companyData.email?.trim()) {
+      errors.push('Email é obrigatório');
+    } else {
+      // Validação básica de email
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(companyData.email)) {
+        errors.push('Formato de email inválido');
+      }
+    }
+
+    if (errors.length > 0) {
+      throw new Error(errors.join(', '));
+    }
+  }
+
+  private static async checkUniqueConstraints(companyData: Omit<Company, 'id' | 'created_at' | 'updated_at'>, excludeId?: string) {
+    // Verificar se CNPJ já existe
+    console.log('CompanyService: Checking if document already exists...');
+    const documentQuery = supabase
+      .from('companies')
+      .select('id, name')
+      .eq('document', companyData.document.trim());
+    
+    if (excludeId) {
+      documentQuery.neq('id', excludeId);
+    }
+
+    const { data: existingCompanyByDocument } = await documentQuery.maybeSingle();
+
+    if (existingCompanyByDocument) {
+      throw new Error(`CNPJ ${companyData.document} já está sendo usado pela empresa "${existingCompanyByDocument.name}"`);
+    }
+
+    // Verificar se email já existe
+    console.log('CompanyService: Checking if email already exists...');
+    const emailQuery = supabase
+      .from('companies')
+      .select('id, name')
+      .eq('email', companyData.email.trim().toLowerCase());
+    
+    if (excludeId) {
+      emailQuery.neq('id', excludeId);
+    }
+
+    const { data: existingCompanyByEmail } = await emailQuery.maybeSingle();
+
+    if (existingCompanyByEmail) {
+      throw new Error(`Email ${companyData.email} já está sendo usado pela empresa "${existingCompanyByEmail.name}"`);
+    }
+  }
+
   static async createCompany(companyData: Omit<Company, 'id' | 'created_at' | 'updated_at'>) {
     try {
       console.log('CompanyService: Starting company creation...');
       console.log('CompanyService: Company data received:', companyData);
-      
+
+      // Validações básicas
+      this.validateCompanyData(companyData);
+
       // Verificar se há usuário logado no sistema customizado
       const savedUser = localStorage.getItem('userLogin');
       console.log('CompanyService: Checking saved user in localStorage:', savedUser);
@@ -109,42 +180,8 @@ export class CompanyService {
         throw new Error('Apenas usuários master podem criar empresas');
       }
 
-      // Validações básicas
-      if (!companyData.name?.trim()) {
-        throw new Error('Nome da empresa é obrigatório');
-      }
-      
-      if (!companyData.document?.trim()) {
-        throw new Error('CNPJ é obrigatório');
-      }
-      
-      if (!companyData.email?.trim()) {
-        throw new Error('Email é obrigatório');
-      }
-
-      // Verificar se CNPJ já existe
-      console.log('CompanyService: Checking if document already exists...');
-      const { data: existingCompany } = await supabase
-        .from('companies')
-        .select('id')
-        .eq('document', companyData.document.trim())
-        .maybeSingle();
-
-      if (existingCompany) {
-        throw new Error('Já existe uma empresa com este CNPJ');
-      }
-
-      // Verificar se email já existe
-      console.log('CompanyService: Checking if email already exists...');
-      const { data: existingEmailCompany } = await supabase
-        .from('companies')
-        .select('id')
-        .eq('email', companyData.email.trim().toLowerCase())
-        .maybeSingle();
-
-      if (existingEmailCompany) {
-        throw new Error('Já existe uma empresa com este email');
-      }
+      // Verificar constraints únicas
+      await this.checkUniqueConstraints(companyData);
 
       console.log('CompanyService: Attempting to create company via RPC...');
       
@@ -162,6 +199,17 @@ export class CompanyService {
 
       if (rpcError) {
         console.error('CompanyService: RPC error:', rpcError);
+        
+        // Tratamento específico para erros de constraint
+        if (rpcError.code === '23505') {
+          if (rpcError.message?.includes('companies_document_key')) {
+            throw new Error(`CNPJ ${companyData.document} já está em uso por outra empresa`);
+          }
+          if (rpcError.message?.includes('companies_email_key')) {
+            throw new Error(`Email ${companyData.email} já está em uso por outra empresa`);
+          }
+          throw new Error('Dados já existem no sistema. Verifique CNPJ e email');
+        }
         
         // Se o erro for de permissão, tentar inserção direta
         if (rpcError.message?.includes('master') || rpcError.code === '42501') {
@@ -183,6 +231,18 @@ export class CompanyService {
 
           if (directError) {
             console.error('CompanyService: Direct insertion error:', directError);
+            
+            // Tratamento específico para erros de constraint na inserção direta
+            if (directError.code === '23505') {
+              if (directError.message?.includes('companies_document_key')) {
+                throw new Error(`CNPJ ${companyData.document} já está em uso por outra empresa`);
+              }
+              if (directError.message?.includes('companies_email_key')) {
+                throw new Error(`Email ${companyData.email} já está em uso por outra empresa`);
+              }
+              throw new Error('Dados já existem no sistema. Verifique CNPJ e email');
+            }
+            
             throw new Error(`Erro ao criar empresa: ${directError.message}`);
           }
 
@@ -251,107 +311,155 @@ export class CompanyService {
   }
 
   static async updateCompany(id: string, updates: Partial<Company>) {
-    // Validações para atualização
-    if (updates.email) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(updates.email)) {
-        throw new Error('Formato de email inválido');
+    try {
+      console.log('CompanyService: Starting company update for ID:', id);
+      console.log('CompanyService: Update data:', updates);
+
+      // Validações para atualização
+      if (updates.email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(updates.email)) {
+          throw new Error('Formato de email inválido');
+        }
       }
 
-      // Verificar se email já existe em outra empresa
-      const { data: existingCompany } = await supabase
+      if (updates.document) {
+        const cnpj = updates.document.replace(/\D/g, '');
+        if (cnpj.length !== 14) {
+          throw new Error('CNPJ deve conter 14 dígitos');
+        }
+      }
+
+      // Verificar constraints únicas se email ou document estão sendo atualizados
+      if (updates.email || updates.document) {
+        const tempData = {
+          name: updates.name || '',
+          document: updates.document || '',
+          email: updates.email || '',
+          phone: updates.phone || '',
+          address: updates.address || '',
+          status: updates.status || 'active',
+          plan_id: updates.plan_id || '',
+          qr_code: updates.qr_code || ''
+        };
+
+        if (updates.email && updates.document) {
+          await this.checkUniqueConstraints(tempData, id);
+        } else if (updates.email) {
+          const { data: existingCompany } = await supabase
+            .from('companies')
+            .select('id, name')
+            .eq('email', updates.email.toLowerCase())
+            .neq('id', id)
+            .maybeSingle();
+
+          if (existingCompany) {
+            throw new Error(`Email ${updates.email} já está sendo usado pela empresa "${existingCompany.name}"`);
+          }
+        } else if (updates.document) {
+          const { data: existingCompany } = await supabase
+            .from('companies')
+            .select('id, name')
+            .eq('document', updates.document.trim())
+            .neq('id', id)
+            .maybeSingle();
+
+          if (existingCompany) {
+            throw new Error(`CNPJ ${updates.document} já está sendo usado pela empresa "${existingCompany.name}"`);
+          }
+        }
+      }
+
+      const updateData: any = { ...updates };
+      
+      if (updateData.email) {
+        updateData.email = updateData.email.toLowerCase();
+      }
+      
+      if (updateData.name) {
+        updateData.name = updateData.name.trim();
+      }
+      
+      if (updateData.document) {
+        updateData.document = updateData.document.trim();
+      }
+      
+      if (updateData.phone) {
+        updateData.phone = updateData.phone.trim();
+      }
+      
+      if (updateData.address) {
+        updateData.address = updateData.address.trim();
+      }
+
+      const { data, error } = await supabase
         .from('companies')
-        .select('id')
-        .eq('email', updates.email.toLowerCase())
-        .neq('id', id)
-        .maybeSingle();
+        .update(updateData)
+        .eq('id', id)
+        .select(`
+          *,
+          plans (
+            id,
+            name,
+            price
+          )
+        `)
+        .single();
 
-      if (existingCompany) {
-        throw new Error('Já existe outra empresa com este email');
+      if (error) {
+        console.error('CompanyService: Update error:', error);
+        
+        // Tratamento específico para erros de constraint
+        if (error.code === '23505') {
+          if (error.message?.includes('companies_document_key')) {
+            throw new Error(`CNPJ ${updates.document} já está em uso por outra empresa`);
+          }
+          if (error.message?.includes('companies_email_key')) {
+            throw new Error(`Email ${updates.email} já está em uso por outra empresa`);
+          }
+          throw new Error('Dados já existem no sistema. Verifique CNPJ e email');
+        }
+        
+        throw new Error(`Erro ao atualizar empresa: ${error.message}`);
       }
-    }
 
-    if (updates.document) {
-      // Verificar se CNPJ já existe em outra empresa
-      const { data: existingCompany } = await supabase
-        .from('companies')
-        .select('id')
-        .eq('document', updates.document.trim())
-        .neq('id', id)
-        .maybeSingle();
-
-      if (existingCompany) {
-        throw new Error('Já existe outra empresa com este CNPJ');
-      }
+      console.log('CompanyService: Company updated successfully:', data);
+      return data;
+    } catch (error) {
+      console.error('CompanyService: updateCompany error:', error);
+      throw error;
     }
-
-    const updateData: any = { ...updates };
-    
-    if (updateData.email) {
-      updateData.email = updateData.email.toLowerCase();
-    }
-    
-    if (updateData.name) {
-      updateData.name = updateData.name.trim();
-    }
-    
-    if (updateData.document) {
-      updateData.document = updateData.document.trim();
-    }
-    
-    if (updateData.phone) {
-      updateData.phone = updateData.phone.trim();
-    }
-    
-    if (updateData.address) {
-      updateData.address = updateData.address.trim();
-    }
-
-    const { data, error } = await supabase
-      .from('companies')
-      .update(updateData)
-      .eq('id', id)
-      .select(`
-        *,
-        plans (
-          id,
-          name,
-          price
-        )
-      `)
-      .single();
-
-    if (error) {
-      console.error('Supabase update error:', error);
-      if (error.code === '23505') {
-        throw new Error('CNPJ ou email já está em uso por outra empresa');
-      }
-      throw new Error(`Erro do banco de dados: ${error.message}`);
-    }
-
-    return data;
   }
 
   static async deleteCompany(id: string) {
-    // Verificar se há usuários associados à empresa
-    const { data: userCompanies } = await supabase
-      .from('user_companies')
-      .select('id')
-      .eq('company_id', id)
-      .limit(1);
+    try {
+      console.log('CompanyService: Starting company deletion for ID:', id);
 
-    if (userCompanies && userCompanies.length > 0) {
-      throw new Error('Não é possível excluir uma empresa que possui usuários associados');
-    }
+      // Verificar se há usuários associados à empresa
+      const { data: userCompanies } = await supabase
+        .from('user_companies')
+        .select('id')
+        .eq('company_id', id)
+        .limit(1);
 
-    const { error } = await supabase
-      .from('companies')
-      .delete()
-      .eq('id', id);
+      if (userCompanies && userCompanies.length > 0) {
+        throw new Error('Não é possível excluir uma empresa que possui usuários associados');
+      }
 
-    if (error) {
-      console.error('Supabase delete error:', error);
-      throw new Error(`Erro do banco de dados: ${error.message}`);
+      const { error } = await supabase
+        .from('companies')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('CompanyService: Delete error:', error);
+        throw new Error(`Erro ao excluir empresa: ${error.message}`);
+      }
+
+      console.log('CompanyService: Company deleted successfully');
+    } catch (error) {
+      console.error('CompanyService: deleteCompany error:', error);
+      throw error;
     }
   }
 }
