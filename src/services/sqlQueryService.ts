@@ -34,7 +34,7 @@ export class SQLQueryService {
   static async createQuery(queryData: Partial<SQLQuery> & { 
     name: string; 
     query_text: string; 
-    company_id?: string;
+    company_id: string;
     connection_id?: string;
     created_by?: string;
   }) {
@@ -49,8 +49,9 @@ export class SQLQueryService {
           description: queryData.description || '',
           connection_id: queryData.connection_id || null,
           created_by: queryData.created_by || null,
-          company_id: queryData.company_id || '',
-          user_id: queryData.created_by || null
+          company_id: queryData.company_id,
+          user_id: queryData.created_by || null,
+          status: 'active'
         })
         .select(`
           *,
@@ -148,14 +149,14 @@ export class SQLQueryService {
     }));
   }
 
-  private static mapSingleSupabaseDataToSQLQuery(data: any, status?: 'success' | 'error' | 'pending'): SQLQuery {
+  private static mapSingleSupabaseDataToSQLQuery(data: any): SQLQuery {
     return {
       id: data.id,
       connection_id: data.connection_id,
       name: data.name,
       description: data.description,
       query_text: data.query_text,
-      status: status || data.status || 'active',
+      status: data.status || 'active',
       created_at: data.created_at,
       updated_at: data.updated_at,
       created_by: data.created_by,
