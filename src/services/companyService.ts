@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Company } from '@/types/company';
 
@@ -48,6 +47,7 @@ export class CompanyService {
             address,
             status,
             plan_id,
+            qr_code,
             created_at,
             updated_at,
             plans (
@@ -224,7 +224,8 @@ export class CompanyService {
               phone: companyData.phone?.trim() || null,
               address: companyData.address?.trim() || null,
               status: companyData.status || 'active',
-              plan_id: companyData.plan_id || null
+              plan_id: companyData.plan_id || null,
+              qr_code: companyData.qr_code || null
             })
             .select()
             .single();

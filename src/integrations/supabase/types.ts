@@ -19,6 +19,7 @@ export type Database = {
           name: string
           phone: string | null
           plan_id: string | null
+          qr_code: string | null
           status: string
           updated_at: string
         }
@@ -31,6 +32,7 @@ export type Database = {
           name: string
           phone?: string | null
           plan_id?: string | null
+          qr_code?: string | null
           status?: string
           updated_at?: string
         }
@@ -43,6 +45,7 @@ export type Database = {
           name?: string
           phone?: string | null
           plan_id?: string | null
+          qr_code?: string | null
           status?: string
           updated_at?: string
         }
@@ -52,6 +55,60 @@ export type Database = {
             columns: ["plan_id"]
             isOneToOne: false
             referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_templates: {
+        Row: {
+          category: string | null
+          company_id: string | null
+          content: string
+          created_at: string
+          id: string
+          name: string
+          status: string
+          updated_at: string
+          user_id: string | null
+          variables: Json | null
+        }
+        Insert: {
+          category?: string | null
+          company_id?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          name: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          variables?: Json | null
+        }
+        Update: {
+          category?: string | null
+          company_id?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          name?: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          variables?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_templates_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_templates_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -202,6 +259,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedulings_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "message_templates"
             referencedColumns: ["id"]
           },
           {
