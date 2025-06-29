@@ -22,23 +22,43 @@ export function useSQLConnections() {
       
       let data: SQLConnection[] = [];
       
+      // Só buscar conexões se o usuário estiver logado
+      if (!userLogin?.id) {
+        console.log('useSQLConnections: No user logged in, skipping fetch');
+        setConnections([]);
+        return;
+      }
+      
       if (currentCompany?.id) {
         // Se há uma empresa selecionada, buscar apenas suas conexões
+        console.log('useSQLConnections: Fetching connections for company:', currentCompany.id);
         data = await sqlConnectionService.fetchConnectionsByCompany(currentCompany.id);
       } else if (userLogin?.is_master) {
         // Se é usuário master sem empresa específica, buscar todas
+        console.log('useSQLConnections: Fetching all connections for master user');
         data = await sqlConnectionService.fetchConnections();
+      } else {
+        // Usuário comum sem empresa selecionada
+        console.log('useSQLConnections: No company selected for regular user');
+        data = [];
       }
       
       console.log('useSQLConnections: Connections loaded:', data);
       setConnections(data);
     } catch (error) {
       console.error('useSQLConnections: Error fetching connections:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao carregar conexões SQL",
-        variant: "destructive"
-      });
+      
+      // Não mostrar toast de erro se for apenas falta de empresa selecionada
+      if (!currentCompany && !userLogin?.is_master) {
+        console.log('useSQLConnections: No company selected, this is expected');
+      } else {
+        toast({
+          title: "Erro",
+          description: "Erro ao carregar conexões SQL",
+          variant: "destructive"
+        });
+      }
+      
       setConnections([]);
     } finally {
       setLoading(false);
@@ -168,8 +188,12 @@ export function useSQLConnections() {
   };
 
   useEffect(() => {
+    // Só buscar conexões se houver usuário logado
     if (userLogin?.id) {
       fetchConnections();
+    } else {
+      setConnections([]);
+      setLoading(false);
     }
   }, [userLogin?.id, currentCompany?.id, fetchConnections]);
 

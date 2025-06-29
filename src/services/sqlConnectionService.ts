@@ -14,7 +14,7 @@ export const sqlConnectionService = {
 
       if (error) {
         console.error('sqlConnectionService: Error fetching connections:', error);
-        throw error;
+        throw new Error(`Erro ao buscar conexões: ${error.message}`);
       }
 
       console.log('sqlConnectionService: Connections fetched successfully:', data);
@@ -29,6 +29,11 @@ export const sqlConnectionService = {
     try {
       console.log('sqlConnectionService: Fetching connections for company:', companyId);
       
+      if (!companyId) {
+        console.log('sqlConnectionService: No company ID provided');
+        return [];
+      }
+      
       const { data, error } = await supabase
         .from('sql_connections')
         .select('*')
@@ -37,7 +42,7 @@ export const sqlConnectionService = {
 
       if (error) {
         console.error('sqlConnectionService: Error fetching company connections:', error);
-        throw error;
+        throw new Error(`Erro ao buscar conexões da empresa: ${error.message}`);
       }
 
       console.log('sqlConnectionService: Company connections fetched successfully:', data);
@@ -51,6 +56,10 @@ export const sqlConnectionService = {
   async createConnection(connectionData: Omit<SQLConnection, 'id' | 'created_at' | 'updated_at'>) {
     try {
       console.log('sqlConnectionService: Creating connection:', connectionData);
+      
+      if (!connectionData.company_id) {
+        throw new Error('ID da empresa é obrigatório');
+      }
       
       const { data, error } = await supabase
         .from('sql_connections')
@@ -70,7 +79,7 @@ export const sqlConnectionService = {
 
       if (error) {
         console.error('sqlConnectionService: Error creating connection:', error);
-        throw error;
+        throw new Error(`Erro ao criar conexão: ${error.message}`);
       }
 
       console.log('sqlConnectionService: Connection created successfully:', data);
@@ -85,6 +94,10 @@ export const sqlConnectionService = {
     try {
       console.log('sqlConnectionService: Updating connection:', id, updates);
       
+      if (!id) {
+        throw new Error('ID da conexão é obrigatório');
+      }
+      
       const { data, error } = await supabase
         .from('sql_connections')
         .update(updates)
@@ -94,7 +107,7 @@ export const sqlConnectionService = {
 
       if (error) {
         console.error('sqlConnectionService: Error updating connection:', error);
-        throw error;
+        throw new Error(`Erro ao atualizar conexão: ${error.message}`);
       }
 
       console.log('sqlConnectionService: Connection updated successfully:', data);
@@ -109,6 +122,10 @@ export const sqlConnectionService = {
     try {
       console.log('sqlConnectionService: Deleting connection:', id);
       
+      if (!id) {
+        throw new Error('ID da conexão é obrigatório');
+      }
+      
       const { error } = await supabase
         .from('sql_connections')
         .delete()
@@ -116,7 +133,7 @@ export const sqlConnectionService = {
 
       if (error) {
         console.error('sqlConnectionService: Error deleting connection:', error);
-        throw error;
+        throw new Error(`Erro ao deletar conexão: ${error.message}`);
       }
 
       console.log('sqlConnectionService: Connection deleted successfully');
@@ -129,6 +146,10 @@ export const sqlConnectionService = {
   async createDemoConnection(companyId: string, companyName: string) {
     try {
       console.log('sqlConnectionService: Creating demo connection for company:', companyName);
+      
+      if (!companyId) {
+        throw new Error('ID da empresa é obrigatório');
+      }
       
       const demoConnectionData = {
         name: `Demo SQL - ${companyName}`,
@@ -150,7 +171,7 @@ export const sqlConnectionService = {
 
       if (error) {
         console.error('sqlConnectionService: Error creating demo connection:', error);
-        throw error;
+        throw new Error(`Erro ao criar conexão demo: ${error.message}`);
       }
 
       console.log('sqlConnectionService: Demo connection created successfully:', data);
