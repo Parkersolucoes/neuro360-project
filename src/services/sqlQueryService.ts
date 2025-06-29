@@ -31,7 +31,13 @@ export class SQLQueryService {
     }
   }
 
-  static async createQuery(queryData: Omit<SQLQuery, 'id' | 'created_at' | 'updated_at' | 'sql_connections'>) {
+  static async createQuery(queryData: Partial<SQLQuery> & { 
+    name: string; 
+    query_text: string; 
+    company_id?: string;
+    connection_id?: string;
+    created_by?: string;
+  }) {
     try {
       console.log('SQLQueryService: Creating query:', queryData);
 
@@ -40,11 +46,11 @@ export class SQLQueryService {
         .insert({
           name: queryData.name,
           query_text: queryData.query_text,
-          description: queryData.description,
-          connection_id: queryData.connection_id,
-          created_by: queryData.created_by,
+          description: queryData.description || '',
+          connection_id: queryData.connection_id || null,
+          created_by: queryData.created_by || null,
           company_id: queryData.company_id || '',
-          user_id: queryData.created_by
+          user_id: queryData.created_by || null
         })
         .select(`
           *,

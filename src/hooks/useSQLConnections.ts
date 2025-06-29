@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useCompanies } from '@/hooks/useCompanies';
 import { SQLConnection } from '@/types/sqlConnection';
 import { sqlConnectionService } from '@/services/sqlConnectionService';
 import { connectionTestService } from '@/services/connectionTestService';
@@ -12,13 +13,23 @@ export function useSQLConnections() {
   const [testing, setTesting] = useState(false);
   const { toast } = useToast();
   const { userLogin } = useAuth();
+  const { currentCompany } = useCompanies();
 
   const fetchConnections = useCallback(async () => {
     try {
       setLoading(true);
       console.log('useSQLConnections: Fetching SQL connections...');
       
-      const data = await sqlConnectionService.fetchConnections();
+      let data: SQLConnection[] = [];
+      
+      if (currentCompany?.id) {
+        // Se há uma empresa selecionada, buscar apenas suas conexões
+        data = await sqlConnectionService.fetchConnectionsByCompany(currentCompany.id);
+      } else if (userLogin?.is_master) {
+        // Se é usuário master sem empresa específica, buscar todas
+        data = await sqlConnectionService.fetchConnections();
+      }
+      
       console.log('useSQLConnections: Connections loaded:', data);
       setConnections(data);
     } catch (error) {
@@ -28,10 +39,11 @@ export function useSQLConnections() {
         description: "Erro ao carregar conexões SQL",
         variant: "destructive"
       });
+      setConnections([]);
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, userLogin, currentCompany]);
 
   const createConnection = async (connectionData: Omit<SQLConnection, 'id' | 'created_at' | 'updated_at'>) => {
     try {
@@ -159,7 +171,7 @@ export function useSQLConnections() {
     if (userLogin?.id) {
       fetchConnections();
     }
-  }, [userLogin?.id, fetchConnections]);
+  }, [userLogin?.id, currentCompany?.id, fetchConnections]);
 
   return {
     connections,
