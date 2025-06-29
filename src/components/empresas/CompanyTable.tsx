@@ -1,4 +1,5 @@
 
+
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +9,7 @@ import { usePlans } from "@/hooks/usePlans";
 import { useCompanyStats } from "@/hooks/useCompanyStats";
 import { useCompanies } from "@/hooks/useCompanies";
 import { useToast } from "@/hooks/use-toast";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
 
 interface CompanyTableProps {
   companies: Company[];
@@ -21,6 +23,16 @@ export function CompanyTable({ companies, onEditCompany, onDeleteCompany, onConf
   const { stats } = useCompanyStats();
   const { currentCompany } = useCompanies();
   const { toast } = useToast();
+  const { isMasterUser } = useAdminAuth();
+
+  // Filtrar empresas - Neuro360 só para usuários master
+  const filteredCompanies = companies.filter(company => {
+    // Se não é usuário master e é a empresa Neuro360, ocultar
+    if (!isMasterUser && company.id === '0a988013-fa43-4d9d-9bfa-22c245c0c1ea') {
+      return false;
+    }
+    return true;
+  });
 
   const handleDeleteCompany = async (companyId: string) => {
     if (confirm("Tem certeza que deseja remover esta empresa?")) {
@@ -78,7 +90,7 @@ export function CompanyTable({ companies, onEditCompany, onDeleteCompany, onConf
         </TableRow>
       </TableHeader>
       <TableBody>
-        {companies.map((company) => {
+        {filteredCompanies.map((company) => {
           const plan = getCompanyPlan(company.plan_id);
           const companyStats = getCompanyStats(company.id);
           const isCurrentCompany = currentCompany?.id === company.id;
@@ -201,3 +213,4 @@ export function CompanyTable({ companies, onEditCompany, onDeleteCompany, onConf
     </Table>
   );
 }
+
