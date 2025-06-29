@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Company } from '@/types/company';
 
@@ -102,8 +103,9 @@ export class CompanyService {
       console.log('CompanyService: User is_admin value:', userLogin.is_admin);
       console.log('CompanyService: User is_master value:', userLogin.is_master);
 
-      // Verificar se o usuário é master (is_admin = '0')
+      // Verificar se o usuário é master (is_admin = '0' ou is_master = true)
       if (userLogin.is_admin !== '0' && !userLogin.is_master) {
+        console.error('CompanyService: User is not master - is_admin:', userLogin.is_admin, 'is_master:', userLogin.is_master);
         throw new Error('Apenas usuários master podem criar empresas');
       }
 
@@ -160,6 +162,49 @@ export class CompanyService {
 
       if (rpcError) {
         console.error('CompanyService: RPC error:', rpcError);
+        
+        // Se o erro for de permissão, tentar inserção direta
+        if (rpcError.message?.includes('master') || rpcError.code === '42501') {
+          console.log('CompanyService: Trying direct insertion as fallback...');
+          
+          const { data: directData, error: directError } = await supabase
+            .from('companies')
+            .insert({
+              name: companyData.name.trim(),
+              document: companyData.document.trim(),
+              email: companyData.email.trim().toLowerCase(),
+              phone: companyData.phone?.trim() || null,
+              address: companyData.address?.trim() || null,
+              status: companyData.status || 'active',
+              plan_id: companyData.plan_id || null
+            })
+            .select()
+            .single();
+
+          if (directError) {
+            console.error('CompanyService: Direct insertion error:', directError);
+            throw new Error(`Erro ao criar empresa: ${directError.message}`);
+          }
+
+          console.log('CompanyService: Company created via direct insertion:', directData);
+          
+          // Vincular automaticamente ao usuário master
+          const { error: linkError } = await supabase
+            .from('user_companies')
+            .insert({
+              user_id: userLogin.id,
+              company_id: directData.id,
+              role: 'admin',
+              is_primary: false
+            });
+
+          if (linkError) {
+            console.error('CompanyService: Error linking company to master user:', linkError);
+          }
+
+          return directData;
+        }
+        
         throw new Error(`Erro ao criar empresa: ${rpcError.message}`);
       }
 

@@ -7,7 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Company } from "@/hooks/useCompanies";
 import { usePlans } from "@/hooks/usePlans";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 interface CompanyFormProps {
   isOpen: boolean;
@@ -19,6 +21,8 @@ interface CompanyFormProps {
 
 export function CompanyForm({ isOpen, onOpenChange, editingCompany, onSave, onCancel }: CompanyFormProps) {
   const { plans, loading: plansLoading } = usePlans();
+  const { isAdmin, isMasterUser, userLogin } = useAdminAuth();
+  const { toast } = useToast();
   
   const [formData, setFormData] = useState({
     name: "",
@@ -30,6 +34,8 @@ export function CompanyForm({ isOpen, onOpenChange, editingCompany, onSave, onCa
     qr_code: "",
     status: "active" as "active" | "inactive" | "suspended"
   });
+
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (editingCompany) {
@@ -58,11 +64,46 @@ export function CompanyForm({ isOpen, onOpenChange, editingCompany, onSave, onCa
   }, [editingCompany, isOpen]);
 
   const handleSave = async () => {
+    if (isSaving) return;
+
+    // Verificar se o usuário tem permissão para criar/editar empresas
+    if (!isAdmin && !isMasterUser) {
+      toast({
+        title: "Erro de Permissão",
+        description: "Apenas usuários master podem criar ou editar empresas",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    console.log('CompanyForm: User permissions check:', {
+      isAdmin,
+      isMasterUser,
+      userLogin: {
+        is_admin: userLogin?.is_admin,
+        is_master: userLogin?.is_master
+      }
+    });
+
     try {
+      setIsSaving(true);
+      console.log('CompanyForm: Submitting form data:', formData);
+      
       await onSave(formData);
       onCancel();
     } catch (error) {
-      console.error('Error saving company:', error);
+      console.error('CompanyForm: Error saving company:', error);
+      
+      // Mostrar toast de erro mais específico
+      if (error instanceof Error) {
+        toast({
+          title: "Erro ao salvar empresa",
+          description: error.message,
+          variant: "destructive"
+        });
+      }
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -72,6 +113,25 @@ export function CompanyForm({ isOpen, onOpenChange, editingCompany, onSave, onCa
       currency: 'BRL'
     }).format(value);
   };
+
+  // Verificar se o usuário tem permissão para usar este formulário
+  if (!isAdmin && !isMasterUser) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Acesso Negado</DialogTitle>
+          </DialogHeader>
+          <div className="text-center py-4">
+            <p className="text-gray-600">Apenas usuários master podem criar ou editar empresas.</p>
+            <Button onClick={onCancel} className="mt-4">
+              Fechar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -91,6 +151,7 @@ export function CompanyForm({ isOpen, onOpenChange, editingCompany, onSave, onCa
                 placeholder="Nome da empresa"
                 value={formData.name}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
+                disabled={isSaving}
               />
             </div>
             <div className="space-y-2">
@@ -100,6 +161,7 @@ export function CompanyForm({ isOpen, onOpenChange, editingCompany, onSave, onCa
                 placeholder="XX.XXX.XXX/XXXX-XX"
                 value={formData.document}
                 onChange={(e) => setFormData({...formData, document: e.target.value})}
+                disabled={isSaving}
               />
             </div>
           </div>
@@ -113,6 +175,7 @@ export function CompanyForm({ isOpen, onOpenChange, editingCompany, onSave, onCa
                 placeholder="contato@empresa.com"
                 value={formData.email}
                 onChange={(e) => setFormData({...formData, email: e.target.value})}
+                disabled={isSaving}
               />
             </div>
             <div className="space-y-2">
@@ -122,6 +185,7 @@ export function CompanyForm({ isOpen, onOpenChange, editingCompany, onSave, onCa
                 placeholder="(11) 3333-4444"
                 value={formData.phone}
                 onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                disabled={isSaving}
               />
             </div>
           </div>
@@ -133,6 +197,7 @@ export function CompanyForm({ isOpen, onOpenChange, editingCompany, onSave, onCa
               placeholder="Endereço completo da empresa"
               value={formData.address}
               onChange={(e) => setFormData({...formData, address: e.target.value})}
+              disabled={isSaving}
             />
           </div>
           
@@ -141,7 +206,7 @@ export function CompanyForm({ isOpen, onOpenChange, editingCompany, onSave, onCa
             <Select 
               value={formData.plan_id} 
               onValueChange={(value) => setFormData({...formData, plan_id: value})}
-              disabled={plansLoading}
+              disabled={plansLoading || isSaving}
             >
               <SelectTrigger>
                 <SelectValue placeholder={plansLoading ? "Carregando planos..." : "Selecione um plano"} />
@@ -168,15 +233,22 @@ export function CompanyForm({ isOpen, onOpenChange, editingCompany, onSave, onCa
               placeholder="Código QR da empresa"
               value={formData.qr_code}
               onChange={(e) => setFormData({...formData, qr_code: e.target.value})}
+              disabled={isSaving}
             />
           </div>
           
           <div className="flex justify-end space-x-2 mt-6">
-            <Button variant="outline" onClick={onCancel}>
+            <Button variant="outline" onClick={onCancel} disabled={isSaving}>
               Cancelar
             </Button>
-            <Button onClick={handleSave} disabled={!formData.name || !formData.document || !formData.email}>
-              {editingCompany ? "Atualizar" : "Criar"} Empresa
+            <Button 
+              onClick={handleSave} 
+              disabled={!formData.name || !formData.document || !formData.email || isSaving}
+            >
+              {isSaving 
+                ? "Salvando..." 
+                : (editingCompany ? "Atualizar" : "Criar") + " Empresa"
+              }
             </Button>
           </div>
         </div>
