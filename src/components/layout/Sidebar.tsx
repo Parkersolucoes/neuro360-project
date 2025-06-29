@@ -18,7 +18,8 @@ import {
   Shield,
   ChevronDown,
   ChevronUp,
-  LogOut
+  LogOut,
+  Brain
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -71,9 +72,12 @@ export function Sidebar() {
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-slate-700">
         {!isCollapsed && (
-          <div>
-            <h1 className="text-xl font-bold text-blue-400">Visão 360</h1>
-            <p className="text-sm text-slate-400">Soluções em Dados</p>
+          <div className="flex items-center space-x-2">
+            <Brain className="w-6 h-6 text-blue-400" />
+            <div>
+              <h1 className="text-xl font-bold text-blue-400">Neuro360</h1>
+              <p className="text-sm text-slate-400">Soluções Inteligentes</p>
+            </div>
           </div>
         )}
         <Button
