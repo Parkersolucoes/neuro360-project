@@ -63,7 +63,8 @@ export function QueryForm({ query, onSubmit, onCancel }: QueryFormProps) {
         description: formData.description,
         query_text: formData.query_text,
         connection_id: formData.connection_id,
-        status: formData.status
+        status: formData.status,
+        company_id: currentCompany.id
       });
     } catch (error) {
       console.error('Error submitting query:', error);
