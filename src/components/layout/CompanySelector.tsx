@@ -1,5 +1,4 @@
 
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -16,27 +15,17 @@ export function CompanySelector() {
   const { isMasterUser } = useAdminAuth();
   const { toast } = useToast();
 
-  // Só mostrar o seletor para usuários master
-  if (!isMasterUser) {
-    return null;
-  }
-
-  // Garantir que companies é sempre um array e filtrar Neuro360 para não-master
+  // Garantir que companies é sempre um array
   const safeCompanies = Array.isArray(companies) ? companies : [];
   
-  // Filtrar empresas - Neuro360 só para usuários master
-  const filteredCompanies = safeCompanies.filter(company => {
-    // Se não é usuário master e é a empresa Neuro360, ocultar
-    if (!isMasterUser && company.id === '0a988013-fa43-4d9d-9bfa-22c245c0c1ea') {
-      return false;
-    }
-    return true;
-  });
+  console.log('CompanySelector: Safe companies:', safeCompanies);
+  console.log('CompanySelector: Current company:', currentCompany);
+  console.log('CompanySelector: Is master user:', isMasterUser);
 
   const handleCompanySelect = async (companyId: string) => {
     console.log('CompanySelector: Selecting company:', companyId);
     
-    const company = filteredCompanies.find(c => c.id === companyId);
+    const company = safeCompanies.find(c => c.id === companyId);
     if (company) {
       console.log('CompanySelector: Setting company:', company);
       
@@ -80,7 +69,7 @@ export function CompanySelector() {
     );
   }
 
-  if (filteredCompanies.length === 0) {
+  if (safeCompanies.length === 0) {
     return (
       <div className="flex items-center space-x-2 px-3 py-2 w-full">
         <Building2 className="w-4 h-4 text-gray-400 flex-shrink-0" />
@@ -89,11 +78,11 @@ export function CompanySelector() {
     );
   }
 
-  if (filteredCompanies.length === 1) {
+  if (safeCompanies.length === 1) {
     return (
       <div className="flex items-center space-x-2 px-3 py-2 w-full">
         <Building2 className="w-4 h-4 text-blue-600 flex-shrink-0" />
-        <span className="text-sm font-medium truncate text-white">{filteredCompanies[0].name}</span>
+        <span className="text-sm font-medium truncate text-white">{safeCompanies[0].name}</span>
       </div>
     );
   }
@@ -128,7 +117,7 @@ export function CompanySelector() {
                 Nenhuma empresa encontrada.
               </CommandEmpty>
               <CommandGroup>
-                {filteredCompanies.map((company) => (
+                {safeCompanies.map((company) => (
                   <CommandItem
                     key={company.id}
                     value={company.id}
@@ -155,4 +144,3 @@ export function CompanySelector() {
     </div>
   );
 }
-

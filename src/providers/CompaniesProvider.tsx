@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { CompaniesContext } from '@/contexts/CompaniesContext';
 import { Company } from '@/types/company';
@@ -58,15 +57,14 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
             status: company.status as "active" | "inactive" | "suspended"
           })) as Company[];
           
-          // Para usuários master, mostrar todas as empresas
-          const finalCompanies = filterCompaniesForUser(typedCompanies);
-          setCompanies(finalCompanies);
+          // Para usuários master, mostrar todas as empresas (incluindo Neuro360)
+          setCompanies(typedCompanies);
           
           // Tentar carregar empresa do localStorage primeiro
-          if (!loadSelectedCompanyFromStorage(finalCompanies)) {
-            // Se não há empresa salva, selecionar a empresa Visão 360 ou a primeira
-            if (!currentCompany && finalCompanies.length > 0) {
-              const defaultCompany = finalCompanies.find(c => c.id === '0a988013-fa43-4d9d-9bfa-22c245c0c1ea') || finalCompanies[0];
+          if (!loadSelectedCompanyFromStorage(typedCompanies)) {
+            // Se não há empresa salva, selecionar a empresa Neuro360 ou a primeira
+            if (!currentCompany && typedCompanies.length > 0) {
+              const defaultCompany = typedCompanies.find(c => c.id === '0a988013-fa43-4d9d-9bfa-22c245c0c1ea') || typedCompanies[0];
               console.log('CompaniesProvider: Setting default company for master:', defaultCompany);
               setCurrentCompanyInternal(defaultCompany);
               localStorage.setItem('selectedCompanyId', defaultCompany.id);
@@ -84,8 +82,14 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
             status: company.status as "active" | "inactive" | "suspended"
           })) as Company[];
           
-          // Filtrar empresa Neuro360 para usuários não-master
-          const finalCompanies = filterCompaniesForUser(typedUserCompanies);
+          // Para usuários normais, filtrar empresa Neuro360 apenas se ela não estiver associada ao usuário
+          const userCompanyIds = typedUserCompanies.map(c => c.id);
+          const isNeuro360Associated = userCompanyIds.includes('0a988013-fa43-4d9d-9bfa-22c245c0c1ea');
+          
+          // Se Neuro360 não está associada ao usuário, filtrar ela
+          const finalCompanies = isNeuro360Associated ? typedUserCompanies : filterCompaniesForUser(typedUserCompanies);
+          
+          console.log('CompaniesProvider: Final companies for user:', finalCompanies);
           setCompanies(finalCompanies);
           
           if (!loadSelectedCompanyFromStorage(finalCompanies)) {
@@ -93,6 +97,12 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
               console.log('CompaniesProvider: Setting single company for user:', finalCompanies[0]);
               setCurrentCompanyInternal(finalCompanies[0]);
               localStorage.setItem('selectedCompanyId', finalCompanies[0].id);
+            } else if (!currentCompany && finalCompanies.length > 1) {
+              // Se há múltiplas empresas, verificar se há uma primária
+              const primaryCompany = finalCompanies[0]; // A primeira será a padrão
+              console.log('CompaniesProvider: Setting first company as default for user:', primaryCompany);
+              setCurrentCompanyInternal(primaryCompany);
+              localStorage.setItem('selectedCompanyId', primaryCompany.id);
             }
           }
         }
@@ -293,4 +303,3 @@ export function CompaniesProvider({ children }: { children: React.ReactNode }) {
     </CompaniesContext.Provider>
   );
 }
-
