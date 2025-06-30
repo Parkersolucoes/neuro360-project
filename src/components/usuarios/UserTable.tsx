@@ -2,15 +2,16 @@
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2, Phone, Mail, Shield, MessageSquare, Building2, Crown } from "lucide-react";
+import { Edit, Trash2, Building2, Key } from "lucide-react";
 import { User } from "@/hooks/useUsers";
-import { useAuth } from "@/hooks/useAuth";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
 
 interface UserTableProps {
   users: User[];
   onEditUser: (user: User) => void;
   onDeleteUser: (userId: string) => void;
   onManageCompanies: (user: User) => void;
+  onGeneratePassword: (user: User) => void;
   getUserCompanyNames: (userId: string) => string;
 }
 
@@ -19,22 +20,10 @@ export function UserTable({
   onEditUser, 
   onDeleteUser, 
   onManageCompanies,
+  onGeneratePassword,
   getUserCompanyNames 
 }: UserTableProps) {
-  const { userLogin } = useAuth();
-  const isMasterUser = userLogin?.is_master || false;
-
-  const roles = [
-    { value: "admin", label: "Administrador" },
-    { value: "manager", label: "Gerente" },
-    { value: "user", label: "Usuário" },
-    { value: "master", label: "Master" }
-  ];
-
-  const getRoleLabel = (role: string) => {
-    const roleObj = roles.find(r => r.value === role);
-    return roleObj ? roleObj.label : role;
-  };
+  const { isMasterUser } = useAdminAuth();
 
   const handleDeleteUser = async (userId: string) => {
     if (confirm("Tem certeza que deseja remover este usuário?")) {
@@ -42,123 +31,108 @@ export function UserTable({
     }
   };
 
+  if (users.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-500">Nenhum usuário encontrado</p>
+      </div>
+    );
+  }
+
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Nome</TableHead>
-          <TableHead>Contato</TableHead>
-          <TableHead>Função</TableHead>
-          <TableHead>Departamento</TableHead>
-          <TableHead>Empresas Vinculadas</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Ações</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {users.map((user) => {
-          // is_admin = '0' significa master, is_admin = '1' significa usuário comum
-          const isMaster = user.is_admin === '0';
-          const isAdmin = user.is_admin === '0'; // Master é admin também
-          
-          return (
-            <TableRow key={user.id} className={isMaster ? 'opacity-50 pointer-events-none' : ''}>
-              <TableCell>
-                <div className="flex items-center space-x-2">
-                  <div>
-                    <div className="font-medium flex items-center space-x-2">
-                      <span>{user.name}</span>
-                      {isMaster && (
-                        <Crown className="w-4 h-4 text-yellow-500" />
-                      )}
-                      {isAdmin && !isMaster && (
-                        <Shield className="w-4 h-4 text-blue-500" />
-                      )}
-                    </div>
-                    <div className="text-sm text-gray-500">Criado em {new Date(user.created_at).toLocaleDateString()}</div>
-                  </div>
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="space-y-1">
-                  <div className="flex items-center space-x-2">
-                    <Mail className="w-3 h-3 text-gray-400" />
-                    <span className="text-sm">{user.email}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Phone className="w-3 h-3 text-gray-400" />
-                    <span className="text-sm">{user.phone}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <MessageSquare className="w-3 h-3 text-green-500" />
-                    <span className="text-sm">{user.whatsapp}</span>
-                  </div>
-                </div>
-              </TableCell>
-              <TableCell>
-                <Badge variant={isMaster ? "default" : "secondary"} className={isMaster ? "bg-yellow-500 text-white" : ""}>
-                  {isMaster ? "Master" : getRoleLabel(user.role)}
-                </Badge>
-              </TableCell>
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Nome</TableHead>
+            <TableHead>Email</TableHead>
+            <TableHead>Telefone</TableHead>
+            <TableHead>WhatsApp</TableHead>
+            <TableHead>Departamento</TableHead>
+            <TableHead>Empresas</TableHead>
+            <TableHead>Tipo</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Ações</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {users.map((user) => (
+            <TableRow key={user.id}>
+              <TableCell className="font-medium">{user.name}</TableCell>
+              <TableCell>{user.email}</TableCell>
+              <TableCell>{user.phone}</TableCell>
+              <TableCell>{user.whatsapp}</TableCell>
               <TableCell>{user.department}</TableCell>
               <TableCell>
-                <div className="text-sm max-w-48">
-                  {isMaster ? "Todas as empresas" : getUserCompanyNames(user.id)}
+                <div className="max-w-xs">
+                  <span className="text-sm text-gray-600">
+                    {getUserCompanyNames(user.id) || "Nenhuma empresa"}
+                  </span>
                 </div>
               </TableCell>
               <TableCell>
-                <Badge className={
-                  user.status === "active" 
-                    ? "bg-green-100 text-green-800" 
-                    : "bg-gray-100 text-gray-800"
-                }>
+                <Badge 
+                  className={user.is_admin === '0' ? "bg-purple-100 text-purple-800" : "bg-blue-100 text-blue-800"}
+                >
+                  {user.is_admin === '0' ? "Master" : "Usuário"}
+                </Badge>
+              </TableCell>
+              <TableCell>
+                <Badge 
+                  className={user.status === "active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}
+                >
                   {user.status === "active" ? "Ativo" : "Inativo"}
                 </Badge>
               </TableCell>
               <TableCell>
-                {!isMaster && (
-                  <div className="flex space-x-2">
-                    {/* Apenas usuários master podem gerenciar empresas */}
-                    {isMasterUser && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => onManageCompanies(user)}
-                        title="Gerenciar Empresas"
-                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                      >
-                        <Building2 className="w-3 h-3" />
-                      </Button>
-                    )}
+                <div className="flex space-x-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => onEditUser(user)}
+                    title="Editar usuário"
+                  >
+                    <Edit className="w-3 h-3" />
+                  </Button>
+                  
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => onGeneratePassword(user)}
+                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    title="Gerar senha"
+                  >
+                    <Key className="w-3 h-3" />
+                  </Button>
+
+                  {/* Apenas usuários master veem o botão de gerenciar empresas */}
+                  {isMasterUser && (
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => onEditUser(user)}
-                      title="Editar"
+                      onClick={() => onManageCompanies(user)}
+                      className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                      title="Gerenciar empresas"
                     >
-                      <Edit className="w-3 h-3" />
+                      <Building2 className="w-3 h-3" />
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      onClick={() => handleDeleteUser(user.id)}
-                      title="Excluir"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  </div>
-                )}
-                {isMaster && (
-                  <div className="text-sm text-gray-500 italic">
-                    Usuário protegido
-                  </div>
-                )}
+                  )}
+                  
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    onClick={() => handleDeleteUser(user.id)}
+                    title="Excluir usuário"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </div>
               </TableCell>
             </TableRow>
-          );
-        })}
-      </TableBody>
-    </Table>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 }

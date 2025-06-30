@@ -773,8 +773,20 @@ export type Database = {
           company_id: string
         }[]
       }
+      generate_random_password: {
+        Args: { length?: number }
+        Returns: string
+      }
+      generate_user_password: {
+        Args: { user_id: string }
+        Returns: string
+      }
       is_master_user: {
         Args: { user_uuid?: string }
+        Returns: boolean
+      }
+      set_user_password: {
+        Args: { user_id: string; new_password: string }
         Returns: boolean
       }
       validate_user_password: {

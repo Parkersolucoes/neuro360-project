@@ -9,6 +9,7 @@ import { useUserCompanies } from "@/hooks/useUserCompanies";
 import { useAuth } from "@/hooks/useAuth";
 import { UserDialog } from "@/components/usuarios/UserDialog";
 import { UserCompaniesDialog } from "@/components/usuarios/UserCompaniesDialog";
+import { PasswordGeneratorDialog } from "@/components/usuarios/PasswordGeneratorDialog";
 import { UserTable } from "@/components/usuarios/UserTable";
 
 export default function Usuarios() {
@@ -19,8 +20,10 @@ export default function Usuarios() {
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCompaniesDialogOpen, setIsCompaniesDialogOpen] = useState(false);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [managingUser, setManagingUser] = useState<User | null>(null);
+  const [passwordUser, setPasswordUser] = useState<User | null>(null);
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
   const [primaryCompany, setPrimaryCompany] = useState<string>('');
 
@@ -88,6 +91,12 @@ export default function Usuarios() {
     setIsCompaniesDialogOpen(true);
   };
 
+  const generateUserPassword = (user: User) => {
+    console.log('Generating password for user:', user.id);
+    setPasswordUser(user);
+    setIsPasswordDialogOpen(true);
+  };
+
   const openNewUserDialog = () => {
     console.log('Opening new user dialog');
     setEditingUser(null);
@@ -145,6 +154,12 @@ export default function Usuarios() {
         />
       )}
 
+      <PasswordGeneratorDialog
+        isOpen={isPasswordDialogOpen}
+        onOpenChange={setIsPasswordDialogOpen}
+        user={passwordUser}
+      />
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
@@ -158,6 +173,7 @@ export default function Usuarios() {
             onEditUser={editUser}
             onDeleteUser={deleteUser}
             onManageCompanies={manageUserCompanies}
+            onGeneratePassword={generateUserPassword}
             getUserCompanyNames={getUserCompanyNames}
           />
         </CardContent>
