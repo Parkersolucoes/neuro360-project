@@ -50,10 +50,10 @@ export function useDemoSQLConnections() {
   };
 
   useEffect(() => {
-    if (companies.length > 0 && connections.length >= 0) {
+    if (companies.length > 0) {
       createDemoConnectionsForNewCompanies();
     }
-  }, [companies, connections]);
+  }, [companies]);
 
   return {
     createDemoConnectionsForNewCompanies
