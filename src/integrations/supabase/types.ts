@@ -781,6 +781,10 @@ export type Database = {
         Args: { user_id: string }
         Returns: string
       }
+      get_current_custom_user_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       is_master_user: {
         Args: { user_uuid?: string }
         Returns: boolean
